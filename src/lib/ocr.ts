@@ -1,6 +1,8 @@
 import OpenAI from "openai"
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
 
 export interface OcrResult {
   mainNumbers: string[]
@@ -16,7 +18,7 @@ export async function readLotteryTicketFromBuffer(buffer: Buffer): Promise<OcrRe
 
 export async function readLotteryTicket(imageUrl: string): Promise<OcrResult | null> {
   try {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
