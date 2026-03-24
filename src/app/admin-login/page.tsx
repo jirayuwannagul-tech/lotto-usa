@@ -3,13 +3,14 @@ import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import LoginForm from "@/components/shared/LoginForm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import LogoutButton from "@/components/shared/LogoutButton"
 import { authOptions } from "@/lib/auth"
 
 export default async function AdminLoginPage() {
   const session = await getServerSession(authOptions)
 
   if (session?.user.role === "ADMIN") redirect("/admin")
-  if (session) redirect("/dashboard")
+  const hasCustomerSession = !!session
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.2),_transparent_28%),linear-gradient(180deg,#020617_0%,#08111f_48%,#0f172a_100%)] px-4 py-10 text-slate-100">
@@ -48,6 +49,21 @@ export default async function AdminLoginPage() {
             <CardTitle className="text-center text-white">เข้าสู่ระบบผู้ดูแล</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {hasCustomerSession && (
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+                <p className="font-semibold">ตอนนี้คุณกำลังใช้บัญชีลูกค้าอยู่</p>
+                <p className="mt-1 leading-6 text-amber-100/80">
+                  หน้านี้มีไว้สำหรับผู้ดูแลระบบเท่านั้น คุณสามารถออกจากบัญชีเดิมก่อน
+                  หรือเข้าสู่ระบบใหม่ด้วยบัญชีแอดมินได้จากฟอร์มด้านล่าง
+                </p>
+                <div className="mt-3">
+                  <LogoutButton
+                    redirectTo="/admin-login"
+                    className="border border-amber-400/30 bg-amber-500/10 px-4 text-amber-100 hover:bg-amber-500/20"
+                  />
+                </div>
+              </div>
+            )}
             <LoginForm portal="admin" redirectTo="/admin" showRegisterLink={false} />
             <div className="space-y-2 text-center text-sm text-slate-400">
               <p>

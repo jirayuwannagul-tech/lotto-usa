@@ -21,7 +21,8 @@ export default withAuth(
     }
 
     if (pathname.startsWith("/admin") && token?.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.url))
+      adminLoginUrl.searchParams.set("callbackUrl", `${pathname}${req.nextUrl.search}`)
+      return NextResponse.redirect(adminLoginUrl)
     }
 
     if (pathname.startsWith("/dashboard") && token?.role === "ADMIN") {
