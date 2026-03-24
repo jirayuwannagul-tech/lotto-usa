@@ -12,4 +12,4 @@ ENV NODE_ENV=production
 ENV HOSTNAME="0.0.0.0"
 
 EXPOSE 3000
-CMD ["sh", "-c", "node_modules/.bin/next start -p ${PORT:-3000} -H 0.0.0.0"]
+CMD ["node_modules/.bin/next", "start", "-H", "0.0.0.0"]
