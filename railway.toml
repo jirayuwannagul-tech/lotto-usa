@@ -3,4 +3,4 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "npx prisma migrate deploy && node server.js"
+startCommand = "node node_modules/.bin/prisma migrate deploy && node server.js"
