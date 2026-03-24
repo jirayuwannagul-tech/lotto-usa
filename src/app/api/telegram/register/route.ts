@@ -14,10 +14,15 @@ export async function GET(req: NextRequest) {
 
   const webhookUrl = `${appUrl.replace(/\/$/, "")}/api/telegram/webhook`
 
+  const body: Record<string, string> = { url: webhookUrl }
+  if (process.env.TELEGRAM_WEBHOOK_SECRET) {
+    body.secret_token = process.env.TELEGRAM_WEBHOOK_SECRET
+  }
+
   const res = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url: webhookUrl }),
+    body: JSON.stringify(body),
   })
   const data = await res.json()
   return NextResponse.json({ webhookUrl, result: data })
