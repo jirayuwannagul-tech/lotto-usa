@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { syncUpcomingDraws } from "@/lib/draw-schedule"
@@ -36,7 +37,16 @@ export default async function Home() {
       <main className="mx-auto max-w-6xl px-5 py-10 sm:px-6 sm:py-14">
         <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="flex items-center justify-between">
-            <p className="text-lg font-semibold tracking-tight text-slate-950">LottoUSA</p>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/Gemini_Generated_Image_itzhiyitzhiyitzh.png"
+                alt="LottoUSA"
+                width={240}
+                height={78}
+                className="h-auto w-44 sm:w-56"
+                priority
+              />
+            </Link>
             <div className="flex items-center gap-3 text-sm font-semibold">
               <Link href="/login" className="text-slate-500 transition hover:text-slate-950">
                 Login
