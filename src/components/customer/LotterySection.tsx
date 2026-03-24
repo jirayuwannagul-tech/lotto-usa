@@ -1,11 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { signIn } from "next-auth/react"
 import { Input } from "@/components/ui/input"
 import { LOTTERY_RULES, DrawType } from "@/lib/lottery-rules"
+
+const CART_KEY = "lotto_cart"
 
 // ─── Types ───────────────────────────────────────────────
 interface Draw {
@@ -175,18 +177,22 @@ function DrawPicker({ draw, onAddToCart }: { draw: Draw; onAddToCart: (item: Car
 }
 
 // ─── Cart Panel ───────────────────────────────────────────
-function CartPanel({ items, draws, isLoggedIn, onRemove }: {
+function CartPanel({ items, draws, isLoggedIn, onRemove, onClearCart }: {
   items: CartItem[]
   draws: Draw[]
   isLoggedIn: boolean
   onRemove: (idx: number) => void
+  onClearCart?: () => void
 }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
   async function checkout() {
-    if (!isLoggedIn) { router.push("/login"); return }
+    if (!isLoggedIn) {
+      document.getElementById("login-panel")?.scrollIntoView({ behavior: "smooth", block: "center" })
+      return
+    }
     if (items.length === 0) return
     setLoading(true); setError("")
 
@@ -209,6 +215,7 @@ function CartPanel({ items, draws, isLoggedIn, onRemove }: {
     const data = await res.json()
     setLoading(false)
     if (!res.ok) { setError(data.error ?? "เกิดข้อผิดพลาด"); return }
+    onClearCart?.()
     router.push(`/orders/${data.id}/pay`)
   }
 
@@ -254,7 +261,7 @@ function CartPanel({ items, draws, isLoggedIn, onRemove }: {
             cursor: items.length > 0 ? "pointer" : "not-allowed",
           }}
         >
-          {loading ? "กำลังดำเนินการ..." : isLoggedIn ? "ชำระเงิน →" : "เข้าสู่ระบบเพื่อชำระ"}
+          {loading ? "กำลังดำเนินการ..." : isLoggedIn ? "ชำระเงิน →" : "🔐 เข้าสู่ระบบเพื่อชำระ ↑"}
         </button>
       </div>
     </div>
@@ -262,7 +269,7 @@ function CartPanel({ items, draws, isLoggedIn, onRemove }: {
 }
 
 // ─── Login Form ───────────────────────────────────────────
-function LoginPanel() {
+function LoginPanel({ onLoginSuccess }: { onLoginSuccess?: () => void }) {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -275,11 +282,11 @@ function LoginPanel() {
     const res = await signIn("credentials", { email, password, redirect: false })
     setLoading(false)
     if (res?.error) setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง")
-    else { router.refresh() }
+    else { onLoginSuccess?.(); router.refresh() }
   }
 
   return (
-    <div className="rounded-2xl p-[1px]" style={{ background: "linear-gradient(135deg,rgba(201,168,76,.5),rgba(255,255,255,.05),rgba(201,168,76,.2))" }}>
+    <div id="login-panel" className="rounded-2xl p-[1px]" style={{ background: "linear-gradient(135deg,rgba(201,168,76,.5),rgba(255,255,255,.05),rgba(201,168,76,.2))" }}>
       <div className="rounded-2xl p-5" style={{ background: "linear-gradient(160deg,rgba(15,12,30,.97),rgba(10,8,20,.95))" }}>
         <h3 className="font-black text-base mb-1 text-center" style={{ background: "linear-gradient(90deg,#f5d485,#c9a84c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
           เข้าสู่ระบบ
@@ -302,10 +309,38 @@ function LoginPanel() {
 
 // ─── Main Export ──────────────────────────────────────────
 export function LotterySection({ draws, isLoggedIn }: { draws: Draw[]; isLoggedIn: boolean }) {
+  const router = useRouter()
   const [cart, setCart] = useState<CartItem[]>([])
+
+  // Restore cart from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(CART_KEY)
+      if (saved) setCart(JSON.parse(saved))
+    } catch { /* ignore */ }
+  }, [])
+
+  // Persist cart to localStorage on every change
+  useEffect(() => {
+    try { localStorage.setItem(CART_KEY, JSON.stringify(cart)) } catch { /* ignore */ }
+  }, [cart])
+
+  // After login: if cart has items, immediately go to checkout
+  function handleLoginSuccess() {
+    const saved = localStorage.getItem(CART_KEY)
+    const items: CartItem[] = saved ? JSON.parse(saved) : cart
+    if (items.length > 0) {
+      // router.refresh() will update isLoggedIn; checkout happens via CartPanel naturally
+      // Just ensure the page refreshes so CartPanel sees isLoggedIn=true
+    }
+  }
 
   function addToCart(item: CartItem) { setCart((prev) => [...prev, item]) }
   function removeFromCart(idx: number) { setCart((prev) => prev.filter((_, i) => i !== idx)) }
+  function clearCart() {
+    setCart([])
+    try { localStorage.removeItem(CART_KEY) } catch { /* ignore */ }
+  }
 
   const powerball = draws.find((d) => d.type === "POWERBALL")
   const mega = draws.find((d) => d.type === "MEGA_MILLIONS")
@@ -328,8 +363,8 @@ export function LotterySection({ draws, isLoggedIn }: { draws: Draw[]; isLoggedI
 
       {/* Right — login or cart */}
       <div className="lg:col-span-2 space-y-4 sticky top-6">
-        {!isLoggedIn && <LoginPanel />}
-        <CartPanel items={cart} draws={draws} isLoggedIn={isLoggedIn} onRemove={removeFromCart} />
+        {!isLoggedIn && <LoginPanel onLoginSuccess={handleLoginSuccess} />}
+        <CartPanel items={cart} draws={draws} isLoggedIn={isLoggedIn} onRemove={removeFromCart} onClearCart={clearCart} />
       </div>
     </div>
   )
