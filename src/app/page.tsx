@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import LoginForm from "@/components/shared/LoginForm"
@@ -132,19 +133,14 @@ export default async function Home() {
               >
                 {/* Logo row */}
                 <div className="flex items-center gap-4 mb-5">
-                  <div
-                    className="w-16 h-16 rounded-full flex flex-col items-center justify-center shrink-0"
-                    style={{
-                      background: "linear-gradient(135deg, #dc2626, #991b1b)",
-                      boxShadow: "0 0 30px rgba(220,38,38,0.5), inset 0 1px 0 rgba(255,255,255,0.2)",
-                    }}
-                  >
-                    <span className="text-white font-black text-[10px] leading-tight text-center tracking-tight">
-                      POWER<br />BALL
-                    </span>
-                  </div>
+                  <Image
+                    src="/png-clipart-powerball-progressive-jackpot-minnesota-state-lottery-mega-millions-lottery-miscellaneous-game.png"
+                    alt="Powerball"
+                    width={140}
+                    height={56}
+                    className="object-contain shrink-0"
+                  />
                   <div>
-                    <h3 className="text-white font-black text-2xl tracking-wide">Powerball</h3>
                     <p className="text-white/40 text-xs mt-0.5">จันทร์ · พุธ · เสาร์</p>
                   </div>
                   <div className="ml-auto">
@@ -203,20 +199,14 @@ export default async function Home() {
                 style={{ background: "linear-gradient(135deg, rgba(5,10,25,0.95), rgba(5,15,35,0.9))" }}
               >
                 <div className="flex items-center gap-4 mb-5">
-                  <div
-                    className="w-16 h-16 rounded-full flex flex-col items-center justify-center shrink-0"
-                    style={{
-                      background: "linear-gradient(135deg, #1d4ed8, #1e40af)",
-                      boxShadow: "0 0 30px rgba(37,99,235,0.5), inset 0 1px 0 rgba(255,255,255,0.2)",
-                      border: "2px solid #ca8a04",
-                    }}
-                  >
-                    <span className="text-yellow-400 font-black text-[10px] leading-tight text-center tracking-tight">
-                      MEGA<br />M
-                    </span>
-                  </div>
+                  <Image
+                    src="/273-2730781_mega-millions-logo-png.png"
+                    alt="Mega Millions"
+                    width={140}
+                    height={56}
+                    className="object-contain shrink-0"
+                  />
                   <div>
-                    <h3 className="text-white font-black text-2xl tracking-wide">Mega Millions</h3>
                     <p className="text-white/40 text-xs mt-0.5">อังคาร · ศุกร์</p>
                   </div>
                   <div className="ml-auto">
