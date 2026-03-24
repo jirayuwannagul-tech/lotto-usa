@@ -57,7 +57,9 @@ export default async function Home() {
   const session = await getServerSession(authOptions)
   if (session?.user.role === "ADMIN") redirect("/admin")
 
-  await syncDraws()
+  // Only sync if no open draws exist (avoids DB overhead on every load)
+  const drawCount = await prisma.draw.count({ where: { isOpen: true } })
+  if (drawCount === 0) await syncDraws()
 
   const draws = await prisma.draw.findMany({ where: { isOpen: true }, orderBy: { drawDate: "asc" } })
 
