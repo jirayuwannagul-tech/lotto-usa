@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { getNextDrawFormValues } from "@/lib/draw-schedule"
 
 interface Draw {
   id: string
@@ -15,44 +16,10 @@ interface Draw {
   jackpot?: string
 }
 
-function getNextDrawDates(type: string): { drawDate: string; cutoffAt: string } {
-  // Draw days in ET: 1=Mon,2=Tue,3=Wed,5=Fri,6=Sat
-  const drawDays = type === "POWERBALL" ? [1, 3, 6] : [2, 5]
-  // Draw time in ET: Powerball 22:59, Mega Millions 23:00
-  const drawHourET = type === "POWERBALL" ? 22 : 23
-  const drawMinET = type === "POWERBALL" ? 59 : 0
-  // March–Nov: EDT = UTC-4
-  const etOffset = 4
-
-  const now = new Date()
-  // Shift now to ET to get correct ET day-of-week
-  const nowET = new Date(now.getTime() - etOffset * 3600000)
-
-  for (let i = 1; i <= 7; i++) {
-    const candidateET = new Date(nowET)
-    candidateET.setUTCDate(nowET.getUTCDate() + i)
-    if (!drawDays.includes(candidateET.getUTCDay())) continue
-
-    // Draw time: ET hour → UTC (Date.UTC handles 22+4=26 → next day 02:xx)
-    const drawDateUTC = new Date(Date.UTC(
-      candidateET.getUTCFullYear(), candidateET.getUTCMonth(), candidateET.getUTCDate(),
-      drawHourET + etOffset, drawMinET
-    ))
-    // Cutoff: 7AM PDT (UTC-7) = 14:00 UTC on the ET draw day
-    const cutoffUTC = new Date(Date.UTC(
-      candidateET.getUTCFullYear(), candidateET.getUTCMonth(), candidateET.getUTCDate(),
-      14, 0
-    ))
-    const fmt = (d: Date) => d.toISOString().slice(0, 16)
-    return { drawDate: fmt(drawDateUTC), cutoffAt: fmt(cutoffUTC) }
-  }
-  return { drawDate: "", cutoffAt: "" }
-}
-
 export default function DrawsPage() {
   const [draws, setDraws] = useState<Draw[]>([])
   const [form, setForm] = useState(() => {
-    const { drawDate, cutoffAt } = getNextDrawDates("POWERBALL")
+    const { drawDate, cutoffAt } = getNextDrawFormValues("POWERBALL")
     return { type: "POWERBALL", drawDate, cutoffAt, jackpot: "" }
   })
   const [loading, setLoading] = useState(false)
@@ -62,13 +29,23 @@ export default function DrawsPage() {
     setDraws(await res.json())
   }
 
-  useEffect(() => { fetchDraws() }, [])
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/draws?all=1")
+      .then((res) => res.json())
+      .then((data: Draw[]) => {
+        if (!cancelled) setDraws(data)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function update(field: string) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const value = e.target.value
       if (field === "type") {
-        const { drawDate, cutoffAt } = getNextDrawDates(value)
+        const { drawDate, cutoffAt } = getNextDrawFormValues(value as "POWERBALL" | "MEGA_MILLIONS")
         setForm((f) => ({ ...f, type: value, drawDate, cutoffAt }))
       } else {
         setForm((f) => ({ ...f, [field]: value }))
@@ -85,7 +62,7 @@ export default function DrawsPage() {
       body: JSON.stringify(form),
     })
     setLoading(false)
-    const { drawDate, cutoffAt } = getNextDrawDates("POWERBALL")
+    const { drawDate, cutoffAt } = getNextDrawFormValues("POWERBALL")
     setForm({ type: "POWERBALL", drawDate, cutoffAt, jackpot: "" })
     fetchDraws()
   }

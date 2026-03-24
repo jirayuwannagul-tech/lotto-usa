@@ -70,7 +70,14 @@ export default async function TicketsPage() {
                           <span className="text-yellow-400/60 text-xs">รอตั๋ว</span>
                         )}
                         {item.ticketPhotoUrl && (
-                          <a href={item.ticketPhotoUrl} target="_blank" className="text-blue-400 text-xs hover:underline">ดูตั๋ว</a>
+                          <a
+                            href={`/api/order-items/${item.id}/ticket`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-400 text-xs hover:underline"
+                          >
+                            ดูตั๋ว
+                          </a>
                         )}
                       </div>
                     ))}

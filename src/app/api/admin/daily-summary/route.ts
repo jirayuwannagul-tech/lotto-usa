@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(summary)
 }
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   const session = await getServerSession(authOptions)
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -72,7 +72,7 @@ async function generateSummary() {
     minute: "2-digit",
   })
 
-  let lines: string[] = [
+  const lines: string[] = [
     `📊 สรุปยอดหวย LottoUSA`,
     `🕙 ${laBangkokDateStr} (LA)`,
     `${"─".repeat(30)}`,

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { saveUploadedFile } from "@/lib/upload"
-import { readLotteryTicket, numbersMatch } from "@/lib/ocr"
+import { readLotteryTicketFromBuffer, numbersMatch } from "@/lib/ocr"
 import { sendLineNotify } from "@/lib/line-notify"
 
 export async function POST(req: NextRequest) {
@@ -20,15 +20,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "ข้อมูลไม่ครบ" }, { status: 400 })
   }
 
-  // Save ticket photo
-  const ticketPhotoUrl = await saveUploadedFile(file, "tickets")
-
-  // Build full URL for OCR
-  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000"
-  const fullImageUrl = `${baseUrl}${ticketPhotoUrl}`
-
-  // Run OCR
-  const ocr = await readLotteryTicket(fullImageUrl)
+  let upload
+  try {
+    upload = await saveUploadedFile(file, "tickets")
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "อัปโหลดรูปไม่สำเร็จ"
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+  const ticketPhotoUrl = upload.assetPath
+  const ocr = await readLotteryTicketFromBuffer(upload.buffer, upload.contentType)
 
   if (!ocr) {
     return NextResponse.json({

@@ -203,20 +203,35 @@ function CartPanel({ items, draws, isLoggedIn, onRemove, onClearCart }: {
       grouped[item.drawId].push(item)
     }
 
-    const firstDrawId = Object.keys(grouped)[0]
-    const res = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        drawId: firstDrawId,
-        items: grouped[firstDrawId].map((i) => ({ mainNumbers: i.mainNumbers, specialNumber: i.specialNumber })),
-      }),
-    })
-    const data = await res.json()
+    const createdOrderIds: string[] = []
+    for (const [drawId, drawItems] of Object.entries(grouped)) {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          drawId,
+          items: drawItems.map((item) => ({
+            mainNumbers: item.mainNumbers,
+            specialNumber: item.specialNumber,
+          })),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setLoading(false)
+        setError(data.error ?? "เกิดข้อผิดพลาด")
+        return
+      }
+      createdOrderIds.push(data.id)
+    }
+
     setLoading(false)
-    if (!res.ok) { setError(data.error ?? "เกิดข้อผิดพลาด"); return }
     onClearCart?.()
-    router.push(`/orders/${data.id}/pay`)
+    if (createdOrderIds.length === 1) {
+      router.push(`/orders/${createdOrderIds[0]}/pay`)
+      return
+    }
+    router.push("/dashboard")
   }
 
   return (
@@ -309,16 +324,15 @@ function LoginPanel({ onLoginSuccess }: { onLoginSuccess?: () => void }) {
 
 // ─── Main Export ──────────────────────────────────────────
 export function LotterySection({ draws, isLoggedIn }: { draws: Draw[]; isLoggedIn: boolean }) {
-  const router = useRouter()
-  const [cart, setCart] = useState<CartItem[]>([])
-
-  // Restore cart from localStorage on mount
-  useEffect(() => {
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") return []
     try {
       const saved = localStorage.getItem(CART_KEY)
-      if (saved) setCart(JSON.parse(saved))
-    } catch { /* ignore */ }
-  }, [])
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
+  })
 
   // Persist cart to localStorage on every change
   useEffect(() => {

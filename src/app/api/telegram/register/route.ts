@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
 export async function GET(req: NextRequest) {
+  const secret = new URL(req.url).searchParams.get("secret")
+  const session = await getServerSession(authOptions)
+  const isAuthorized = secret === process.env.CRON_SECRET || session?.user.role === "ADMIN"
+  if (!isAuthorized) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const token = process.env.TELEGRAM_BOT_TOKEN
-  if (!token) return NextResponse.json({
-    error: "TELEGRAM_BOT_TOKEN not set",
-    debug: {
-      hasToken: !!process.env.TELEGRAM_BOT_TOKEN,
-      hasChatIds: !!process.env.TELEGRAM_ADMIN_CHAT_IDS,
-      hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
-      nodeEnv: process.env.NODE_ENV,
-    }
-  }, { status: 500 })
+  if (!token) {
+    return NextResponse.json({ error: "TELEGRAM_BOT_TOKEN not set" }, { status: 500 })
+  }
 
   const appUrl = process.env.APP_URL ?? process.env.NEXTAUTH_URL
   if (!appUrl || appUrl.includes("localhost")) {
-    return NextResponse.json({ error: "APP_URL not set — add APP_URL=https://your-app.railway.app in Railway Variables" }, { status: 500 })
+    return NextResponse.json({ error: "APP_URL not set" }, { status: 500 })
   }
 
   const webhookUrl = `${appUrl.replace(/\/$/, "")}/api/telegram/webhook`

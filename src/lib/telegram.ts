@@ -37,8 +37,7 @@ export async function downloadFileBuffer(fileId: string): Promise<Buffer | null>
 
 export function isAllowedChat(chatId: number): boolean {
   const allowed = process.env.TELEGRAM_ADMIN_CHAT_IDS
-  // ถ้าไม่ได้ set → ให้ทุก chat ใช้ได้ (ตั้งค่าก่อน deploy)
-  if (!allowed) return true
+  if (!allowed) return false
   return allowed.split(",").map((s) => s.trim()).includes(String(chatId))
 }
 

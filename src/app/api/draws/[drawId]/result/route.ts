@@ -2,7 +2,36 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendAdminMessage, sendMessage } from "@/lib/telegram"
+import { sendAdminMessage } from "@/lib/telegram"
+import { LOTTERY_RULES } from "@/lib/lottery-rules"
+
+function parseWinningNumbers(rawMain: string, rawSpecial: string, type: keyof typeof LOTTERY_RULES) {
+  const rule = LOTTERY_RULES[type]
+  const mainNumbers = rawMain
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((value) => Number.parseInt(value, 10))
+  const specialNumber = Number.parseInt(rawSpecial.trim(), 10)
+
+  if (mainNumbers.length !== rule.mainCount) {
+    throw new Error(`ต้องกรอก ${rule.mainCount} เลขหลัก`)
+  }
+  if (mainNumbers.some((value) => Number.isNaN(value) || value < 1 || value > rule.mainMax)) {
+    throw new Error(`เลขหลักต้องอยู่ระหว่าง 1-${rule.mainMax}`)
+  }
+  if (new Set(mainNumbers).size !== mainNumbers.length) {
+    throw new Error("เลขหลักห้ามซ้ำกัน")
+  }
+  if (Number.isNaN(specialNumber) || specialNumber < 1 || specialNumber > rule.specialMax) {
+    throw new Error(`${rule.specialLabel} ต้องอยู่ระหว่าง 1-${rule.specialMax}`)
+  }
+
+  return {
+    winningMain: mainNumbers.map((value) => String(value).padStart(2, "0")).sort().join(","),
+    winningSpecial: String(specialNumber).padStart(2, "0"),
+  }
+}
 
 export async function POST(
   req: NextRequest,
@@ -31,19 +60,32 @@ export async function POST(
     },
   })
   if (!draw) return NextResponse.json({ error: "ไม่พบงวด" }, { status: 404 })
+  if (draw.winningMain || draw.winningSpecial) {
+    return NextResponse.json({ error: "งวดนี้ประกาศผลแล้ว" }, { status: 409 })
+  }
 
-  // Save winning numbers
+  let normalized
+  try {
+    normalized = parseWinningNumbers(winningMain, winningSpecial, draw.type)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "ข้อมูลผลรางวัลไม่ถูกต้อง"
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+
   await prisma.draw.update({
     where: { id: drawId },
-    data: { winningMain, winningSpecial, isOpen: false },
+    data: {
+      winningMain: normalized.winningMain,
+      winningSpecial: normalized.winningSpecial,
+      isOpen: false,
+    },
   })
 
-  // Normalize winning numbers for comparison
-  const winMain = winningMain
+  const winMain = normalized.winningMain
     .split(",")
-    .map((n: string) => n.trim().padStart(2, "0"))
+    .map((n: string) => n.trim())
     .sort()
-  const winSpecial = winningSpecial.trim().padStart(2, "0")
+  const winSpecial = normalized.winningSpecial
 
   const drawLabel = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
   const drawDateThai = draw.drawDate.toLocaleDateString("th-TH", {
@@ -64,13 +106,10 @@ export async function POST(
       const matchMain = itemMain.filter((n) => winMain.includes(n)).length
       const matchSpecial = itemSpecial === winSpecial
 
-      if (matchMain > 0 || matchSpecial) {
+      const prize = getPrizeLabel(draw.type, matchMain, matchSpecial)
+      if (prize) {
         winnerCount++
-        const prize = getPrizeLabel(draw.type, matchMain, matchSpecial)
-        if (prize) {
-          winnerMessages.push(`🏆 ${order.user.name}: ${item.mainNumbers} | ${item.specialNumber} → ${prize}`)
-          // Notify the winner directly if they have a telegram chat id stored (future feature)
-        }
+        winnerMessages.push(`🏆 ${order.user.name}: ${item.mainNumbers} | ${item.specialNumber} → ${prize}`)
       }
     }
   }

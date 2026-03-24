@@ -5,30 +5,7 @@ import Image from "next/image"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { LotterySection } from "@/components/customer/LotterySection"
-
-const PT_OFFSET = 7
-const SCHEDULE = {
-  POWERBALL:     { days: [1, 3, 6], hourPT: 22, minPT: 59 },
-  MEGA_MILLIONS: { days: [2, 5],    hourPT: 23, minPT: 0  },
-}
-
-async function syncDraws() {
-  const now = new Date()
-  const nowPT = new Date(now.getTime() - PT_OFFSET * 3600000)
-  for (const [type, s] of Object.entries(SCHEDULE) as [keyof typeof SCHEDULE, typeof SCHEDULE[keyof typeof SCHEDULE]][]) {
-    for (let i = 0; i <= 7; i++) {
-      const d = new Date(nowPT); d.setUTCDate(nowPT.getUTCDate() + i)
-      if (!s.days.includes(d.getUTCDay())) continue
-      const drawUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), s.hourPT + PT_OFFSET, s.minPT))
-      const cutoffUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 14, 0))
-      if (cutoffUTC <= now) continue
-      const exists = await prisma.draw.findFirst({ where: { type, drawDate: drawUTC } })
-      if (!exists) await prisma.draw.create({ data: { type, drawDate: drawUTC, cutoffAt: cutoffUTC } })
-      break
-    }
-  }
-  await prisma.draw.updateMany({ where: { isOpen: true, cutoffAt: { lt: now } }, data: { isOpen: false } })
-}
+import { syncUpcomingDraws } from "@/lib/draw-schedule"
 
 function fmt(date: Date, opts: Intl.DateTimeFormatOptions) {
   return date.toLocaleString("th-TH", { timeZone: "Asia/Bangkok", ...opts })
@@ -39,7 +16,9 @@ export default async function Home() {
   if (session?.user.role === "ADMIN") redirect("/admin")
 
   const drawCount = await prisma.draw.count({ where: { isOpen: true } })
-  if (drawCount === 0) await syncDraws()
+  if (drawCount === 0) {
+    await syncUpcomingDraws(prisma)
+  }
 
   const draws = await prisma.draw.findMany({ where: { isOpen: true }, orderBy: { drawDate: "asc" } })
 

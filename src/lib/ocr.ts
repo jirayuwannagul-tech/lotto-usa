@@ -10,9 +10,12 @@ export interface OcrResult {
   raw: string
 }
 
-export async function readLotteryTicketFromBuffer(buffer: Buffer): Promise<OcrResult | null> {
+export async function readLotteryTicketFromBuffer(
+  buffer: Buffer,
+  contentType = "image/jpeg"
+): Promise<OcrResult | null> {
   const base64 = buffer.toString("base64")
-  const dataUrl = `data:image/jpeg;base64,${base64}`
+  const dataUrl = `data:${contentType};base64,${base64}`
   return readLotteryTicket(dataUrl)
 }
 

@@ -9,10 +9,10 @@ describe("isAllowedChat", () => {
   beforeEach(() => vi.resetModules())
   afterEach(() => { delete process.env.TELEGRAM_ADMIN_CHAT_IDS })
 
-  it("allows all chats if TELEGRAM_ADMIN_CHAT_IDS not set", async () => {
+  it("blocks chats if TELEGRAM_ADMIN_CHAT_IDS not set", async () => {
     delete process.env.TELEGRAM_ADMIN_CHAT_IDS
     const { isAllowedChat } = await import("../telegram")
-    expect(isAllowedChat(999999)).toBe(true)
+    expect(isAllowedChat(999999)).toBe(false)
   })
 
   it("allows chat ID in the list", async () => {

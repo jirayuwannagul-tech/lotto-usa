@@ -138,8 +138,9 @@ export default async function AdminPage() {
                     <div className="flex flex-col gap-2 items-end shrink-0">
                       {order.payment?.slipUrl && (
                         <a
-                          href={order.payment.slipUrl}
+                          href={`/api/payments/${order.payment.id}/slip`}
                           target="_blank"
+                          rel="noreferrer"
                           className="text-xs px-2.5 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-colors"
                         >
                           🖼 ดูสลิป

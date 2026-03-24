@@ -6,6 +6,15 @@ import { LOTTERY_RULES, MARGIN_USD } from "@/lib/lottery-rules"
 const itemSchema = z.object({
   mainNumbers: z.array(z.string().regex(/^\d{1,2}$/)).min(1).max(10),
   specialNumber: z.string().regex(/^\d{1,2}$/),
+}).superRefine((item, ctx) => {
+  const normalized = item.mainNumbers.map((value) => value.padStart(2, "0"))
+  if (new Set(normalized).size !== normalized.length) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "เลขหลักห้ามซ้ำกัน",
+      path: ["mainNumbers"],
+    })
+  }
 })
 
 const createOrderSchema = z.object({
@@ -54,6 +63,14 @@ describe("Order validation schema", () => {
     const result = createOrderSchema.safeParse({
       drawId: "abc",
       items: [{ mainNumbers: ["1","2","3","4","100"], specialNumber: "10" }],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it("rejects duplicate main numbers", () => {
+    const result = createOrderSchema.safeParse({
+      drawId: "abc",
+      items: [{ mainNumbers: ["1", "1", "2", "3", "4"], specialNumber: "10" }],
     })
     expect(result.success).toBe(false)
   })

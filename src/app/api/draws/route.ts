@@ -51,14 +51,28 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const draw = await prisma.draw.create({
-    data: {
-      type,
-      drawDate: drawDateParsed,
-      cutoffAt: cutoffAtParsed,
-      jackpot: jackpot || null,
-    },
-  })
+  try {
+    const draw = await prisma.$transaction(async (tx) => {
+      const existing = await tx.draw.findFirst({
+        where: { type, drawDate: drawDateParsed },
+      })
+      if (existing) {
+        throw new Error("มีงวดนี้อยู่แล้ว")
+      }
 
-  return NextResponse.json(draw)
+      return tx.draw.create({
+        data: {
+          type,
+          drawDate: drawDateParsed,
+          cutoffAt: cutoffAtParsed,
+          jackpot: jackpot || null,
+        },
+      })
+    })
+
+    return NextResponse.json(draw)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "สร้างงวดไม่สำเร็จ"
+    return NextResponse.json({ error: message }, { status: 409 })
+  }
 }
