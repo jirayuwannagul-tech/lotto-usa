@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { syncUpcomingDraws } from "@/lib/draw-schedule"
 
@@ -27,9 +28,13 @@ export default async function Home() {
         <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="flex items-center justify-between">
             <p className="text-lg font-semibold tracking-tight text-slate-950">LottoUSA</p>
-            <div className="flex items-center gap-3 text-sm font-semibold text-slate-500">
-              <span>Login</span>
-              <span>Register</span>
+            <div className="flex items-center gap-3 text-sm font-semibold">
+              <Link href="/login" className="text-slate-500 transition hover:text-slate-950">
+                Login
+              </Link>
+              <Link href="/register" className="text-slate-500 transition hover:text-slate-950">
+                Register
+              </Link>
             </div>
           </div>
 
@@ -45,18 +50,24 @@ export default async function Home() {
               </p>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-center">
+                <button
+                  type="button"
+                  className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-center transition hover:border-slate-300 hover:bg-white"
+                >
                   <p className="text-sm font-semibold text-slate-500">Power Ball</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
                     ไปหน้าซื้อหวย
                   </p>
-                </div>
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-center">
+                </button>
+                <button
+                  type="button"
+                  className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-center transition hover:border-slate-300 hover:bg-white"
+                >
                   <p className="text-sm font-semibold text-slate-500">Mega Ball</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
                     ไปหน้าซื้อหวย
                   </p>
-                </div>
+                </button>
               </div>
             </div>
 
