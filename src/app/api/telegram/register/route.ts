@@ -12,8 +12,10 @@ export async function GET(req: NextRequest) {
     }
   }, { status: 500 })
 
-  const appUrl = process.env.NEXTAUTH_URL ?? process.env.APP_URL
-  if (!appUrl) return NextResponse.json({ error: "NEXTAUTH_URL not set" }, { status: 500 })
+  const appUrl = process.env.APP_URL ?? process.env.NEXTAUTH_URL
+  if (!appUrl || appUrl.includes("localhost")) {
+    return NextResponse.json({ error: "APP_URL not set — add APP_URL=https://your-app.railway.app in Railway Variables" }, { status: 500 })
+  }
 
   const webhookUrl = `${appUrl.replace(/\/$/, "")}/api/telegram/webhook`
 
