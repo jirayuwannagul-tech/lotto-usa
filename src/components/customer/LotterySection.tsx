@@ -33,14 +33,14 @@ interface CartItem {
 
 const GAME_THEME = {
   POWERBALL: {
-    label: "Powerball",
+    label: "พาวเวอร์บอล",
     logo: "/png-clipart-powerball-progressive-jackpot-minnesota-state-lottery-mega-millions-lottery-miscellaneous-game.png",
     badgeClass: "border-rose-100 bg-rose-50 text-rose-700",
     accentClass: "bg-rose-500",
     emphasisClass: "text-rose-600",
   },
   MEGA_MILLIONS: {
-    label: "Mega Millions",
+    label: "เมกา มิลเลียนส์",
     logo: "/273-2730781_mega-millions-logo-png.png",
     badgeClass: "border-sky-100 bg-sky-50 text-sky-700",
     accentClass: "bg-sky-500",
@@ -48,21 +48,26 @@ const GAME_THEME = {
   },
 } as const
 
+const SPECIAL_LABELS: Record<DrawType, string> = {
+  POWERBALL: "พาวเวอร์บอล",
+  MEGA_MILLIONS: "เมก้าบอล",
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
 function formatRemaining(ms: number) {
-  if (ms <= 0) return "Live"
+  if (ms <= 0) return "กำลังออกรางวัล"
 
   const totalSeconds = Math.floor(ms / 1000)
   const days = Math.floor(totalSeconds / 86400)
   const hours = Math.floor((totalSeconds % 86400) / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
 
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${minutes}m`
-  return `${minutes}m`
+  if (days > 0) return `${days} วัน ${hours} ชม.`
+  if (hours > 0) return `${hours} ชม. ${minutes} นาที`
+  return `${minutes} นาที`
 }
 
 function CountdownPanel({ targetAt }: { targetAt: string }) {
@@ -79,7 +84,7 @@ function CountdownPanel({ targetAt }: { targetAt: string }) {
   return (
     <div className="min-w-[132px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
       <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
-        Time left
+        เวลาที่เหลือ
       </p>
       <p className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
         {formatRemaining(remainingMs)}
@@ -142,6 +147,7 @@ function PortalCard({
 }) {
   const rule = LOTTERY_RULES[draw.type as DrawType]
   const theme = GAME_THEME[draw.type as DrawType]
+  const specialLabel = SPECIAL_LABELS[draw.type as DrawType]
   const [main, setMain] = useState<string[]>([])
   const [special, setSpecial] = useState("")
 
@@ -215,23 +221,23 @@ function PortalCard({
       </div>
 
       <div className="mt-6">
-        <p className="text-sm font-medium text-slate-500">Jackpot</p>
+        <p className="text-sm font-medium text-slate-500">แจ็กพอต</p>
         <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-950">
-          {draw.jackpot ?? "Updating"}
+          {draw.jackpot ?? "กำลังอัปเดต"}
         </p>
       </div>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Draw time
+            วันออกรางวัล
           </p>
           <p className="mt-2 text-sm font-semibold text-slate-950">{draw.drawDateThai}</p>
           <p className={`mt-1 text-sm font-medium ${theme.emphasisClass}`}>{draw.drawTimeThai} น.</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Buy before
+            ปิดรับซื้อ
           </p>
           <p className="mt-2 text-sm font-semibold text-slate-950">{draw.cutoffDateThai}</p>
           <p className="mt-1 text-sm font-medium text-slate-500">{draw.cutoffTimeThai} น.</p>
@@ -239,7 +245,7 @@ function PortalCard({
       </div>
 
       <p className="mt-4 text-sm leading-6 text-slate-500">
-        Pick {rule.mainCount} numbers and 1 {rule.specialLabel.toLowerCase()}.
+        เลือกเลขหลัก {rule.mainCount} ตัว และเลขพิเศษ 1 ตัว ({specialLabel})
       </p>
 
       <div className="mt-5 flex flex-wrap gap-3">
@@ -248,7 +254,7 @@ function PortalCard({
           onClick={onExpand}
           className="inline-flex items-center rounded-2xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-400"
         >
-          Pick Numbers
+          เลือกเลข
           <ArrowRight className="ml-2 size-4" />
         </button>
         <button
@@ -256,7 +262,7 @@ function PortalCard({
           onClick={quickPick}
           className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
         >
-          Quick Pick
+          สุ่มเลขอัตโนมัติ
           <Sparkles className="ml-2 size-4 text-emerald-500" />
         </button>
       </div>
@@ -266,10 +272,10 @@ function PortalCard({
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-lg font-semibold tracking-tight text-slate-950">
-                Build your ticket
+                เลือกเลขสำหรับตั๋วของคุณ
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                Choose your numbers, then add the ticket to your cart.
+                เลือกเลขให้ครบ แล้วเพิ่มตั๋วใบนี้ลงตะกร้า
               </p>
             </div>
             <button
@@ -277,13 +283,13 @@ function PortalCard({
               onClick={onCollapse}
               className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:border-slate-300 hover:text-slate-900"
             >
-              Close
+              ปิด
             </button>
           </div>
 
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-950">1. Main numbers</p>
+              <p className="text-sm font-semibold text-slate-950">1. เลขหลัก</p>
               <p className="text-sm text-slate-500">
                 {main.length}/{rule.mainCount}
               </p>
@@ -305,8 +311,8 @@ function PortalCard({
 
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-950">2. {rule.specialLabel}</p>
-              <p className="text-sm text-slate-500">{special || "Select one"}</p>
+              <p className="text-sm font-semibold text-slate-950">2. {specialLabel}</p>
+              <p className="text-sm text-slate-500">{special || "เลือก 1 ตัว"}</p>
             </div>
             <div className="flex max-h-36 flex-wrap gap-2 overflow-y-auto pr-1">
               {Array.from({ length: rule.specialMax }, (_, index) =>
@@ -325,8 +331,8 @@ function PortalCard({
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-semibold text-slate-950">3. Selected ticket</p>
-            <p className="mt-1 text-sm text-slate-500">Add this ticket to your cart when ready.</p>
+            <p className="text-sm font-semibold text-slate-950">3. ตั๋วที่เลือก</p>
+            <p className="mt-1 text-sm text-slate-500">เมื่อตรวจสอบเลขเรียบร้อยแล้ว สามารถเพิ่มลงตะกร้าได้ทันที</p>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
               {main.length > 0 ? (
@@ -339,7 +345,7 @@ function PortalCard({
                   </span>
                 ))
               ) : (
-                <span className="text-sm text-slate-400">No main numbers selected yet</span>
+                <span className="text-sm text-slate-400">ยังไม่ได้เลือกเลขหลัก</span>
               )}
 
               {special && (
@@ -355,7 +361,7 @@ function PortalCard({
               disabled={!ready}
               className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
             >
-              Add Ticket to Cart
+              เพิ่มตั๋วลงตะกร้า
               <ShoppingBag className="ml-2 size-4" />
             </button>
           </div>
@@ -379,7 +385,7 @@ function AccessCard({ isLoggedIn }: { isLoggedIn: boolean }) {
     const result = await signIn("credentials", { email, password, redirect: false })
     setLoading(false)
     if (result?.error) {
-      setError("Email or password is incorrect")
+      setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง")
       return
     }
     router.refresh()
@@ -393,17 +399,16 @@ function AccessCard({ isLoggedIn }: { isLoggedIn: boolean }) {
             <CheckCircle2 className="size-5" />
           </div>
           <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-            Logged in
+            เข้าสู่ระบบแล้ว
           </span>
         </div>
 
         <div className="mt-5">
           <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
-            Your account is ready.
+            บัญชีของคุณพร้อมใช้งาน
           </h3>
           <p className="mt-3 text-sm leading-7 text-slate-500">
-            You can go straight to checkout, then track payment approval and ticket updates from
-            your dashboard.
+            คุณสามารถไปชำระเงินต่อได้ทันที และติดตามสถานะการชำระเงินรวมถึงตั๋วของคุณผ่านแดชบอร์ด
           </p>
         </div>
 
@@ -411,7 +416,7 @@ function AccessCard({ isLoggedIn }: { isLoggedIn: boolean }) {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 size-4 text-emerald-500" />
             <p className="text-sm leading-6 text-slate-600">
-              Orders are created separately for each draw so your cart stays organized.
+              ระบบจะแยกรายการสั่งซื้อให้ตามแต่ละงวด เพื่อให้ตรวจสอบและติดตามได้ง่าย
             </p>
           </div>
         </div>
@@ -420,7 +425,7 @@ function AccessCard({ isLoggedIn }: { isLoggedIn: boolean }) {
           href="/dashboard"
           className="mt-auto inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
         >
-          Open Dashboard
+          เปิดแดชบอร์ด
           <ArrowRight className="ml-2 size-4" />
         </Link>
       </article>
@@ -434,16 +439,16 @@ function AccessCard({ isLoggedIn }: { isLoggedIn: boolean }) {
           <CircleUserRound className="size-5" />
         </div>
         <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
-          Login
+          เข้าสู่ระบบ
         </span>
       </div>
 
       <div className="mt-5">
         <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
-          Log in before checkout.
+          เข้าสู่ระบบก่อนชำระเงิน
         </h3>
         <p className="mt-3 text-sm leading-7 text-slate-500">
-          You can pick numbers first, then log in here when you are ready to place the order.
+          คุณสามารถเลือกเลขก่อน แล้วค่อยเข้าสู่ระบบตรงนี้เมื่อพร้อมส่งรายการสั่งซื้อ
         </p>
       </div>
 
@@ -452,7 +457,7 @@ function AccessCard({ isLoggedIn }: { isLoggedIn: boolean }) {
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="Email"
+          placeholder="อีเมล"
           className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400"
           required
         />
@@ -460,7 +465,7 @@ function AccessCard({ isLoggedIn }: { isLoggedIn: boolean }) {
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          placeholder="Password"
+          placeholder="รหัสผ่าน"
           className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400"
           required
         />
@@ -472,15 +477,15 @@ function AccessCard({ isLoggedIn }: { isLoggedIn: boolean }) {
           disabled={loading}
           className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
         >
-          {loading ? "Signing in..." : "Log In"}
+          {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
           <LogIn className="ml-2 size-4" />
         </button>
       </form>
 
       <p className="mt-4 text-sm text-slate-500">
-        New here?{" "}
+        ยังไม่มีบัญชี?{" "}
         <Link href="/register" className="font-semibold text-emerald-600 transition hover:text-emerald-500">
-          Create an account
+          สมัครสมาชิก
         </Link>
       </p>
     </article>
@@ -536,7 +541,7 @@ function CartCard({
       const data = await response.json()
       if (!response.ok) {
         setLoading(false)
-        setError(data.error ?? "Something went wrong")
+        setError(data.error ?? "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง")
         return
       }
       createdOrderIds.push(data.id)
@@ -560,27 +565,27 @@ function CartCard({
           <ShoppingBag className="size-5" />
         </div>
         <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
-          Cart
+          ตะกร้า
         </span>
       </div>
 
       <div className="mt-5">
-        <h3 className="text-2xl font-semibold tracking-tight text-slate-950">Your cart</h3>
+        <h3 className="text-2xl font-semibold tracking-tight text-slate-950">ตะกร้าของคุณ</h3>
         <p className="mt-3 text-sm leading-7 text-slate-500">
-          Review your tickets here before you continue to checkout.
+          ตรวจสอบตั๋วทั้งหมดตรงนี้ก่อนดำเนินการชำระเงิน
         </p>
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Tickets
+          <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+            จำนวนตั๋ว
           </p>
           <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{items.length}</p>
         </div>
         <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Draws
+          <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+            จำนวนงวด
           </p>
           <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{drawCount}</p>
         </div>
@@ -589,9 +594,9 @@ function CartCard({
       <div className="mt-5 flex-1">
         {items.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center">
-            <p className="text-sm font-medium text-slate-500">Your cart is empty.</p>
+            <p className="text-sm font-medium text-slate-500">ตะกร้ายังว่างอยู่</p>
             <p className="mt-2 text-sm leading-6 text-slate-400">
-              Open a game card, pick numbers, and add a ticket here.
+              เปิดการ์ดเกม เลือกเลข แล้วเพิ่มตั๋วเข้ามาที่นี่ได้เลย
             </p>
           </div>
         ) : (
@@ -646,7 +651,7 @@ function CartCard({
         disabled={items.length === 0 || loading}
         className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
       >
-        {loading ? "Creating orders..." : isLoggedIn ? "Proceed to Checkout" : "Log in to Checkout"}
+        {loading ? "กำลังสร้างรายการ..." : isLoggedIn ? "ไปชำระเงิน" : "เข้าสู่ระบบเพื่อชำระเงิน"}
         <ArrowRight className="ml-2 size-4" />
       </button>
     </article>
@@ -705,7 +710,7 @@ export function LotterySection({ draws, isLoggedIn }: { draws: Draw[]; isLoggedI
         />
       ) : (
         <article className="flex h-full items-center rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-10 text-center">
-          <p className="w-full text-sm text-slate-500">Powerball is not open right now.</p>
+          <p className="w-full text-sm text-slate-500">ตอนนี้พาวเวอร์บอลยังไม่เปิดขาย</p>
         </article>
       )}
 
@@ -719,7 +724,7 @@ export function LotterySection({ draws, isLoggedIn }: { draws: Draw[]; isLoggedI
         />
       ) : (
         <article className="flex h-full items-center rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-10 text-center">
-          <p className="w-full text-sm text-slate-500">Mega Millions is not open right now.</p>
+          <p className="w-full text-sm text-slate-500">ตอนนี้เมกา มิลเลียนส์ยังไม่เปิดขาย</p>
         </article>
       )}
 

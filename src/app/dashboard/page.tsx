@@ -31,6 +31,7 @@ export default async function DashboardPage() {
   const approvedCount = myOrders.filter((o) =>
     ["APPROVED", "TICKET_UPLOADED", "MATCHED"].includes(o.status)
   ).length
+  const getDrawLabel = (type: string) => (type === "POWERBALL" ? "🔴 พาวเวอร์บอล" : "🔵 เมกา มิลเลียนส์")
 
   return (
     <div className="min-h-screen bg-[#0a0f1e]">
@@ -102,7 +103,7 @@ export default async function DashboardPage() {
                             ? "bg-red-500/20 text-red-400 border border-red-500/30"
                             : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                         }`}>
-                          {isPowerball ? "🔴 POWERBALL" : "🔵 MEGA MILLIONS"}
+                          {getDrawLabel(draw.type)}
                         </span>
                       </div>
                       <CutoffCountdown
@@ -116,7 +117,7 @@ export default async function DashboardPage() {
                     {/* Jackpot */}
                     {draw.jackpot && (
                       <div>
-                        <p className="text-white/40 text-xs">JACKPOT</p>
+                        <p className="text-white/40 text-xs">แจ็กพอต</p>
                         <p className="text-3xl font-black text-white tracking-tight">{draw.jackpot}</p>
                       </div>
                     )}
@@ -174,7 +175,7 @@ export default async function DashboardPage() {
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-white font-semibold text-sm">
-                            {isPowerball ? "🔴 Powerball" : "🔵 Mega Millions"}
+                            {getDrawLabel(order.draw.type)}
                           </span>
                         </div>
                         <p className="text-white/40 text-xs">

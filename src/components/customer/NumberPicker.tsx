@@ -55,6 +55,7 @@ function NumberGrid({ max, selected, onToggle, limit }: {
 
 export function NumberPicker({ drawType, onConfirm }: Props) {
   const rule = LOTTERY_RULES[drawType]
+  const specialLabel = drawType === "POWERBALL" ? "พาวเวอร์บอล" : "เมก้าบอล"
   const [sets, setSets] = useState<NumberSet[]>([{ mainNumbers: [], specialNumber: "" }])
   const [activeSet, setActiveSet] = useState(0)
 
@@ -165,7 +166,7 @@ export function NumberPicker({ drawType, onConfirm }: Props) {
       {/* Special number */}
       <div>
         <div className="text-white/80 text-sm mb-2">
-          {rule.specialLabel} (1-{rule.specialMax})
+          {specialLabel} (1-{rule.specialMax})
           <span className="ml-2 text-blue-400">{current.specialNumber || "ยังไม่เลือก"}</span>
         </div>
         <NumberGrid

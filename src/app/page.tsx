@@ -40,24 +40,24 @@ export default async function Home() {
   const openDraws = enriched.filter((draw) =>
     draw.type === "POWERBALL" || draw.type === "MEGA_MILLIONS"
   )
-  const strongestJackpot = openDraws.map((draw) => draw.jackpot).find(Boolean) ?? "Updating"
+  const strongestJackpot = openDraws.map((draw) => draw.jackpot).find(Boolean) ?? "กำลังอัปเดต"
   const nextDraw = openDraws[0]
 
   const steps = [
     {
       number: "1",
-      title: "Choose a game",
-      description: "Open Powerball or Mega Millions and check the draw date before you start.",
+      title: "เลือกเกม",
+      description: "เลือกพาวเวอร์บอลหรือเมกา มิลเลียนส์ แล้วตรวจสอบวันออกรางวัลก่อนเริ่ม",
     },
     {
       number: "2",
-      title: "Pick your numbers",
-      description: "Select your numbers manually or use Quick Pick for a random ticket.",
+      title: "เลือกเลข",
+      description: "เลือกเลขด้วยตัวเอง หรือใช้สุ่มเลขอัตโนมัติเพื่อออกตั๋วอย่างรวดเร็ว",
     },
     {
       number: "3",
-      title: "Checkout",
-      description: "Review your cart, pay in Thai baht, and follow the order from your dashboard.",
+      title: "ชำระเงิน",
+      description: "ตรวจสอบตะกร้า ชำระเป็นเงินบาท และติดตามรายการผ่านแดชบอร์ดของคุณ",
     },
   ]
 
@@ -70,8 +70,8 @@ export default async function Home() {
               LU
             </div>
             <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-emerald-600">
-                US Lottery Service
+              <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-emerald-600">
+                บริการหวยอเมริกา
               </p>
               <p className="text-lg font-semibold tracking-tight text-slate-950">LottoUSA</p>
             </div>
@@ -79,13 +79,13 @@ export default async function Home() {
 
           <div className="hidden items-center gap-6 text-sm font-medium text-slate-500 md:flex">
             <a href="#buy" className="transition hover:text-slate-950">
-              Games
+              เกม
             </a>
             <a href="#steps" className="transition hover:text-slate-950">
-              Steps
+              วิธีเล่น
             </a>
             <a href="/admin" className="text-slate-400 transition hover:text-slate-700">
-              Admin
+              ผู้ดูแล
             </a>
           </div>
 
@@ -96,7 +96,7 @@ export default async function Home() {
                   href="/dashboard"
                   className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-950 sm:inline-flex"
                 >
-                  Dashboard
+                  แดชบอร์ด
                 </Link>
                 <div className="flex h-11 min-w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
                   <CircleUserRound className="mr-2 size-4 text-slate-500" />
@@ -109,13 +109,13 @@ export default async function Home() {
                   href="#buy"
                   className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-950 sm:inline-flex"
                 >
-                  Log In
+                  เข้าสู่ระบบ
                 </a>
                 <Link
                   href="/register"
                   className="inline-flex items-center rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400"
                 >
-                  Create Account
+                  สมัครสมาชิก
                 </Link>
               </>
             )}
@@ -127,15 +127,15 @@ export default async function Home() {
         <section className="mx-auto max-w-6xl px-5 py-10 sm:px-6 sm:py-12">
           <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600">
-                Choose a game, pick numbers, checkout
+              <p className="text-xs font-semibold tracking-[0.22em] text-emerald-600">
+                เลือกเกม เลือกเลข ชำระเงิน
               </p>
               <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                Play US jackpots with a cleaner, easier flow.
+                ซื้อหวยอเมริกาได้ง่ายขึ้นในหน้าเดียว
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-                We stripped the page back to the essentials: open draws, clear timing, quick
-                number entry, and a simple cart.
+                หน้าแรกนี้ออกแบบให้คนไทยใช้งานง่าย เห็นงวดที่เปิดขาย เวลาออกรางวัล
+                การเลือกเลข และตะกร้าอย่างชัดเจนในจอเดียว
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -143,40 +143,40 @@ export default async function Home() {
                   href="#buy"
                   className="inline-flex items-center rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400"
                 >
-                  Choose a Game
+                  เลือกเกม
                   <ArrowRight className="ml-2 size-4" />
                 </a>
                 <a
                   href="#steps"
                   className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
                 >
-                  See the Steps
+                  ดูวิธีเล่น
                 </a>
               </div>
 
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Open games
+                  <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+                    เกมที่เปิดอยู่
                   </p>
                   <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
                     {openDraws.length}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Best jackpot
+                  <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+                    แจ็กพอตสูงสุด
                   </p>
                   <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
                     {strongestJackpot}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Next draw
+                  <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+                    งวดถัดไป
                   </p>
                   <p className="mt-2 text-lg font-semibold tracking-tight text-slate-950">
-                    {nextDraw ? nextDraw.drawDateThai : "Waiting for schedule"}
+                    {nextDraw ? nextDraw.drawDateThai : "รอประกาศตาราง"}
                   </p>
                   {nextDraw && (
                     <p className="mt-1 text-sm text-slate-500">{nextDraw.drawTimeThai} น.</p>
@@ -186,7 +186,7 @@ export default async function Home() {
             </div>
 
             <aside className="rounded-3xl border border-slate-200 bg-white p-6">
-              <p className="text-sm font-semibold text-slate-950">Open now</p>
+              <p className="text-sm font-semibold text-slate-950">เปิดขายตอนนี้</p>
 
               <div className="mt-4 space-y-3">
                 {openDraws.length > 0 ? (
@@ -195,27 +195,27 @@ export default async function Home() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold text-slate-950">
-                            {draw.type === "POWERBALL" ? "Powerball" : "Mega Millions"}
+                            {draw.type === "POWERBALL" ? "พาวเวอร์บอล" : "เมกา มิลเลียนส์"}
                           </p>
                           <p className="mt-1 text-sm text-slate-500">
-                            {draw.drawDateThai} at {draw.drawTimeThai} น.
+                            {draw.drawDateThai} เวลา {draw.drawTimeThai} น.
                           </p>
                         </div>
                         <p className="text-lg font-semibold tracking-tight text-slate-950">
-                          {draw.jackpot ?? "Updating"}
+                          {draw.jackpot ?? "กำลังอัปเดต"}
                         </p>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                    No open draws right now.
+                    ตอนนี้ยังไม่มีงวดที่เปิดขาย
                   </div>
                 )}
               </div>
 
               <div className="mt-6 rounded-3xl bg-slate-50 p-5">
-                <p className="text-sm font-semibold text-slate-950">Simple flow</p>
+                <p className="text-sm font-semibold text-slate-950">ขั้นตอนแบบสั้น ๆ</p>
                 <div className="mt-4 space-y-3">
                   {steps.map((step) => (
                     <div key={step.number} className="flex gap-3">
@@ -236,15 +236,14 @@ export default async function Home() {
 
         <section id="buy" className="mx-auto max-w-6xl px-5 pb-12 sm:px-6">
           <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-              Games
+            <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">
+              เกม
             </p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-              Pick your numbers.
+              เลือกเลขของคุณ
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-              Each card below shows the jackpot, the draw time, and one clear button to start
-              building a ticket.
+              การ์ดแต่ละใบจะแสดงแจ็กพอต วันเวลาออกรางวัล และปุ่มเริ่มเลือกเลขแบบชัดเจน
             </p>
           </div>
           <LotterySection draws={enriched} isLoggedIn={Boolean(session)} />
@@ -252,11 +251,11 @@ export default async function Home() {
 
         <section id="steps" className="mx-auto max-w-6xl px-5 pb-16 sm:px-6">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-              Steps
+            <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">
+              วิธีเล่น
             </p>
             <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-              The whole flow in three steps.
+              ครบทุกขั้นตอนใน 3 ขั้น
             </h3>
 
             <div className="mt-6 grid gap-4 md:grid-cols-3">

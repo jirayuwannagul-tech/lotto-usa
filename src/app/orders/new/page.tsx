@@ -21,6 +21,7 @@ function NewOrderContent() {
   const [sets, setSets] = useState<NumberSet[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const getDrawLabel = (type: string) => (type === "POWERBALL" ? "🔴 พาวเวอร์บอล" : "🔵 เมกา มิลเลียนส์")
 
   useEffect(() => {
     if (drawId) {
@@ -70,7 +71,7 @@ function NewOrderContent() {
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <button onClick={() => router.back()} className="text-white/60 hover:text-white">← กลับ</button>
           <span className="text-white font-semibold">
-            {draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"}
+            {getDrawLabel(draw.type)}
           </span>
         </div>
       </header>

@@ -42,7 +42,7 @@ export function CutoffCountdown({ cutoffAt, drawDate, drawType, compact = false 
     )
   }
 
-  const drawLabel = drawType === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
+  const drawLabel = drawType === "POWERBALL" ? "🔴 พาวเวอร์บอล" : "🔵 เมกา มิลเลียนส์"
   const drawDateTH = new Date(drawDate).toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" })
 
   return (

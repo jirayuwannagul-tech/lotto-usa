@@ -71,8 +71,8 @@ export default function RegisterPage() {
                   <Input value={form.phone} onChange={update("phone")} placeholder="089-xxx-xxxx" className="bg-white/20 border-white/30 text-white placeholder:text-white/50" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-white">Line ID</Label>
-                  <Input value={form.lineId} onChange={update("lineId")} placeholder="line_id" className="bg-white/20 border-white/30 text-white placeholder:text-white/50" />
+                  <Label className="text-white">ไลน์ไอดี</Label>
+                  <Input value={form.lineId} onChange={update("lineId")} placeholder="@lineid" className="bg-white/20 border-white/30 text-white placeholder:text-white/50" />
                 </div>
               </div>
               <div className="space-y-2">

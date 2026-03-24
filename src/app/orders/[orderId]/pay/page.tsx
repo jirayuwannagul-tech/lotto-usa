@@ -24,6 +24,7 @@ export default function PayPage({ params }: { params: Promise<{ orderId: string 
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState("")
+  const getDrawLabel = (type: string) => (type === "POWERBALL" ? "🔴 พาวเวอร์บอล" : "🔵 เมกา มิลเลียนส์")
 
   useEffect(() => {
     fetch(`/api/orders/${orderId}`).then((r) => r.json()).then(setOrder)
@@ -74,10 +75,10 @@ export default function PayPage({ params }: { params: Promise<{ orderId: string 
             <CardContent className="py-10 text-center space-y-4">
               <div className="text-5xl">✅</div>
               <h2 className="text-white text-xl font-bold">ส่งสลิปเรียบร้อย</h2>
-              <p className="text-white/60">รอ Admin ตรวจสลิปและยืนยัน</p>
-              <p className="text-white/40 text-sm">เราจะแจ้งผลผ่าน Telegram</p>
+              <p className="text-white/60">รอผู้ดูแลระบบตรวจสลิปและยืนยัน</p>
+              <p className="text-white/40 text-sm">ระบบจะแจ้งผลให้คุณหลังตรวจสอบเสร็จ</p>
               <Button onClick={() => router.push("/dashboard")} className="bg-blue-500 hover:bg-blue-600 text-white">
-                กลับหน้าหลัก
+                กลับไปที่แดชบอร์ด
               </Button>
             </CardContent>
           </Card>
@@ -87,7 +88,7 @@ export default function PayPage({ params }: { params: Promise<{ orderId: string 
             <Card className="bg-white/5 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-base">
-                  สรุปออเดอร์ — {order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"}
+                  สรุปออเดอร์ — {getDrawLabel(order.draw.type)}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -169,7 +170,7 @@ export default function PayPage({ params }: { params: Promise<{ orderId: string 
                   {error && <p className="text-red-400 text-sm">{error}</p>}
 
                   <p className="text-white/30 text-xs text-center">
-                    ⚠️ ออเดอร์จะยืนยันหลัง Admin ตรวจสลิป
+                    ⚠️ ออเดอร์จะได้รับการยืนยันหลังผู้ดูแลระบบตรวจสลิป
                   </p>
                   <Button type="submit" disabled={!file || loading} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold disabled:opacity-40">
                     {loading ? "กำลังส่งสลิป..." : "ส่งสลิป & ยืนยันออเดอร์"}
