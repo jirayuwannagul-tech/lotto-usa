@@ -1,7 +1,9 @@
+import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { syncUpcomingDraws } from "@/lib/draw-schedule"
 import { HomeDrawCountdown } from "@/components/home/HomeDrawCountdown"
+import { authOptions } from "@/lib/auth"
 
 export const dynamic = "force-dynamic"
 
@@ -18,6 +20,7 @@ function formatJackpotUsd(value: string | null) {
 }
 
 export default async function Home() {
+  const session = await getServerSession(authOptions)
   const drawCount = await prisma.draw.count({ where: { isOpen: true } })
   if (drawCount === 0) {
     await syncUpcomingDraws(prisma)
@@ -30,6 +33,8 @@ export default async function Home() {
 
   const powerballDraw = pickDraw(draws, "POWERBALL")
   const megaBallDraw = pickDraw(draws, "MEGA_MILLIONS")
+  const powerballHref = session ? "/power-ball" : "/login"
+  const megaBallHref = session ? "/mega-ball" : "/login"
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
@@ -60,7 +65,7 @@ export default async function Home() {
 
               <div className="mt-10 grid gap-4 sm:grid-cols-2">
                 <Link
-                  href="/power-ball"
+                  href={powerballHref}
                   className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-center transition hover:border-slate-300 hover:bg-white"
                 >
                   <p className="text-sm font-semibold text-slate-500">Power Ball</p>
@@ -69,7 +74,7 @@ export default async function Home() {
                   </p>
                 </Link>
                 <Link
-                  href="/mega-ball"
+                  href={megaBallHref}
                   className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-center transition hover:border-slate-300 hover:bg-white"
                 >
                   <p className="text-sm font-semibold text-slate-500">Mega Ball</p>
