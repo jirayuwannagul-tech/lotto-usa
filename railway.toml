@@ -4,3 +4,8 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "sh /app/scripts/start.sh"
+
+[[crons]]
+name = "sync-draws"
+schedule = "*/15 * * * *"
+command = "curl -sf \"$NEXTAUTH_URL/api/cron/sync-draws?secret=$CRON_SECRET\" || true"
