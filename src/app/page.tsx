@@ -117,12 +117,12 @@ export default async function Home() {
               </>
             ) : (
               <>
-                <a
-                  href="#buy"
+                <Link
+                  href="/login"
                   className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-950 sm:inline-flex"
                 >
                   เข้าสู่ระบบ
-                </a>
+                </Link>
                 <Link
                   href="/register"
                   className="inline-flex items-center rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400"

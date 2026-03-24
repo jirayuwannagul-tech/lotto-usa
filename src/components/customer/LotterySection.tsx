@@ -3,10 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { signIn } from "next-auth/react"
-import Link from "next/link"
-import { ArrowRight, CheckCircle2, CircleUserRound, LogIn, ShoppingBag, Sparkles } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { ArrowRight, ShoppingBag, Sparkles } from "lucide-react"
 import { LOTTERY_RULES, DrawType } from "@/lib/lottery-rules"
 
 const CART_KEY = "lotto_cart"
@@ -371,127 +368,6 @@ function PortalCard({
   )
 }
 
-function AccessCard({ isLoggedIn }: { isLoggedIn: boolean }) {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    setLoading(true)
-    setError("")
-    const result = await signIn("credentials", { email, password, redirect: false })
-    setLoading(false)
-    if (result?.error) {
-      setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง")
-      return
-    }
-    router.refresh()
-  }
-
-  if (isLoggedIn) {
-    return (
-      <article className="flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex size-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-            <CheckCircle2 className="size-5" />
-          </div>
-          <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-            เข้าสู่ระบบแล้ว
-          </span>
-        </div>
-
-        <div className="mt-5">
-          <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
-            บัญชีของคุณพร้อมใช้งาน
-          </h3>
-          <p className="mt-3 text-sm leading-7 text-slate-500">
-            คุณสามารถไปชำระเงินต่อได้ทันที และติดตามสถานะการชำระเงินรวมถึงตั๋วของคุณผ่านแดชบอร์ด
-          </p>
-        </div>
-
-        <div className="mt-6 rounded-2xl bg-slate-50 p-4">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 size-4 text-emerald-500" />
-            <p className="text-sm leading-6 text-slate-600">
-              ระบบจะแยกรายการสั่งซื้อให้ตามแต่ละงวด เพื่อให้ตรวจสอบและติดตามได้ง่าย
-            </p>
-          </div>
-        </div>
-
-        <Link
-          href="/dashboard"
-          className="mt-auto inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-        >
-          เปิดแดชบอร์ด
-          <ArrowRight className="ml-2 size-4" />
-        </Link>
-      </article>
-    )
-  }
-
-  return (
-    <article className="flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6">
-      <div className="flex items-center justify-between">
-        <div className="flex size-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
-          <CircleUserRound className="size-5" />
-        </div>
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
-          เข้าสู่ระบบ
-        </span>
-      </div>
-
-      <div className="mt-5">
-        <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
-          เข้าสู่ระบบก่อนชำระเงิน
-        </h3>
-        <p className="mt-3 text-sm leading-7 text-slate-500">
-          คุณสามารถเลือกเลขก่อน แล้วค่อยเข้าสู่ระบบตรงนี้เมื่อพร้อมส่งรายการสั่งซื้อ
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="mt-6 space-y-3">
-        <Input
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="อีเมล"
-          className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400"
-          required
-        />
-        <Input
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="รหัสผ่าน"
-          className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400"
-          required
-        />
-
-        {error && <p className="text-sm text-rose-500">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-        >
-          {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-          <LogIn className="ml-2 size-4" />
-        </button>
-      </form>
-
-      <p className="mt-4 text-sm text-slate-500">
-        ยังไม่มีบัญชี?{" "}
-        <Link href="/register" className="font-semibold text-emerald-600 transition hover:text-emerald-500">
-          สมัครสมาชิก
-        </Link>
-      </p>
-    </article>
-  )
-}
-
 function CartCard({
   items,
   draws,
@@ -511,7 +387,7 @@ function CartCard({
 
   async function checkout() {
     if (!isLoggedIn) {
-      document.getElementById("account-portal")?.scrollIntoView({ behavior: "smooth", block: "center" })
+      router.push("/login")
       return
     }
     if (items.length === 0) return
@@ -728,17 +604,15 @@ export function LotterySection({ draws, isLoggedIn }: { draws: Draw[]; isLoggedI
         </article>
       )}
 
-      <div id="account-portal">
-        <AccessCard isLoggedIn={isLoggedIn} />
+      <div className="xl:col-span-2">
+        <CartCard
+          items={cart}
+          draws={draws}
+          isLoggedIn={isLoggedIn}
+          onRemove={removeFromCart}
+          onClearCart={clearCart}
+        />
       </div>
-
-      <CartCard
-        items={cart}
-        draws={draws}
-        isLoggedIn={isLoggedIn}
-        onRemove={removeFromCart}
-        onClearCart={clearCart}
-      />
     </div>
   )
 }
