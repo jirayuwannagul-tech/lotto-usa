@@ -34,16 +34,16 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
-      <main className="mx-auto max-w-6xl px-5 py-10 sm:px-6 sm:py-14">
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <main className="mx-auto max-w-5xl px-5 py-8 sm:px-6 sm:py-12">
+        <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center">
               <Image
                 src="/lotto-usa-logo.png"
                 alt="LottoUSA"
-                width={420}
-                height={137}
-                className="h-auto w-52 sm:w-64 lg:w-80"
+                width={620}
+                height={202}
+                className="h-auto w-72 sm:w-80 lg:w-[26rem]"
                 priority
                 unoptimized
               />
