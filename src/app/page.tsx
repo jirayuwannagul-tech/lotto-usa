@@ -41,9 +41,9 @@ export default async function Home() {
               <Image
                 src="/lotto-usa-logo.png"
                 alt="LottoUSA"
-                width={620}
-                height={202}
-                className="h-auto w-72 sm:w-80 lg:w-[26rem]"
+                width={1240}
+                height={404}
+                className="h-auto w-[28rem] sm:w-[34rem] lg:w-[52rem]"
                 priority
                 unoptimized
               />
