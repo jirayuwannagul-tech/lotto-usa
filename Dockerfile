@@ -16,4 +16,4 @@ ENV NODE_ENV=production
 ENV HOSTNAME="0.0.0.0"
 
 EXPOSE 3000
-CMD ["node_modules/.bin/next", "start", "-H", "0.0.0.0"]
+CMD ["sh", "-c", "npm run seed && node_modules/.bin/next start -H 0.0.0.0"]
