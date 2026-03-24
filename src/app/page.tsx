@@ -43,21 +43,18 @@ export default async function Home() {
   const strongestJackpot = openDraws.map((draw) => draw.jackpot).find(Boolean) ?? "กำลังอัปเดต"
   const nextDraw = openDraws[0]
 
-  const steps = [
+  const prizeHighlights = [
     {
-      number: "1",
-      title: "เลือกเกม",
-      description: "เลือกพาวเวอร์บอลหรือเมกา มิลเลียนส์ แล้วตรวจสอบวันออกรางวัลก่อนเริ่ม",
+      title: "รางวัลเลข 2 ตัวตรง",
+      description: "เลขทั้ง 2 หลักตรงตามผลประกาศ ลูกค้าสามารถตรวจสอบสถานะและผลรางวัลได้จากบัญชีของตนเอง",
     },
     {
-      number: "2",
-      title: "เลือกเลข",
-      description: "เลือกเลขด้วยตัวเอง หรือใช้สุ่มเลขอัตโนมัติเพื่อออกตั๋วอย่างรวดเร็ว",
+      title: "รางวัลเลข 2 ตัวสลับ",
+      description: "กรณีเลขตรงกันแต่สลับตำแหน่ง ระบบจะแสดงผลตามเงื่อนไขรางวัลของงวดนั้นให้ชัดเจน",
     },
     {
-      number: "3",
-      title: "ชำระเงิน",
-      description: "ตรวจสอบตะกร้า ชำระเป็นเงินบาท และติดตามรายการผ่านแดชบอร์ดของคุณ",
+      title: "ตรวจสอบรางวัลย้อนหลัง",
+      description: "หลังประกาศผล คุณสามารถกลับมาดูรายการซื้อ ผลการจับคู่ และข้อมูลรางวัลได้ในแดชบอร์ด",
     },
   ]
 
@@ -81,8 +78,8 @@ export default async function Home() {
             <a href="#buy" className="transition hover:text-slate-950">
               เกม
             </a>
-            <a href="#steps" className="transition hover:text-slate-950">
-              วิธีเล่น
+            <a href="#prizes" className="transition hover:text-slate-950">
+              รางวัลทั้งหมดหวย 2 ตัว
             </a>
             <a href="/admin" className="text-slate-400 transition hover:text-slate-700">
               ผู้ดูแล
@@ -147,10 +144,10 @@ export default async function Home() {
                   <ArrowRight className="ml-2 size-4" />
                 </a>
                 <a
-                  href="#steps"
+                  href="#prizes"
                   className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
                 >
-                  ดูวิธีเล่น
+                  ดูรางวัลทั้งหมดหวย 2 ตัว
                 </a>
               </div>
 
@@ -215,16 +212,14 @@ export default async function Home() {
               </div>
 
               <div className="mt-6 rounded-3xl bg-slate-50 p-5">
-                <p className="text-sm font-semibold text-slate-950">ขั้นตอนแบบสั้น ๆ</p>
+                <p className="text-sm font-semibold text-slate-950">รางวัลเด่น</p>
                 <div className="mt-4 space-y-3">
-                  {steps.map((step) => (
-                    <div key={step.number} className="flex gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sm font-semibold text-slate-950">
-                        {step.number}
-                      </div>
+                  {prizeHighlights.map((item) => (
+                    <div key={item.title} className="flex gap-3">
+                      <div className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
                       <div>
-                        <p className="text-sm font-semibold text-slate-950">{step.title}</p>
-                        <p className="mt-1 text-sm leading-6 text-slate-500">{step.description}</p>
+                        <p className="text-sm font-semibold text-slate-950">{item.title}</p>
+                        <p className="mt-1 text-sm leading-6 text-slate-500">{item.description}</p>
                       </div>
                     </div>
                   ))}
@@ -249,25 +244,25 @@ export default async function Home() {
           <LotterySection draws={enriched} isLoggedIn={Boolean(session)} />
         </section>
 
-        <section id="steps" className="mx-auto max-w-6xl px-5 pb-16 sm:px-6">
+        <section id="prizes" className="mx-auto max-w-6xl px-5 pb-16 sm:px-6">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
             <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">
-              วิธีเล่น
+              รางวัลทั้งหมดหวย 2 ตัว
             </p>
             <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-              ครบทุกขั้นตอนใน 3 ขั้น
+              สรุปรางวัลและการตรวจสอบผลในหน้าเดียว
             </h3>
 
             <div className="mt-6 grid gap-4 md:grid-cols-3">
-              {steps.map((step) => (
-                <div key={step.number} className="rounded-2xl bg-slate-50 p-5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-semibold text-slate-950">
-                    {step.number}
+              {prizeHighlights.map((item) => (
+                <div key={item.title} className="rounded-2xl bg-slate-50 p-5">
+                  <div className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-600">
+                    รางวัล
                   </div>
                   <h4 className="mt-4 text-lg font-semibold tracking-tight text-slate-950">
-                    {step.title}
+                    {item.title}
                   </h4>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">{step.description}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
                 </div>
               ))}
             </div>
