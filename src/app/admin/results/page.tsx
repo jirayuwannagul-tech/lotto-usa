@@ -77,17 +77,17 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e]">
-      <header className="border-b border-white/5 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <a href="/admin" className="text-white/50 hover:text-white text-sm">← Admin</a>
-          <span className="text-white font-semibold">ประกาศผลรางวัล</span>
-        </div>
-      </header>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <section className="rounded-[2rem] border border-slate-800 bg-slate-950/60 p-6">
+        <p className="text-xs font-semibold tracking-[0.24em] text-cyan-300/75">RESULT MANAGEMENT</p>
+        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">ประกาศผลรางวัล</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+          เลือกงวดที่ปิดแล้ว กรอกเลขที่ออก และให้ระบบคำนวณรายการที่ถูกรางวัลพร้อมแจ้งทีมงานกลับทาง Telegram
+        </p>
+      </section>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Enter result */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+        <div className="rounded-3xl border border-slate-800 bg-slate-950/70 p-5">
           <h2 className="text-white font-semibold mb-4">กรอกเลขที่ออก</h2>
           <form onSubmit={submit} className="space-y-4">
             <div>
@@ -161,7 +161,7 @@ export default function ResultsPage() {
 
         {/* Result */}
         {result && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <div className="rounded-3xl border border-slate-800 bg-slate-950/70 p-5">
             <h3 className="text-white font-semibold mb-3">
               ผลการตรวจ — ถูกรางวัล {result.winnerCount} รายการ
             </h3>
@@ -187,7 +187,7 @@ export default function ResultsPage() {
             {draws
               .filter((d) => d.winningMain)
               .map((d) => (
-                <div key={d.id} className="bg-white/3 border border-white/8 rounded-xl px-4 py-3 flex justify-between items-center">
+                <div key={d.id} className="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 flex justify-between items-center">
                   <div>
                     <p className="text-white text-sm font-medium">
                       {d.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"} —{" "}
@@ -202,7 +202,6 @@ export default function ResultsPage() {
               ))}
           </div>
         </div>
-      </main>
     </div>
   )
 }

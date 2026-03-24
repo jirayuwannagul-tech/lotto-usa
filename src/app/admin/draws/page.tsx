@@ -77,17 +77,17 @@ export default function DrawsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <header className="border-b border-white/10 px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <a href="/admin" className="text-white/60 hover:text-white">← Admin</a>
-          <span className="text-white font-semibold">จัดการงวดหวย</span>
-        </div>
-      </header>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <section className="rounded-[2rem] border border-slate-800 bg-slate-950/60 p-6">
+        <p className="text-xs font-semibold tracking-[0.24em] text-cyan-300/75">DRAW CONTROL</p>
+        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">จัดการงวดหวย</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+          เพิ่มงวดใหม่ ปรับเวลาปิดรับ และตรวจสถานะการเปิดขายของแต่ละเกมจากหน้าจัดการนี้
+        </p>
+      </section>
 
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
         {/* Create draw */}
-        <Card className="bg-white/5 border-white/10">
+        <Card className="border-slate-800 bg-slate-950/70">
           <CardHeader>
             <CardTitle className="text-white text-base">+ เพิ่มงวดใหม่</CardTitle>
           </CardHeader>
@@ -126,7 +126,7 @@ export default function DrawsPage() {
         {/* Draw list */}
         <div className="space-y-3">
           {draws.map((d) => (
-            <Card key={d.id} className="bg-white/5 border-white/10">
+            <Card key={d.id} className="border-slate-800 bg-slate-950/70">
               <CardContent className="p-4 flex justify-between items-center">
                 <div>
                   <p className="text-white font-medium">
@@ -154,7 +154,6 @@ export default function DrawsPage() {
             </Card>
           ))}
         </div>
-      </main>
     </div>
   )
 }

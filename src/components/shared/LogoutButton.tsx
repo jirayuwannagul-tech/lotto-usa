@@ -2,17 +2,23 @@
 
 import { signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
-export default function LogoutButton() {
+interface LogoutButtonProps {
+  redirectTo?: string
+  className?: string
+}
+
+export default function LogoutButton({ redirectTo = "/", className }: LogoutButtonProps) {
   return (
     <Button
       variant="ghost"
       size="sm"
       onClick={async () => {
         await signOut({ redirect: false })
-        window.location.href = "/"
+        window.location.href = redirectTo
       }}
-      className="text-white/50 hover:text-white text-xs"
+      className={cn("text-white/50 hover:text-white text-xs", className)}
     >
       ออกจากระบบ
     </Button>

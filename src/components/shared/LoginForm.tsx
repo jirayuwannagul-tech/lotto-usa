@@ -1,13 +1,23 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
+import { getSession, signIn, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
-export default function LoginForm() {
+interface LoginFormProps {
+  redirectTo?: string
+  portal?: "customer" | "admin"
+  showRegisterLink?: boolean
+}
+
+export default function LoginForm({
+  redirectTo = "/dashboard",
+  portal = "customer",
+  showRegisterLink = true,
+}: LoginFormProps) {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -23,7 +33,17 @@ export default function LoginForm() {
     if (res?.error) {
       setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง")
     } else {
-      router.push("/dashboard")
+      const session = await getSession()
+      const role = session?.user?.role
+
+      if (portal === "admin" && role !== "ADMIN") {
+        await signOut({ redirect: false })
+        setError("บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานระบบผู้ดูแล")
+        return
+      }
+
+      const nextPath = role === "ADMIN" ? "/admin" : redirectTo
+      router.push(nextPath)
       router.refresh()
     }
   }
@@ -60,12 +80,14 @@ export default function LoginForm() {
       >
         {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
       </Button>
-      <p className="text-center text-white/50 text-sm">
-        ยังไม่มีบัญชี?{" "}
-        <Link href="/register" className="text-blue-400 hover:underline">
-          สมัครสมาชิก
-        </Link>
-      </p>
+      {showRegisterLink && (
+        <p className="text-center text-white/50 text-sm">
+          ยังไม่มีบัญชี?{" "}
+          <Link href="/register" className="text-blue-400 hover:underline">
+            สมัครสมาชิก
+          </Link>
+        </p>
+      )}
     </form>
   )
 }

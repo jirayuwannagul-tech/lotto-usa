@@ -96,9 +96,6 @@ export default async function Home() {
             <a href="#prizes" className="transition hover:text-slate-950">
               รางวัลทั้งหมดหวย 2 ตัว
             </a>
-            <a href="/admin" className="text-slate-400 transition hover:text-slate-700">
-              ผู้ดูแล
-            </a>
           </div>
 
           <div className="flex items-center gap-3">

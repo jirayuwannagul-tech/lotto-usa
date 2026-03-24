@@ -7,6 +7,7 @@ import LoginForm from "@/components/shared/LoginForm"
 
 export default async function LoginPage() {
   const session = await getServerSession(authOptions)
+  if (session?.user.role === "ADMIN") redirect("/admin")
   if (session) redirect("/dashboard")
 
   return (
@@ -23,7 +24,7 @@ export default async function LoginPage() {
             <CardTitle className="text-center text-white">เข้าสู่ระบบบัญชี</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <LoginForm />
+            <LoginForm redirectTo="/dashboard" portal="customer" />
             <p className="text-center text-sm text-white/50">
               <Link href="/" className="text-blue-300 hover:underline">
                 กลับไปหน้าแรก

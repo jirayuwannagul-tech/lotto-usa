@@ -1,17 +1,8 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { redirect } from "next/navigation"
-import Link from "next/link"
 import { StatusBadge } from "@/components/shared/StatusBadge"
-import LogoutButton from "@/components/shared/LogoutButton"
 import { AdminApproveButton } from "@/components/admin/AdminApproveButton"
-import { AdminSummaryButton } from "@/components/admin/AdminSummaryButton"
 
 export default async function AdminPage() {
-  const session = await getServerSession(authOptions)
-  if (!session || session.user.role !== "ADMIN") redirect("/login")
-
   const draws = await prisma.draw.findMany({
     orderBy: { drawDate: "desc" },
     include: {
@@ -35,42 +26,24 @@ export default async function AdminPage() {
   const totalRevenueTHB = approvedOrders.reduce((s, o) => s + Number(o.totalTHB), 0)
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e]">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-[#0a0f1e]/90 backdrop-blur border-b border-white/5 px-4 py-3">
-        <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white">
-              A
-            </div>
-            <span className="text-white font-bold">Admin Panel</span>
+    <div className="space-y-8">
+      <section className="rounded-[2rem] border border-cyan-950/60 bg-slate-950/55 p-6 shadow-[0_30px_80px_-40px_rgba(8,145,178,0.55)]">
+        <p className="text-xs font-semibold tracking-[0.24em] text-cyan-300/75">ADMIN OVERVIEW</p>
+        <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="text-3xl font-semibold tracking-tight text-white">ภาพรวมการปฏิบัติงานวันนี้</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+              ดูออเดอร์ที่รอตรวจสลิป ยอดที่อนุมัติแล้ว และสถานะการอัปโหลดตั๋วของแต่ละงวดจากพื้นที่หลังบ้านชุดเดียว
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/admin/draws"
-              className="text-xs px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-colors border border-white/8"
-            >
-              + งวด
-            </Link>
-            <Link
-              href="/admin/tickets"
-              className="text-xs px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-colors border border-white/8"
-            >
-              📷 ตั๋ว
-            </Link>
-            <Link
-              href="/admin/results"
-              className="text-xs px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-colors border border-white/8"
-            >
-              🏆 ผลรางวัล
-            </Link>
-            <AdminSummaryButton />
-            <LogoutButton />
+          <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/10 px-5 py-4">
+            <p className="text-xs font-semibold tracking-[0.2em] text-emerald-300/80">REVENUE APPROVED</p>
+            <p className="mt-2 text-3xl font-semibold text-white">
+              {totalRevenueTHB.toLocaleString("th-TH", { maximumFractionDigits: 0 })} ฿
+            </p>
           </div>
         </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-8">
+      </section>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -86,17 +59,6 @@ export default async function AdminPage() {
               {s.sub && <p className="text-orange-400/70 text-xs mt-0.5">{s.sub}</p>}
             </div>
           ))}
-        </div>
-
-        {/* Revenue summary */}
-        <div className="bg-gradient-to-r from-green-950/50 to-teal-950/50 border border-green-800/20 rounded-2xl p-4 flex justify-between items-center">
-          <div>
-            <p className="text-green-400/60 text-xs uppercase tracking-wider">รายได้รวม (ที่อนุมัติแล้ว)</p>
-            <p className="text-2xl font-bold text-white mt-1">
-              {totalRevenueTHB.toLocaleString("th-TH", { maximumFractionDigits: 0 })} ฿
-            </p>
-          </div>
-          <div className="text-3xl">💰</div>
         </div>
 
         {/* Pending approval */}
@@ -248,7 +210,6 @@ export default async function AdminPage() {
           )
         })}
 
-      </main>
     </div>
   )
 }
