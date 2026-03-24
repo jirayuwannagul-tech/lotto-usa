@@ -1,0 +1,58 @@
+import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { sendLineNotify } from "@/lib/line-notify"
+
+export async function PATCH(_: NextRequest, { params }: { params: Promise<{ paymentId: string }> }) {
+  const session = await getServerSession(authOptions)
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { paymentId } = await params
+
+  const payment = await prisma.payment.update({
+    where: { id: paymentId },
+    data: { status: "APPROVED", approvedAt: new Date(), approvedBy: session.user.id },
+    include: {
+      order: {
+        include: {
+          user: true,
+          draw: true,
+          items: true,
+        },
+      },
+    },
+  })
+
+  await prisma.order.update({
+    where: { id: payment.orderId },
+    data: { status: "APPROVED" },
+  })
+
+  // Build LINE Notify message
+  const { order } = payment
+  const drawTypeLabel = order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
+  const itemLines = order.items
+    .map((item, i) => `  ${i + 1}. ${item.mainNumbers} | ${item.specialNumber}`)
+    .join("\n")
+
+  const message = `
+✅ ชำระเงินแล้ว — ออเดอร์ใหม่
+
+👤 ${order.user.name}
+📞 ${order.user.phone ?? "-"}
+🎱 ${drawTypeLabel}
+📅 งวด: ${order.draw.drawDate.toLocaleDateString("th-TH")}
+
+เลขที่จอง:
+${itemLines}
+
+💰 $${order.totalUSD} = ${order.totalTHB} บาท
+อัตรา: $1 = ${order.rateUsed} บาท`
+
+  await sendLineNotify(message)
+
+  return NextResponse.json({ success: true })
+}
