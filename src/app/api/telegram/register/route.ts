@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
-  const secret = new URL(req.url).searchParams.get("secret")
-  const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && secret !== cronSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
   const token = process.env.TELEGRAM_BOT_TOKEN
   if (!token) return NextResponse.json({ error: "TELEGRAM_BOT_TOKEN not set" }, { status: 500 })
 
