@@ -32,26 +32,6 @@ function fmt(date: Date, opts: Intl.DateTimeFormatOptions) {
   return date.toLocaleString("th-TH", { timeZone: "Asia/Bangkok", ...opts })
 }
 
-const PB_PRIZES = [
-  { match: "5 + Powerball", prize: "Jackpot", color: "#fbbf24" },
-  { match: "5 เลข", prize: "$1,000,000", color: "#f87171" },
-  { match: "4 + Powerball", prize: "$50,000", color: "#fb923c" },
-  { match: "4 เลข", prize: "$100", color: "#a3a3a3" },
-  { match: "3 + Powerball", prize: "$100", color: "#a3a3a3" },
-  { match: "3 เลข", prize: "$7", color: "#a3a3a3" },
-  { match: "2 + Powerball", prize: "$7", color: "#a3a3a3" },
-  { match: "Powerball", prize: "$4", color: "#a3a3a3" },
-]
-const MM_PRIZES = [
-  { match: "5 + Mega Ball", prize: "Jackpot", color: "#fbbf24" },
-  { match: "5 เลข", prize: "$1,000,000", color: "#60a5fa" },
-  { match: "4 + Mega Ball", prize: "$10,000", color: "#fb923c" },
-  { match: "4 เลข", prize: "$500", color: "#a3a3a3" },
-  { match: "3 + Mega Ball", prize: "$200", color: "#a3a3a3" },
-  { match: "3 เลข", prize: "$10", color: "#a3a3a3" },
-  { match: "2 + Mega Ball", prize: "$10", color: "#a3a3a3" },
-  { match: "Mega Ball", prize: "$2", color: "#a3a3a3" },
-]
 
 export default async function Home() {
   const session = await getServerSession(authOptions)
@@ -111,38 +91,33 @@ export default async function Home() {
         </div>
       )}
 
-      {/* Prize tables */}
-      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 mt-8">
-        <h2 className="text-white/40 text-xs uppercase tracking-widest mb-4 text-center">ตารางรางวัล</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Powerball prizes */}
-          <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)" }}>
-            <div className="px-4 py-3 flex items-center gap-2" style={{ background: "rgba(239,68,68,0.1)" }}>
-              <span className="text-red-400 font-bold text-sm">🔴 Powerball</span>
-              <span className="text-white/30 text-xs">$2/ใบ + ค่าบริการ</span>
+      {/* Top jackpot banner */}
+      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Powerball jackpot */}
+          <div className="rounded-2xl px-6 py-5 flex items-center justify-between"
+            style={{ background: "linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.04))", border: "1px solid rgba(239,68,68,0.25)" }}>
+            <div>
+              <p className="text-red-400 font-bold text-base">🔴 Powerball</p>
+              <p className="text-white/40 text-xs mt-0.5">รางวัลที่ 1</p>
             </div>
-            <div className="divide-y divide-white/5">
-              {PB_PRIZES.map((p) => (
-                <div key={p.match} className="flex justify-between px-4 py-2 text-sm">
-                  <span className="text-white/60">{p.match}</span>
-                  <span className="font-bold" style={{ color: p.color }}>{p.prize}</span>
-                </div>
-              ))}
+            <div className="text-right">
+              <p className="font-black text-4xl sm:text-5xl" style={{ background: "linear-gradient(90deg,#fde68a,#f59e0b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                {enriched.find(d => d.type === "POWERBALL")?.jackpot ?? "—"}
+              </p>
             </div>
           </div>
-          {/* Mega Millions prizes */}
-          <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.2)" }}>
-            <div className="px-4 py-3 flex items-center gap-2" style={{ background: "rgba(59,130,246,0.1)" }}>
-              <span className="text-blue-400 font-bold text-sm">🔵 Mega Millions</span>
-              <span className="text-white/30 text-xs">$2/ใบ + ค่าบริการ</span>
+          {/* Mega Millions jackpot */}
+          <div className="rounded-2xl px-6 py-5 flex items-center justify-between"
+            style={{ background: "linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.04))", border: "1px solid rgba(59,130,246,0.25)" }}>
+            <div>
+              <p className="text-blue-400 font-bold text-base">🔵 Mega Millions</p>
+              <p className="text-white/40 text-xs mt-0.5">รางวัลที่ 1</p>
             </div>
-            <div className="divide-y divide-white/5">
-              {MM_PRIZES.map((p) => (
-                <div key={p.match} className="flex justify-between px-4 py-2 text-sm">
-                  <span className="text-white/60">{p.match}</span>
-                  <span className="font-bold" style={{ color: p.color }}>{p.prize}</span>
-                </div>
-              ))}
+            <div className="text-right">
+              <p className="font-black text-4xl sm:text-5xl" style={{ background: "linear-gradient(90deg,#fde68a,#f59e0b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                {enriched.find(d => d.type === "MEGA_MILLIONS")?.jackpot ?? "—"}
+              </p>
             </div>
           </div>
         </div>
