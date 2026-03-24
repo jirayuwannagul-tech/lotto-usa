@@ -16,4 +16,4 @@ ENV NODE_ENV=production
 ENV HOSTNAME="0.0.0.0"
 
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma db seed && echo 'Starting Next.js on port '$PORT && npm start || echo 'Next.js exited with code '$?"]
+CMD ["sh", "/app/scripts/start.sh"]
