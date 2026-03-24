@@ -4,20 +4,21 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { LotterySection } from "@/components/customer/LotterySection"
 
-const ET_OFFSET = 4
+const PT_OFFSET = 7 // PDT = UTC-7 (LA time, Mar–Nov)
 const SCHEDULE = {
-  POWERBALL:     { days: [1, 3, 6], hourET: 22, minET: 59 },
-  MEGA_MILLIONS: { days: [2, 5],    hourET: 23, minET: 0  },
+  POWERBALL:     { days: [1, 3, 6], hourPT: 22, minPT: 59 }, // 10:59 PM PDT = 12:59 Thai
+  MEGA_MILLIONS: { days: [2, 5],    hourPT: 23, minPT: 0  }, // 11:00 PM PDT = 13:00 Thai
 }
 
 async function syncDraws() {
   const now = new Date()
-  const nowET = new Date(now.getTime() - ET_OFFSET * 3600000)
+  const nowPT = new Date(now.getTime() - PT_OFFSET * 3600000)
   for (const [type, s] of Object.entries(SCHEDULE) as [keyof typeof SCHEDULE, typeof SCHEDULE[keyof typeof SCHEDULE]][]) {
     for (let i = 0; i <= 7; i++) {
-      const d = new Date(nowET); d.setUTCDate(nowET.getUTCDate() + i)
+      const d = new Date(nowPT); d.setUTCDate(nowPT.getUTCDate() + i)
       if (!s.days.includes(d.getUTCDay())) continue
-      const drawUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), s.hourET + ET_OFFSET, s.minET))
+      // hourPT + PT_OFFSET = UTC (e.g. 22+7=29 → next day 05:xx UTC = 12:xx Thai)
+      const drawUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), s.hourPT + PT_OFFSET, s.minPT))
       const cutoffUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 14, 0))
       if (cutoffUTC <= now) continue
       const exists = await prisma.draw.findFirst({ where: { type, drawDate: drawUTC } })

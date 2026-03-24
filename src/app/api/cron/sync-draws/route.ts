@@ -3,18 +3,18 @@ import { prisma } from "@/lib/prisma"
 
 // Draw schedule (ET days): Powerball Mon/Wed/Sat, Mega Millions Tue/Fri
 const SCHEDULE = {
-  POWERBALL:     { days: [1, 3, 6], hourET: 22, minET: 59 },
-  MEGA_MILLIONS: { days: [2, 5],    hourET: 23, minET: 0  },
+  POWERBALL:     { days: [1, 3, 6], hourPT: 22, minPT: 59 }, // 10:59 PM PDT = 05:59 UTC = 12:59 Thai
+  MEGA_MILLIONS: { days: [2, 5],    hourPT: 23, minPT: 0  }, // 11:00 PM PDT = 06:00 UTC = 13:00 Thai
 }
-const ET_OFFSET = 4 // EDT = UTC-4
+const PT_OFFSET = 7 // PDT = UTC-7
 
-function buildDrawDates(type: keyof typeof SCHEDULE, refDateET: Date) {
+function buildDrawDates(type: keyof typeof SCHEDULE, refDatePT: Date) {
   const s = SCHEDULE[type]
   for (let i = 0; i <= 7; i++) {
-    const d = new Date(refDateET)
-    d.setUTCDate(refDateET.getUTCDate() + i)
+    const d = new Date(refDatePT)
+    d.setUTCDate(refDatePT.getUTCDate() + i)
     if (!s.days.includes(d.getUTCDay())) continue
-    const drawUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), s.hourET + ET_OFFSET, s.minET))
+    const drawUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), s.hourPT + PT_OFFSET, s.minPT))
     const cutoffUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 14, 0))
     if (cutoffUTC > new Date()) return { drawDate: drawUTC, cutoffAt: cutoffUTC }
   }
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
   }
 
   const now = new Date()
-  const nowET = new Date(now.getTime() - ET_OFFSET * 3600000)
+  const nowET = new Date(now.getTime() - PT_OFFSET * 3600000)
   const created: string[] = []
 
   for (const type of ["POWERBALL", "MEGA_MILLIONS"] as const) {
