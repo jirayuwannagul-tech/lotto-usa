@@ -57,6 +57,9 @@ export default async function Home() {
                 ตอนนี้รองรับการซื้อ Power Ball และ Mega Ball โดยจะแยก flow การใช้งานออกเป็นขั้นตอนถัดไป
                 ตามที่กำหนดภายหลัง
               </p>
+              <p className="mt-4 text-base font-semibold text-rose-600">
+                กรุณาสมัครสมาชิกหรือเข้าสู่ระบบก่อนซื้อหวย
+              </p>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-2">
                 <Link
