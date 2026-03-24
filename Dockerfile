@@ -12,4 +12,4 @@ ENV NODE_ENV=production
 ENV HOSTNAME="0.0.0.0"
 
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node .next/standalone/server.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public && node .next/standalone/server.js"]
