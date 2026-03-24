@@ -22,12 +22,11 @@ function formatThaiTime(date: Date) {
   })
 }
 
-// Check if a draw has happened today (Thai time) — draw time passed and it's after 14:30 Thai
 function getTodayDrawBanner(draws: { type: string; drawDate: Date }[]) {
   const now = new Date()
   const thaiNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Bangkok" }))
-  const cutoff1430 = new Date(thaiNow)
-  cutoff1430.setHours(14, 30, 0, 0)
+  const cutoff = new Date(thaiNow)
+  cutoff.setHours(14, 30, 0, 0)
 
   for (const draw of draws) {
     const drawThai = new Date(draw.drawDate.toLocaleString("en-US", { timeZone: "Asia/Bangkok" }))
@@ -36,11 +35,11 @@ function getTodayDrawBanner(draws: { type: string; drawDate: Date }[]) {
       drawThai.getMonth() === thaiNow.getMonth() &&
       drawThai.getDate() === thaiNow.getDate()
 
-    if (sameDay && thaiNow >= cutoff1430) {
-      return { type: draw.type, status: "done" as const }
-    }
-    if (sameDay && thaiNow < cutoff1430) {
-      return { type: draw.type, status: "today" as const }
+    if (sameDay) {
+      return {
+        type: draw.type,
+        status: thaiNow >= cutoff ? ("done" as const) : ("today" as const),
+      }
     }
   }
   return null
@@ -60,150 +59,280 @@ export default async function Home() {
   const banner = getTodayDrawBanner(draws)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+    <div
+      className="min-h-screen text-white"
+      style={{
+        background: "radial-gradient(ellipse at 20% 50%, #0d1b3e 0%, #050a14 60%, #0a0a0a 100%)",
+      }}
+    >
+      {/* Ambient glow top */}
+      <div
+        className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] opacity-20"
+        style={{
+          background: "radial-gradient(ellipse, #c9a84c 0%, transparent 70%)",
+        }}
+      />
+
       {/* Header */}
-      <header className="border-b border-white/10 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center gap-3">
-          <span className="text-2xl">🎱</span>
-          <span className="text-white font-bold text-xl">LottoUSA</span>
-          <span className="text-white/40 text-sm ml-2">ซื้อหวยอเมริกาจากไทย</span>
+      <header className="relative z-10 px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center text-lg"
+            style={{ background: "linear-gradient(135deg, #c9a84c, #f5d485)" }}
+          >
+            🎱
+          </div>
+          <span
+            className="font-black text-xl tracking-wide"
+            style={{ background: "linear-gradient(90deg, #f5d485, #c9a84c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+          >
+            LottoUSA
+          </span>
         </div>
+        <p className="text-white/30 text-sm hidden sm:block">ซื้อ Powerball & Mega Millions จากไทย</p>
       </header>
 
       {/* Today banner */}
       {banner && (
-        <div className={`py-3 px-6 text-center text-sm font-medium ${banner.status === "done" ? "bg-green-600/80" : "bg-yellow-500/80"}`}>
+        <div
+          className="relative z-10 mx-4 sm:mx-6 mb-2 rounded-xl px-5 py-3 text-center text-sm font-medium"
+          style={{
+            background: banner.status === "done"
+              ? "linear-gradient(90deg, rgba(16,185,129,0.2), rgba(16,185,129,0.1))"
+              : "linear-gradient(90deg, rgba(234,179,8,0.2), rgba(234,179,8,0.1))",
+            border: `1px solid ${banner.status === "done" ? "rgba(16,185,129,0.4)" : "rgba(234,179,8,0.4)"}`,
+          }}
+        >
           {banner.status === "done" ? (
-            <span className="text-white">
-              ✅ วันนี้{" "}
-              <strong>{banner.type === "POWERBALL" ? "Powerball" : "Mega Millions"}</strong>{" "}
-              ออกรางวัลแล้ว (หลัง 14:30 น.)
+            <span className="text-emerald-400">
+              ✅ วันนี้ <strong>{banner.type === "POWERBALL" ? "Powerball" : "Mega Millions"}</strong> ออกรางวัลแล้ว
             </span>
           ) : (
-            <span className="text-slate-900">
-              ⚡ วันนี้มี{" "}
-              <strong>{banner.type === "POWERBALL" ? "Powerball" : "Mega Millions"}</strong>{" "}
-              ออกรางวัล — ผลจะทราบหลัง 14:30 น.
+            <span className="text-yellow-400">
+              ⚡ วันนี้มี <strong>{banner.type === "POWERBALL" ? "Powerball" : "Mega Millions"}</strong> ออกรางวัล — รอผลหลัง 14:30 น.
             </span>
           )}
         </div>
       )}
 
-      <main className="max-w-6xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Left — Lottery info */}
+      <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+          {/* Left — Lottery cards */}
           <div className="lg:col-span-3 space-y-5">
-            <h2 className="text-white/60 text-sm uppercase tracking-widest">งวดที่เปิดรับอยู่</h2>
 
             {/* Powerball */}
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
-              <div className="flex items-center gap-4 mb-4">
-                {/* Powerball logo style */}
-                <div className="w-14 h-14 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-900/50">
-                  <span className="text-white font-black text-xs text-center leading-tight">POWER<br/>BALL</span>
-                </div>
-                <div>
-                  <h3 className="text-white font-bold text-xl">Powerball</h3>
-                  <p className="text-white/40 text-xs">จันทร์ • พุธ • เสาร์</p>
-                </div>
-              </div>
-              {powerball ? (
-                <>
-                  {powerball.jackpot && (
-                    <div className="mb-3">
-                      <p className="text-white/50 text-xs mb-1">Jackpot สะสม</p>
-                      <p className="text-yellow-400 font-bold text-3xl">{powerball.jackpot}</p>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="bg-white/5 rounded-lg p-3">
-                      <p className="text-white/40 text-xs mb-1">ออกรางวัล (ไทย)</p>
-                      <p className="text-white font-medium">{formatThaiDate(powerball.drawDate)}</p>
-                      <p className="text-blue-300 text-xs">{formatThaiTime(powerball.drawDate)} น.</p>
-                    </div>
-                    <div className="bg-white/5 rounded-lg p-3">
-                      <p className="text-white/40 text-xs mb-1">ปิดรับออเดอร์ (ไทย)</p>
-                      <p className="text-white font-medium">{formatThaiDate(powerball.cutoffAt)}</p>
-                      <p className="text-orange-300 text-xs">{formatThaiTime(powerball.cutoffAt)} น.</p>
-                    </div>
+            <div
+              className="rounded-2xl p-[1px] overflow-hidden"
+              style={{ background: "linear-gradient(135deg, rgba(220,38,38,0.6), rgba(255,255,255,0.05), rgba(220,38,38,0.2))" }}
+            >
+              <div
+                className="rounded-2xl p-6"
+                style={{ background: "linear-gradient(135deg, rgba(12,5,20,0.95), rgba(30,10,10,0.9))" }}
+              >
+                {/* Logo row */}
+                <div className="flex items-center gap-4 mb-5">
+                  <div
+                    className="w-16 h-16 rounded-full flex flex-col items-center justify-center shrink-0"
+                    style={{
+                      background: "linear-gradient(135deg, #dc2626, #991b1b)",
+                      boxShadow: "0 0 30px rgba(220,38,38,0.5), inset 0 1px 0 rgba(255,255,255,0.2)",
+                    }}
+                  >
+                    <span className="text-white font-black text-[10px] leading-tight text-center tracking-tight">
+                      POWER<br />BALL
+                    </span>
                   </div>
-                </>
-              ) : (
-                <p className="text-white/30 text-sm">ยังไม่มีงวดที่เปิดรับ</p>
-              )}
+                  <div>
+                    <h3 className="text-white font-black text-2xl tracking-wide">Powerball</h3>
+                    <p className="text-white/40 text-xs mt-0.5">จันทร์ · พุธ · เสาร์</p>
+                  </div>
+                  <div className="ml-auto">
+                    <span
+                      className="text-xs px-3 py-1 rounded-full font-medium"
+                      style={{
+                        background: powerball ? "rgba(220,38,38,0.2)" : "rgba(255,255,255,0.05)",
+                        border: `1px solid ${powerball ? "rgba(220,38,38,0.5)" : "rgba(255,255,255,0.1)"}`,
+                        color: powerball ? "#fca5a5" : "#ffffff40",
+                      }}
+                    >
+                      {powerball ? "เปิดรับ" : "ปิดรับ"}
+                    </span>
+                  </div>
+                </div>
+
+                {powerball ? (
+                  <>
+                    {powerball.jackpot && (
+                      <div className="mb-5 text-center py-4 rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
+                        <p className="text-white/40 text-xs mb-1 uppercase tracking-widest">Jackpot สะสม</p>
+                        <p
+                          className="font-black text-4xl sm:text-5xl"
+                          style={{ background: "linear-gradient(90deg, #fde68a, #f59e0b, #fde68a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                        >
+                          {powerball.jackpot}
+                        </p>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <p className="text-white/40 text-xs mb-2 uppercase tracking-wider">ออกรางวัล</p>
+                        <p className="text-white font-semibold text-sm">{formatThaiDate(powerball.drawDate)}</p>
+                        <p className="text-red-400 font-bold mt-1">{formatThaiTime(powerball.drawDate)} น.</p>
+                      </div>
+                      <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <p className="text-white/40 text-xs mb-2 uppercase tracking-wider">ปิดรับออเดอร์</p>
+                        <p className="text-white font-semibold text-sm">{formatThaiDate(powerball.cutoffAt)}</p>
+                        <p className="text-orange-400 font-bold mt-1">{formatThaiTime(powerball.cutoffAt)} น.</p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-white/25 text-sm text-center py-4">ยังไม่มีงวดที่เปิดรับ</p>
+                )}
+              </div>
             </div>
 
             {/* Mega Millions */}
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
-              <div className="flex items-center gap-4 mb-4">
-                {/* Mega Millions logo style */}
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-blue-900 flex items-center justify-center shadow-lg shadow-blue-900/50 border-2 border-yellow-400">
-                  <span className="text-yellow-400 font-black text-xs text-center leading-tight">MEGA<br/>M</span>
-                </div>
-                <div>
-                  <h3 className="text-white font-bold text-xl">Mega Millions</h3>
-                  <p className="text-white/40 text-xs">อังคาร • ศุกร์</p>
-                </div>
-              </div>
-              {megaMillions ? (
-                <>
-                  {megaMillions.jackpot && (
-                    <div className="mb-3">
-                      <p className="text-white/50 text-xs mb-1">Jackpot สะสม</p>
-                      <p className="text-yellow-400 font-bold text-3xl">{megaMillions.jackpot}</p>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="bg-white/5 rounded-lg p-3">
-                      <p className="text-white/40 text-xs mb-1">ออกรางวัล (ไทย)</p>
-                      <p className="text-white font-medium">{formatThaiDate(megaMillions.drawDate)}</p>
-                      <p className="text-blue-300 text-xs">{formatThaiTime(megaMillions.drawDate)} น.</p>
-                    </div>
-                    <div className="bg-white/5 rounded-lg p-3">
-                      <p className="text-white/40 text-xs mb-1">ปิดรับออเดอร์ (ไทย)</p>
-                      <p className="text-white font-medium">{formatThaiDate(megaMillions.cutoffAt)}</p>
-                      <p className="text-orange-300 text-xs">{formatThaiTime(megaMillions.cutoffAt)} น.</p>
-                    </div>
+            <div
+              className="rounded-2xl p-[1px] overflow-hidden"
+              style={{ background: "linear-gradient(135deg, rgba(37,99,235,0.6), rgba(255,255,255,0.05), rgba(234,179,8,0.3))" }}
+            >
+              <div
+                className="rounded-2xl p-6"
+                style={{ background: "linear-gradient(135deg, rgba(5,10,25,0.95), rgba(5,15,35,0.9))" }}
+              >
+                <div className="flex items-center gap-4 mb-5">
+                  <div
+                    className="w-16 h-16 rounded-full flex flex-col items-center justify-center shrink-0"
+                    style={{
+                      background: "linear-gradient(135deg, #1d4ed8, #1e40af)",
+                      boxShadow: "0 0 30px rgba(37,99,235,0.5), inset 0 1px 0 rgba(255,255,255,0.2)",
+                      border: "2px solid #ca8a04",
+                    }}
+                  >
+                    <span className="text-yellow-400 font-black text-[10px] leading-tight text-center tracking-tight">
+                      MEGA<br />M
+                    </span>
                   </div>
-                </>
-              ) : (
-                <p className="text-white/30 text-sm">ยังไม่มีงวดที่เปิดรับ</p>
-              )}
+                  <div>
+                    <h3 className="text-white font-black text-2xl tracking-wide">Mega Millions</h3>
+                    <p className="text-white/40 text-xs mt-0.5">อังคาร · ศุกร์</p>
+                  </div>
+                  <div className="ml-auto">
+                    <span
+                      className="text-xs px-3 py-1 rounded-full font-medium"
+                      style={{
+                        background: megaMillions ? "rgba(37,99,235,0.2)" : "rgba(255,255,255,0.05)",
+                        border: `1px solid ${megaMillions ? "rgba(37,99,235,0.5)" : "rgba(255,255,255,0.1)"}`,
+                        color: megaMillions ? "#93c5fd" : "#ffffff40",
+                      }}
+                    >
+                      {megaMillions ? "เปิดรับ" : "ปิดรับ"}
+                    </span>
+                  </div>
+                </div>
+
+                {megaMillions ? (
+                  <>
+                    {megaMillions.jackpot && (
+                      <div className="mb-5 text-center py-4 rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
+                        <p className="text-white/40 text-xs mb-1 uppercase tracking-widest">Jackpot สะสม</p>
+                        <p
+                          className="font-black text-4xl sm:text-5xl"
+                          style={{ background: "linear-gradient(90deg, #fde68a, #f59e0b, #fde68a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                        >
+                          {megaMillions.jackpot}
+                        </p>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <p className="text-white/40 text-xs mb-2 uppercase tracking-wider">ออกรางวัล</p>
+                        <p className="text-white font-semibold text-sm">{formatThaiDate(megaMillions.drawDate)}</p>
+                        <p className="text-blue-400 font-bold mt-1">{formatThaiTime(megaMillions.drawDate)} น.</p>
+                      </div>
+                      <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <p className="text-white/40 text-xs mb-2 uppercase tracking-wider">ปิดรับออเดอร์</p>
+                        <p className="text-white font-semibold text-sm">{formatThaiDate(megaMillions.cutoffAt)}</p>
+                        <p className="text-orange-400 font-bold mt-1">{formatThaiTime(megaMillions.cutoffAt)} น.</p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-white/25 text-sm text-center py-4">ยังไม่มีงวดที่เปิดรับ</p>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Right — Login or Dashboard */}
+          {/* Right — Login / Dashboard */}
           <div className="lg:col-span-2">
-            <div className="rounded-2xl bg-white/5 border border-white/10 p-6 sticky top-6">
-              {session ? (
-                <div className="text-center space-y-4">
-                  <p className="text-white/60 text-sm">ยินดีต้อนรับกลับ</p>
-                  <p className="text-white font-bold text-lg">{session.user.name}</p>
-                  <Link
-                    href="/dashboard"
-                    className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg text-center transition"
-                  >
-                    ไปที่ Dashboard →
-                  </Link>
-                  {(draws.length > 0) && (
+            <div
+              className="rounded-2xl p-[1px] sticky top-6"
+              style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.5), rgba(255,255,255,0.05), rgba(201,168,76,0.2))" }}
+            >
+              <div
+                className="rounded-2xl p-6"
+                style={{ background: "linear-gradient(160deg, rgba(15,12,30,0.97), rgba(10,8,20,0.95))" }}
+              >
+                {session ? (
+                  <div className="text-center space-y-5">
+                    <div>
+                      <p className="text-white/40 text-sm">ยินดีต้อนรับกลับ</p>
+                      <p
+                        className="font-bold text-xl mt-1"
+                        style={{ background: "linear-gradient(90deg, #f5d485, #c9a84c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                      >
+                        {session.user.name}
+                      </p>
+                    </div>
                     <Link
-                      href="/orders/new"
-                      className="block w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold py-3 rounded-lg text-center transition"
+                      href="/dashboard"
+                      className="block w-full py-3 rounded-xl font-semibold text-slate-900 text-center transition hover:opacity-90"
+                      style={{ background: "linear-gradient(90deg, #f5d485, #c9a84c)" }}
                     >
-                      🎟 ซื้อหวยเลย
+                      ไปที่ Dashboard →
                     </Link>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <h3 className="text-white font-semibold text-lg mb-5 text-center">เข้าสู่ระบบสมาชิก</h3>
-                  <LoginForm />
-                </>
-              )}
+                    {draws.length > 0 && (
+                      <Link
+                        href="/orders/new"
+                        className="block w-full py-3 rounded-xl font-semibold text-center transition"
+                        style={{
+                          background: "rgba(255,255,255,0.05)",
+                          border: "1px solid rgba(201,168,76,0.3)",
+                          color: "#f5d485",
+                        }}
+                      >
+                        🎟 ซื้อหวยเลย
+                      </Link>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-center mb-6">
+                      <h3
+                        className="font-black text-xl"
+                        style={{ background: "linear-gradient(90deg, #f5d485, #c9a84c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                      >
+                        เข้าสู่ระบบ
+                      </h3>
+                      <p className="text-white/30 text-xs mt-1">สำหรับสมาชิกเท่านั้น</p>
+                    </div>
+                    <LoginForm />
+                  </>
+                )}
+              </div>
             </div>
           </div>
+
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 text-center py-8 mt-4">
+        <p className="text-white/15 text-xs">© 2026 LottoUSA · ซื้อหวยอเมริกาจากไทย</p>
+      </footer>
     </div>
   )
 }
