@@ -1,15 +1,28 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { signIn } from "next-auth/react"
+import Link from "next/link"
+import {
+  ArrowRight,
+  CalendarClock,
+  CheckCircle2,
+  CircleUserRound,
+  Gauge,
+  LogIn,
+  ShoppingBag,
+  Sparkles,
+} from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { LOTTERY_RULES, DrawType } from "@/lib/lottery-rules"
 
 const CART_KEY = "lotto_cart"
+const RING_RADIUS = 28
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
+const RING_WINDOW_MS = 72 * 60 * 60 * 1000
 
-// ─── Types ───────────────────────────────────────────────
 interface Draw {
   id: string
   type: string
@@ -29,159 +42,471 @@ interface CartItem {
   specialNumber: string
 }
 
-// ─── Number Grid ─────────────────────────────────────────
-function NumberBall({ n, selected, disabled, special, onClick }: {
-  n: string; selected: boolean; disabled: boolean; special?: boolean; onClick: () => void
+const GAME_THEME = {
+  POWERBALL: {
+    label: "Powerball",
+    logo: "/png-clipart-powerball-progressive-jackpot-minnesota-state-lottery-mega-millions-lottery-miscellaneous-game.png",
+    badgeClass: "border-rose-100 bg-rose-50 text-rose-700",
+    accentClass: "bg-rose-500",
+    secondaryClass: "text-rose-600",
+  },
+  MEGA_MILLIONS: {
+    label: "Mega Millions",
+    logo: "/273-2730781_mega-millions-logo-png.png",
+    badgeClass: "border-sky-100 bg-sky-50 text-sky-700",
+    accentClass: "bg-sky-500",
+    secondaryClass: "text-sky-600",
+  },
+} as const
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function formatRemaining(ms: number) {
+  if (ms <= 0) return "Live"
+
+  const totalSeconds = Math.floor(ms / 1000)
+  const days = Math.floor(totalSeconds / 86400)
+  const hours = Math.floor((totalSeconds % 86400) / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+
+  if (days > 0) return `${days}d ${hours}h`
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
+}
+
+function CountdownRing({ targetAt }: { targetAt: string }) {
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const remainingMs = new Date(targetAt).getTime() - now
+  const progress = clamp((remainingMs / RING_WINDOW_MS) * 100, 0, 100)
+  const dashOffset = RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * progress) / 100
+
+  return (
+    <div className="relative flex h-20 w-20 items-center justify-center">
+      <svg className="-rotate-90" width="80" height="80" viewBox="0 0 80 80" aria-hidden>
+        <circle
+          cx="40"
+          cy="40"
+          r={RING_RADIUS}
+          stroke="#e2e8f0"
+          strokeWidth="8"
+          fill="none"
+        />
+        <circle
+          cx="40"
+          cy="40"
+          r={RING_RADIUS}
+          stroke="#22c55e"
+          strokeWidth="8"
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={RING_CIRCUMFERENCE}
+          strokeDashoffset={dashOffset}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
+          Draw
+        </span>
+        <span className="text-sm font-semibold tracking-tight text-slate-950">
+          {formatRemaining(remainingMs)}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function NumberBall({
+  n,
+  selected,
+  disabled,
+  special,
+  onClick,
+}: {
+  n: string
+  selected: boolean
+  disabled: boolean
+  special?: boolean
+  onClick: () => void
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-9 h-9 rounded-full text-sm font-bold transition-all select-none"
-      style={{
-        background: selected
-          ? special ? "linear-gradient(135deg,#f59e0b,#d97706)" : "linear-gradient(135deg,#3b82f6,#1d4ed8)"
-          : disabled ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.1)",
-        color: selected ? "#fff" : disabled ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.8)",
-        transform: selected ? "scale(1.12)" : "scale(1)",
-        boxShadow: selected ? (special ? "0 0 12px rgba(245,158,11,0.6)" : "0 0 12px rgba(59,130,246,0.6)") : "none",
-        cursor: disabled ? "not-allowed" : "pointer",
-      }}
+      className={`flex h-10 w-10 items-center justify-center rounded-2xl border text-sm font-semibold transition ${
+        selected
+          ? special
+            ? "border-slate-950 bg-slate-950 text-white shadow-[0_18px_28px_-20px_rgba(15,23,42,0.75)]"
+            : "border-emerald-400 bg-emerald-500 text-white shadow-[0_20px_30px_-18px_rgba(34,197,94,0.8)]"
+          : disabled
+            ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300"
+            : "border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50"
+      }`}
     >
       {n}
     </button>
   )
 }
 
-// ─── Single Draw Picker ───────────────────────────────────
-function DrawPicker({ draw, onAddToCart }: { draw: Draw; onAddToCart: (item: CartItem) => void }) {
+function PortalCard({
+  draw,
+  expanded,
+  onExpand,
+  onCollapse,
+  onAddToCart,
+}: {
+  draw: Draw
+  expanded: boolean
+  onExpand: () => void
+  onCollapse: () => void
+  onAddToCart: (item: CartItem) => void
+}) {
   const rule = LOTTERY_RULES[draw.type as DrawType]
-  const isPB = draw.type === "POWERBALL"
-  const accentColor = isPB ? "#ef4444" : "#3b82f6"
-
+  const theme = GAME_THEME[draw.type as DrawType]
   const [main, setMain] = useState<string[]>([])
   const [special, setSpecial] = useState("")
 
-  function toggleMain(n: string) {
+  function toggleMain(value: string) {
     setMain((prev) =>
-      prev.includes(n) ? prev.filter((x) => x !== n) : prev.length < rule.mainCount ? [...prev, n].sort() : prev
+      prev.includes(value)
+        ? prev.filter((entry) => entry !== value)
+        : prev.length < rule.mainCount
+          ? [...prev, value].sort()
+          : prev
     )
   }
-  function toggleSpecial(n: string) { setSpecial((p) => (p === n ? "" : n)) }
+
+  function toggleSpecial(value: string) {
+    setSpecial((prev) => (prev === value ? "" : value))
+  }
 
   function quickPick() {
-    const pool = (max: number) => Array.from({ length: max }, (_, i) => String(i + 1).padStart(2, "0"))
-    const pick = (arr: string[], n: number) => {
-      const a = [...arr]; const out: string[] = []
-      while (out.length < n) { const i = Math.floor(Math.random() * a.length); out.push(a.splice(i, 1)[0]) }
-      return out.sort()
+    const pool = (max: number) =>
+      Array.from({ length: max }, (_, index) => String(index + 1).padStart(2, "0"))
+    const pick = (values: string[], count: number) => {
+      const remaining = [...values]
+      const selected: string[] = []
+      while (selected.length < count) {
+        const index = Math.floor(Math.random() * remaining.length)
+        selected.push(remaining.splice(index, 1)[0])
+      }
+      return selected.sort()
     }
+
     setMain(pick(pool(rule.mainMax), rule.mainCount))
     setSpecial(pick(pool(rule.specialMax), 1)[0])
+    onExpand()
+  }
+
+  function addTicket() {
+    if (main.length !== rule.mainCount || !special) return
+    onAddToCart({
+      drawId: draw.id,
+      drawType: draw.type,
+      mainNumbers: main,
+      specialNumber: special,
+    })
+    setMain([])
+    setSpecial("")
+    onCollapse()
   }
 
   const ready = main.length === rule.mainCount && special !== ""
 
-  function addToCart() {
-    if (!ready) return
-    onAddToCart({ drawId: draw.id, drawType: draw.type, mainNumbers: main, specialNumber: special })
-    setMain([]); setSpecial("")
-  }
-
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{
-        background: isPB ? "linear-gradient(135deg,rgba(20,5,5,.97),rgba(30,10,10,.9))" : "linear-gradient(135deg,rgba(5,10,25,.97),rgba(5,15,35,.9))",
-        border: `1px solid ${isPB ? "rgba(220,38,38,.35)" : "rgba(37,99,235,.35)"}`,
-      }}
-    >
-      {/* Header */}
-      <div className="p-5 pb-3">
-        <div className="flex items-center justify-between mb-3">
+    <article className="group flex h-full flex-col rounded-[32px] border border-slate-200/80 bg-white p-6 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.45)] transition hover:-translate-y-1 hover:shadow-[0_32px_85px_-44px_rgba(15,23,42,0.5)]">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-3">
+          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] ${theme.badgeClass}`}>
+            <span className={`mr-2 h-2 w-2 rounded-full ${theme.accentClass}`} />
+            {theme.label}
+          </span>
           <Image
-            src={isPB
-              ? "/png-clipart-powerball-progressive-jackpot-minnesota-state-lottery-mega-millions-lottery-miscellaneous-game.png"
-              : "/273-2730781_mega-millions-logo-png.png"}
-            alt={rule.name} width={120} height={46} className="object-contain"
+            src={theme.logo}
+            alt={theme.label}
+            width={138}
+            height={52}
+            className="h-10 w-auto object-contain"
           />
-          <div className="text-right">
-            <p className="text-white/40 text-xs">ออกรางวัล</p>
-            <p className="text-white text-sm font-semibold">{draw.drawDateThai}</p>
-            <p className="font-bold text-sm" style={{ color: accentColor }}>{draw.drawTimeThai} น.</p>
-          </div>
         </div>
-        {draw.jackpot && (
-          <div className="text-center py-2 mb-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
-            <p className="text-white/40 text-[10px] uppercase tracking-widest">Jackpot</p>
-            <p className="font-black text-3xl" style={{ background: "linear-gradient(90deg,#fde68a,#f59e0b,#fde68a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              {draw.jackpot}
-            </p>
-          </div>
-        )}
+        <CountdownRing targetAt={draw.drawDate} />
       </div>
 
-      {/* Picker */}
-      <div className="px-5 pb-5 space-y-4 border-t border-white/5 pt-4">
-        {/* Main numbers */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-white/60 text-xs">เลือก {rule.mainCount} เลข (1–{rule.mainMax}) <span className="text-blue-400 font-mono ml-1">{main.length}/{rule.mainCount}</span></span>
-            <button onClick={quickPick} className="text-xs px-2 py-1 rounded-md transition" style={{ background: "rgba(255,255,255,0.06)", color: "#a78bfa" }}>🎲 สุ่ม</button>
+      <div className="mt-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Live jackpot</p>
+        <p className="mt-2 text-4xl font-semibold tracking-tight text-slate-950">
+          {draw.jackpot ?? "Updating"}
+        </p>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="mb-2 flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <CalendarClock className="size-3.5" />
+            Draw time
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {Array.from({ length: rule.mainMax }, (_, i) => String(i + 1).padStart(2, "0")).map((n) => (
-              <NumberBall key={n} n={n} selected={main.includes(n)} disabled={main.length >= rule.mainCount && !main.includes(n)} onClick={() => toggleMain(n)} />
-            ))}
-          </div>
+          <p className="text-sm font-semibold text-slate-900">{draw.drawDateThai}</p>
+          <p className={`mt-1 text-sm font-medium ${theme.secondaryClass}`}>{draw.drawTimeThai} น.</p>
         </div>
-
-        {/* Special number */}
-        <div>
-          <div className="text-white/60 text-xs mb-2">
-            {rule.specialLabel} (1–{rule.specialMax})
-            {special && <span className="ml-2 font-bold" style={{ color: accentColor }}>{special}</span>}
+        <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="mb-2 flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <Gauge className="size-3.5" />
+            Cutoff
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {Array.from({ length: rule.specialMax }, (_, i) => String(i + 1).padStart(2, "0")).map((n) => (
-              <NumberBall key={n} n={n} selected={special === n} disabled={false} special onClick={() => toggleSpecial(n)} />
-            ))}
-          </div>
+          <p className="text-sm font-semibold text-slate-900">{draw.cutoffDateThai}</p>
+          <p className="mt-1 text-sm font-medium text-slate-500">{draw.cutoffTimeThai} น.</p>
         </div>
+      </div>
 
-        {/* Selected preview */}
-        {main.length > 0 && (
-          <div className="rounded-xl px-4 py-3 font-mono text-center text-white" style={{ background: "rgba(255,255,255,0.05)" }}>
-            <span>{main.join(" · ")}</span>
-            {special && <span className="ml-3 font-bold" style={{ color: accentColor }}>● {special}</span>}
-          </div>
-        )}
-
-        {/* Add to cart */}
+      <div className="mt-5 flex flex-wrap gap-2">
         <button
-          onClick={addToCart}
-          disabled={!ready}
-          className="w-full py-3 rounded-xl font-bold text-white transition"
-          style={{
-            background: ready ? `linear-gradient(90deg,${accentColor},${isPB ? "#991b1b" : "#1d4ed8"})` : "rgba(255,255,255,0.06)",
-            color: ready ? "#fff" : "rgba(255,255,255,0.25)",
-            cursor: ready ? "pointer" : "not-allowed",
-            boxShadow: ready ? `0 4px 20px ${accentColor}40` : "none",
-          }}
+          type="button"
+          onClick={onExpand}
+          className="inline-flex items-center rounded-2xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_22px_42px_-20px_rgba(34,197,94,0.8)] transition hover:-translate-y-0.5 hover:bg-emerald-400"
         >
-          {ready ? "🛒 เพิ่มลงตะกร้า" : `เลือกให้ครบก่อน (${main.length}/${rule.mainCount} ${special ? "✓" : "· " + rule.specialLabel})`}
+          Play Now
+          <ArrowRight className="ml-2 size-4" />
+        </button>
+        <button
+          type="button"
+          onClick={quickPick}
+          className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950"
+        >
+          Quick Pick
+          <Sparkles className="ml-2 size-4 text-emerald-500" />
         </button>
       </div>
-    </div>
+
+      {expanded && (
+        <div className="mt-6 space-y-5 rounded-[28px] border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-950">Build your ticket</p>
+              <p className="text-sm text-slate-500">
+                {rule.mainCount} main numbers + {rule.specialLabel}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onCollapse}
+              className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:border-slate-300 hover:text-slate-900"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Main Numbers
+              </p>
+              <p className="text-sm font-semibold text-slate-700">
+                {main.length}/{rule.mainCount}
+              </p>
+            </div>
+            <div className="flex max-h-52 flex-wrap gap-2 overflow-y-auto pr-1">
+              {Array.from({ length: rule.mainMax }, (_, index) => String(index + 1).padStart(2, "0")).map((value) => (
+                <NumberBall
+                  key={value}
+                  n={value}
+                  selected={main.includes(value)}
+                  disabled={main.length >= rule.mainCount && !main.includes(value)}
+                  onClick={() => toggleMain(value)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                {rule.specialLabel}
+              </p>
+              <p className="text-sm font-semibold text-slate-700">{special || "Select one"}</p>
+            </div>
+            <div className="flex max-h-36 flex-wrap gap-2 overflow-y-auto pr-1">
+              {Array.from({ length: rule.specialMax }, (_, index) => String(index + 1).padStart(2, "0")).map((value) => (
+                <NumberBall
+                  key={value}
+                  n={value}
+                  selected={special === value}
+                  disabled={false}
+                  special
+                  onClick={() => toggleSpecial(value)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-slate-200 bg-white px-4 py-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Selected ticket</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {main.length > 0 ? (
+                main.map((value) => (
+                  <span
+                    key={value}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-sm font-semibold text-slate-800"
+                  >
+                    {value}
+                  </span>
+                ))
+              ) : (
+                <span className="text-sm text-slate-400">No main numbers yet</span>
+              )}
+              {special && (
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white">
+                  {special}
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={addTicket}
+              disabled={!ready}
+              className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_22px_42px_-20px_rgba(34,197,94,0.8)] transition hover:-translate-y-0.5 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+            >
+              Add Ticket to Cart
+              <ShoppingBag className="ml-2 size-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    </article>
   )
 }
 
-// ─── Cart Panel ───────────────────────────────────────────
-function CartPanel({ items, draws, isLoggedIn, onRemove, onClearCart }: {
+function AccessCard({ isLoggedIn }: { isLoggedIn: boolean }) {
+  const router = useRouter()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    setLoading(true)
+    setError("")
+    const result = await signIn("credentials", { email, password, redirect: false })
+    setLoading(false)
+    if (result?.error) {
+      setError("Email or password is incorrect")
+      return
+    }
+    router.refresh()
+  }
+
+  if (isLoggedIn) {
+    return (
+      <article className="flex h-full flex-col rounded-[32px] border border-slate-200/80 bg-white p-6 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.45)]">
+        <div className="flex items-center justify-between">
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+            <CheckCircle2 className="size-5" />
+          </div>
+          <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+            Connected
+          </span>
+        </div>
+        <div className="mt-5">
+          <h3 className="text-2xl font-semibold tracking-tight text-slate-950">Account is ready.</h3>
+          <p className="mt-3 text-sm leading-7 text-slate-500">
+            Continue to your dashboard for receipts, order history, and matched tickets after checkout.
+          </p>
+        </div>
+        <div className="mt-6 space-y-3 rounded-[28px] border border-slate-200 bg-slate-50 p-4">
+          {[
+            "Checkout creates one order per draw automatically.",
+            "Receipt review stays in the same clean workflow.",
+            "Your cart remains available in this browser session.",
+          ].map((item) => (
+            <div key={item} className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 size-4 text-emerald-500" />
+              <p className="text-sm leading-6 text-slate-600">{item}</p>
+            </div>
+          ))}
+        </div>
+        <Link
+          href="/dashboard"
+          className="mt-auto inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+        >
+          Open Dashboard
+          <ArrowRight className="ml-2 size-4" />
+        </Link>
+      </article>
+    )
+  }
+
+  return (
+    <article className="flex h-full flex-col rounded-[32px] border border-slate-200/80 bg-white p-6 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.45)]">
+      <div className="flex items-center justify-between">
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+          <CircleUserRound className="size-5" />
+        </div>
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Access
+        </span>
+      </div>
+      <div className="mt-5">
+        <h3 className="text-2xl font-semibold tracking-tight text-slate-950">Log in to continue.</h3>
+        <p className="mt-3 text-sm leading-7 text-slate-500">
+          Connect your account to move straight from portal selection into checkout and order tracking.
+        </p>
+      </div>
+      <form onSubmit={handleSubmit} className="mt-6 space-y-3">
+        <Input
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="Email"
+          className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400"
+          required
+        />
+        <Input
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Password"
+          className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400"
+          required
+        />
+        {error && <p className="text-sm text-rose-500">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_22px_42px_-20px_rgba(34,197,94,0.8)] transition hover:-translate-y-0.5 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+        >
+          {loading ? "Signing in..." : "Log In"}
+          <LogIn className="ml-2 size-4" />
+        </button>
+      </form>
+      <p className="mt-4 text-sm text-slate-500">
+        New here?{" "}
+        <Link href="/register" className="font-semibold text-emerald-600 transition hover:text-emerald-500">
+          Create an account
+        </Link>
+      </p>
+    </article>
+  )
+}
+
+function CartCard({
+  items,
+  draws,
+  isLoggedIn,
+  onRemove,
+  onClearCart,
+}: {
   items: CartItem[]
   draws: Draw[]
   isLoggedIn: boolean
-  onRemove: (idx: number) => void
+  onRemove: (index: number) => void
   onClearCart?: () => void
 }) {
   const router = useRouter()
@@ -190,13 +515,14 @@ function CartPanel({ items, draws, isLoggedIn, onRemove, onClearCart }: {
 
   async function checkout() {
     if (!isLoggedIn) {
-      document.getElementById("login-panel")?.scrollIntoView({ behavior: "smooth", block: "center" })
+      document.getElementById("account-portal")?.scrollIntoView({ behavior: "smooth", block: "center" })
       return
     }
     if (items.length === 0) return
-    setLoading(true); setError("")
 
-    // Group by drawId and submit orders
+    setLoading(true)
+    setError("")
+
     const grouped: Record<string, CartItem[]> = {}
     for (const item of items) {
       if (!grouped[item.drawId]) grouped[item.drawId] = []
@@ -205,7 +531,7 @@ function CartPanel({ items, draws, isLoggedIn, onRemove, onClearCart }: {
 
     const createdOrderIds: string[] = []
     for (const [drawId, drawItems] of Object.entries(grouped)) {
-      const res = await fetch("/api/orders", {
+      const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -216,10 +542,10 @@ function CartPanel({ items, draws, isLoggedIn, onRemove, onClearCart }: {
           })),
         }),
       })
-      const data = await res.json()
-      if (!res.ok) {
+      const data = await response.json()
+      if (!response.ok) {
         setLoading(false)
-        setError(data.error ?? "เกิดข้อผิดพลาด")
+        setError(data.error ?? "Something went wrong")
         return
       }
       createdOrderIds.push(data.id)
@@ -234,95 +560,105 @@ function CartPanel({ items, draws, isLoggedIn, onRemove, onClearCart }: {
     router.push("/dashboard")
   }
 
-  return (
-    <div className="rounded-2xl p-[1px]" style={{ background: "linear-gradient(135deg,rgba(201,168,76,.5),rgba(255,255,255,.05),rgba(201,168,76,.2))" }}>
-      <div className="rounded-2xl p-5" style={{ background: "linear-gradient(160deg,rgba(15,12,30,.97),rgba(10,8,20,.95))" }}>
-        <h3 className="font-black text-base mb-3" style={{ background: "linear-gradient(90deg,#f5d485,#c9a84c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          🛒 ตะกร้า {items.length > 0 && `(${items.length} ใบ)`}
-        </h3>
+  const drawCount = new Set(items.map((item) => item.drawId)).size
 
+  return (
+    <article className="flex h-full flex-col rounded-[32px] border border-slate-200/80 bg-white p-6 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.45)]">
+      <div className="flex items-center justify-between">
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+          <ShoppingBag className="size-5" />
+        </div>
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Queue
+        </span>
+      </div>
+
+      <div className="mt-5">
+        <h3 className="text-2xl font-semibold tracking-tight text-slate-950">Checkout lane.</h3>
+        <p className="mt-3 text-sm leading-7 text-slate-500">
+          Review tickets from all active portals before sending them to checkout.
+        </p>
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tickets</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{items.length}</p>
+        </div>
+        <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Draws</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{drawCount}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex-1">
         {items.length === 0 ? (
-          <p className="text-white/25 text-sm text-center py-4">ยังไม่มีเลขในตะกร้า</p>
+          <div className="rounded-[28px] border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center">
+            <p className="text-sm font-medium text-slate-500">No tickets in the queue yet.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Open a portal card, pick numbers, and send a ticket into this lane.
+            </p>
+          </div>
         ) : (
-          <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
-            {items.map((item, i) => {
-              const draw = draws.find((d) => d.id === item.drawId)
-              const isPB = item.drawType === "POWERBALL"
+          <div className="space-y-3">
+            {items.map((item, index) => {
+              const draw = draws.find((entry) => entry.id === item.drawId)
+              const theme = GAME_THEME[item.drawType as DrawType]
               return (
-                <div key={i} className="rounded-xl px-3 py-2.5 flex items-center justify-between gap-2" style={{ background: "rgba(255,255,255,0.05)" }}>
-                  <div>
-                    <p className="text-white/50 text-[10px] mb-1">{isPB ? "🔴 Powerball" : "🔵 Mega Millions"} · {draw?.drawDateThai}</p>
-                    <p className="font-mono text-white text-sm">
-                      {item.mainNumbers.join(" · ")}
-                      <span className="ml-2 font-bold" style={{ color: isPB ? "#ef4444" : "#3b82f6" }}>● {item.specialNumber}</span>
-                    </p>
+                <div
+                  key={`${item.drawId}-${index}`}
+                  className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                        {theme.label}
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-slate-500">{draw?.drawDateThai}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onRemove(index)}
+                      className="text-lg leading-none text-slate-300 transition hover:text-rose-500"
+                    >
+                      ×
+                    </button>
                   </div>
-                  <button onClick={() => onRemove(i)} className="text-white/20 hover:text-red-400 text-lg leading-none shrink-0">×</button>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {item.mainNumbers.map((value) => (
+                      <span
+                        key={value}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-sm font-semibold text-slate-800"
+                      >
+                        {value}
+                      </span>
+                    ))}
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white">
+                      {item.specialNumber}
+                    </span>
+                  </div>
                 </div>
               )
             })}
           </div>
         )}
-
-        {error && <p className="text-red-400 text-xs mb-2">{error}</p>}
-
-        <button
-          onClick={checkout}
-          disabled={items.length === 0 || loading}
-          className="w-full py-3 rounded-xl font-bold transition"
-          style={{
-            background: items.length > 0 ? "linear-gradient(90deg,#f5d485,#c9a84c)" : "rgba(255,255,255,0.05)",
-            color: items.length > 0 ? "#1a1000" : "rgba(255,255,255,0.2)",
-            cursor: items.length > 0 ? "pointer" : "not-allowed",
-          }}
-        >
-          {loading ? "กำลังดำเนินการ..." : isLoggedIn ? "ชำระเงิน →" : "🔐 เข้าสู่ระบบเพื่อชำระ ↑"}
-        </button>
       </div>
-    </div>
+
+      {error && <p className="mt-4 text-sm text-rose-500">{error}</p>}
+
+      <button
+        type="button"
+        onClick={checkout}
+        disabled={items.length === 0 || loading}
+        className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_22px_42px_-20px_rgba(34,197,94,0.8)] transition hover:-translate-y-0.5 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+      >
+        {loading ? "Creating orders..." : isLoggedIn ? "Proceed to Checkout" : "Log in to Checkout"}
+        <ArrowRight className="ml-2 size-4" />
+      </button>
+    </article>
   )
 }
 
-// ─── Login Form ───────────────────────────────────────────
-function LoginPanel({ onLoginSuccess }: { onLoginSuccess?: () => void }) {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true); setError("")
-    const res = await signIn("credentials", { email, password, redirect: false })
-    setLoading(false)
-    if (res?.error) setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง")
-    else { onLoginSuccess?.(); router.refresh() }
-  }
-
-  return (
-    <div id="login-panel" className="rounded-2xl p-[1px]" style={{ background: "linear-gradient(135deg,rgba(201,168,76,.5),rgba(255,255,255,.05),rgba(201,168,76,.2))" }}>
-      <div className="rounded-2xl p-5" style={{ background: "linear-gradient(160deg,rgba(15,12,30,.97),rgba(10,8,20,.95))" }}>
-        <h3 className="font-black text-base mb-1 text-center" style={{ background: "linear-gradient(90deg,#f5d485,#c9a84c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          เข้าสู่ระบบ
-        </h3>
-        <p className="text-white/30 text-xs text-center mb-4">เพื่อซื้อและติดตามออเดอร์</p>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="อีเมล" className="bg-white/10 border-white/20 text-white placeholder:text-white/30" required />
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="รหัสผ่าน" className="bg-white/10 border-white/20 text-white placeholder:text-white/30" required />
-          {error && <p className="text-red-400 text-xs text-center">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full py-2.5 rounded-xl font-bold text-slate-900 transition hover:opacity-90"
-            style={{ background: "linear-gradient(90deg,#f5d485,#c9a84c)" }}>
-            {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-          </button>
-          <p className="text-center text-white/30 text-xs">ยังไม่มีบัญชี? <a href="/register" className="text-yellow-400 hover:underline">สมัครสมาชิก</a></p>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-// ─── Main Export ──────────────────────────────────────────
 export function LotterySection({ draws, isLoggedIn }: { draws: Draw[]; isLoggedIn: boolean }) {
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return []
@@ -333,53 +669,77 @@ export function LotterySection({ draws, isLoggedIn }: { draws: Draw[]; isLoggedI
       return []
     }
   })
+  const [activePortal, setActivePortal] = useState<DrawType | null>(null)
 
-  // Persist cart to localStorage on every change
   useEffect(() => {
-    try { localStorage.setItem(CART_KEY, JSON.stringify(cart)) } catch { /* ignore */ }
+    try {
+      localStorage.setItem(CART_KEY, JSON.stringify(cart))
+    } catch {
+      // Ignore storage write issues in private browsing or restricted environments.
+    }
   }, [cart])
 
-  // After login: if cart has items, immediately go to checkout
-  function handleLoginSuccess() {
-    const saved = localStorage.getItem(CART_KEY)
-    const items: CartItem[] = saved ? JSON.parse(saved) : cart
-    if (items.length > 0) {
-      // router.refresh() will update isLoggedIn; checkout happens via CartPanel naturally
-      // Just ensure the page refreshes so CartPanel sees isLoggedIn=true
+  function addToCart(item: CartItem) {
+    setCart((prev) => [...prev, item])
+  }
+
+  function removeFromCart(index: number) {
+    setCart((prev) => prev.filter((_, currentIndex) => currentIndex !== index))
+  }
+
+  function clearCart() {
+    setCart([])
+    try {
+      localStorage.removeItem(CART_KEY)
+    } catch {
+      // Ignore storage removal issues in restricted environments.
     }
   }
 
-  function addToCart(item: CartItem) { setCart((prev) => [...prev, item]) }
-  function removeFromCart(idx: number) { setCart((prev) => prev.filter((_, i) => i !== idx)) }
-  function clearCart() {
-    setCart([])
-    try { localStorage.removeItem(CART_KEY) } catch { /* ignore */ }
-  }
-
-  const powerball = draws.find((d) => d.type === "POWERBALL")
-  const mega = draws.find((d) => d.type === "MEGA_MILLIONS")
+  const powerball = draws.find((draw) => draw.type === "POWERBALL")
+  const megaMillions = draws.find((draw) => draw.type === "MEGA_MILLIONS")
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-      {/* Left — pickers */}
-      <div className="lg:col-span-3 space-y-5">
-        {powerball ? <DrawPicker draw={powerball} onAddToCart={addToCart} /> : (
-          <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-white/25 text-sm">Powerball — ยังไม่มีงวดที่เปิดรับ</p>
-          </div>
-        )}
-        {mega ? <DrawPicker draw={mega} onAddToCart={addToCart} /> : (
-          <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-white/25 text-sm">Mega Millions — ยังไม่มีงวดที่เปิดรับ</p>
-          </div>
-        )}
+    <div className="grid gap-5 xl:grid-cols-2">
+      {powerball ? (
+        <PortalCard
+          draw={powerball}
+          expanded={activePortal === "POWERBALL"}
+          onExpand={() => setActivePortal("POWERBALL")}
+          onCollapse={() => setActivePortal(null)}
+          onAddToCart={addToCart}
+        />
+      ) : (
+        <article className="flex h-full items-center rounded-[32px] border border-dashed border-slate-200 bg-white px-6 py-10 text-center shadow-[0_28px_80px_-48px_rgba(15,23,42,0.45)]">
+          <p className="w-full text-sm text-slate-500">Powerball portal is currently offline.</p>
+        </article>
+      )}
+
+      {megaMillions ? (
+        <PortalCard
+          draw={megaMillions}
+          expanded={activePortal === "MEGA_MILLIONS"}
+          onExpand={() => setActivePortal("MEGA_MILLIONS")}
+          onCollapse={() => setActivePortal(null)}
+          onAddToCart={addToCart}
+        />
+      ) : (
+        <article className="flex h-full items-center rounded-[32px] border border-dashed border-slate-200 bg-white px-6 py-10 text-center shadow-[0_28px_80px_-48px_rgba(15,23,42,0.45)]">
+          <p className="w-full text-sm text-slate-500">Mega Millions portal is currently offline.</p>
+        </article>
+      )}
+
+      <div id="account-portal">
+        <AccessCard isLoggedIn={isLoggedIn} />
       </div>
 
-      {/* Right — login or cart */}
-      <div className="lg:col-span-2 space-y-4 sticky top-6">
-        {!isLoggedIn && <LoginPanel onLoginSuccess={handleLoginSuccess} />}
-        <CartPanel items={cart} draws={draws} isLoggedIn={isLoggedIn} onRemove={removeFromCart} onClearCart={clearCart} />
-      </div>
+      <CartCard
+        items={cart}
+        draws={draws}
+        isLoggedIn={isLoggedIn}
+        onRemove={removeFromCart}
+        onClearCart={clearCart}
+      />
     </div>
   )
 }
