@@ -8,7 +8,7 @@ export default function LogoutButton() {
     <Button
       variant="ghost"
       size="sm"
-      onClick={() => signOut({ callbackUrl: "/login" })}
+      onClick={() => signOut({ callbackUrl: "/" })}
       className="text-white/50 hover:text-white text-xs"
     >
       ออกจากระบบ
