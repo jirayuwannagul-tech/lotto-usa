@@ -6,6 +6,10 @@ RUN npm ci
 
 COPY . .
 RUN npx prisma generate
+# Placeholder env vars so Turbopack doesn't inline as undefined at build time
+# Railway overrides these with real values at runtime
+ENV NEXTAUTH_SECRET=build-placeholder
+ENV NEXTAUTH_URL=http://localhost:3000
 RUN npm run build
 
 ENV NODE_ENV=production
