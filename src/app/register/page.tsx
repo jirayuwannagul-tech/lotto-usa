@@ -38,7 +38,7 @@ export default function RegisterPage() {
     if (!res.ok) {
       setError(data.error ?? "เกิดข้อผิดพลาด")
     } else {
-      router.push("/login?registered=1")
+      router.push("/?registered=1")
     }
   }
 

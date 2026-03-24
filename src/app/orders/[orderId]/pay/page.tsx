@@ -75,7 +75,7 @@ export default function PayPage({ params }: { params: Promise<{ orderId: string 
               <div className="text-5xl">✅</div>
               <h2 className="text-white text-xl font-bold">ส่งสลิปเรียบร้อย</h2>
               <p className="text-white/60">รอ Admin ตรวจสลิปและยืนยัน</p>
-              <p className="text-white/40 text-sm">เราจะแจ้งผลทาง Line</p>
+              <p className="text-white/40 text-sm">เราจะแจ้งผลผ่าน Telegram</p>
               <Button onClick={() => router.push("/dashboard")} className="bg-blue-500 hover:bg-blue-600 text-white">
                 กลับหน้าหลัก
               </Button>
