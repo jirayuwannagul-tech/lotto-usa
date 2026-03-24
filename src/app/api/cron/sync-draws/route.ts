@@ -44,6 +44,15 @@ export async function GET(req: Request) {
     }
   }
 
+  // Remove draws with wrong UTC draw-time (EDT-based: hour 2 or 3 UTC instead of correct 5 or 6 UTC)
+  const openDraws = await prisma.draw.findMany({ where: { isOpen: true } })
+  const wrongDrawIds = openDraws
+    .filter((d) => { const h = d.drawDate.getUTCHours(); return h === 2 || h === 3 })
+    .map((d) => d.id)
+  if (wrongDrawIds.length > 0) {
+    await prisma.draw.deleteMany({ where: { id: { in: wrongDrawIds } } })
+  }
+
   // Auto-close draws past cutoff
   await prisma.draw.updateMany({
     where: { isOpen: true, cutoffAt: { lt: now } },

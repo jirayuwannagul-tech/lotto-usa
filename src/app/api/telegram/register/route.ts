@@ -1,0 +1,24 @@
+import { NextRequest, NextResponse } from "next/server"
+
+export async function GET(req: NextRequest) {
+  const secret = new URL(req.url).searchParams.get("secret")
+  if (secret !== process.env.CRON_SECRET && process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) return NextResponse.json({ error: "TELEGRAM_BOT_TOKEN not set" }, { status: 500 })
+
+  const appUrl = process.env.NEXTAUTH_URL ?? process.env.APP_URL
+  if (!appUrl) return NextResponse.json({ error: "NEXTAUTH_URL not set" }, { status: 500 })
+
+  const webhookUrl = `${appUrl.replace(/\/$/, "")}/api/telegram/webhook`
+
+  const res = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url: webhookUrl }),
+  })
+  const data = await res.json()
+  return NextResponse.json({ webhookUrl, result: data })
+}

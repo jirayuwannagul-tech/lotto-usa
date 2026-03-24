@@ -42,6 +42,15 @@ export function isAllowedChat(chatId: number): boolean {
   return allowed.split(",").map((s) => s.trim()).includes(String(chatId))
 }
 
+// ---- Admin broadcast -----------------------------------------------------
+
+export async function sendAdminMessage(text: string) {
+  const allowed = process.env.TELEGRAM_ADMIN_CHAT_IDS
+  if (!allowed || !BOT_TOKEN) return
+  const ids = allowed.split(",").map((s) => s.trim()).filter(Boolean)
+  await Promise.all(ids.map((id) => sendMessage(id, text)))
+}
+
 // ---- Types ---------------------------------------------------------------
 
 export interface TgUpdate {

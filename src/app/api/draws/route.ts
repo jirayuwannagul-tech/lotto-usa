@@ -11,10 +11,11 @@ const createDrawSchema = z.object({
   jackpot: z.string().max(50).optional(),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const all = new URL(req.url).searchParams.get("all") === "1"
   const draws = await prisma.draw.findMany({
-    where: { isOpen: true },
-    orderBy: { drawDate: "asc" },
+    where: all ? undefined : { isOpen: true },
+    orderBy: { drawDate: "desc" },
   })
   return NextResponse.json(draws)
 }

@@ -58,7 +58,7 @@ export default function DrawsPage() {
   const [loading, setLoading] = useState(false)
 
   async function fetchDraws() {
-    const res = await fetch("/api/draws")
+    const res = await fetch("/api/draws?all=1")
     setDraws(await res.json())
   }
 

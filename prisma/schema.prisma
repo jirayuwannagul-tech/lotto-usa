@@ -50,8 +50,10 @@ model Draw {
   drawDate  DateTime
   cutoffAt  DateTime
   isOpen    Boolean  @default(true)
-  jackpot   String?
-  createdAt DateTime @default(now())
+  jackpot        String?
+  winningMain    String?
+  winningSpecial String?
+  createdAt      DateTime @default(now())
 
   orders Order[]
 }
