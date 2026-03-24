@@ -1,11 +1,20 @@
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { syncUpcomingDraws } from "@/lib/draw-schedule"
+import { HomeDrawCountdown } from "@/components/home/HomeDrawCountdown"
 
 export const dynamic = "force-dynamic"
 
-function pickJackpot(draws: { type: string; jackpot: string | null }[], type: string) {
-  return draws.find((draw) => draw.type === type)?.jackpot ?? "กำลังอัปเดต"
+function pickDraw(
+  draws: { type: string; jackpot: string | null; drawDate: Date }[],
+  type: string
+) {
+  return draws.find((draw) => draw.type === type) ?? null
+}
+
+function formatJackpotUsd(value: string | null) {
+  if (!value) return "USD กำลังอัปเดต"
+  return value.startsWith("$") ? `USD ${value.slice(1)}` : `USD ${value}`
 }
 
 export default async function Home() {
@@ -19,8 +28,8 @@ export default async function Home() {
     orderBy: { drawDate: "asc" },
   })
 
-  const powerballJackpot = pickJackpot(draws, "POWERBALL")
-  const megaBallJackpot = pickJackpot(draws, "MEGA_MILLIONS")
+  const powerballDraw = pickDraw(draws, "POWERBALL")
+  const megaBallDraw = pickDraw(draws, "MEGA_MILLIONS")
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
@@ -79,14 +88,16 @@ export default async function Home() {
                 <div className="rounded-2xl bg-white p-5 text-center">
                   <p className="text-sm font-semibold text-slate-500">Power Ball</p>
                   <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                    {powerballJackpot}
+                    {formatJackpotUsd(powerballDraw?.jackpot ?? null)}
                   </p>
+                  <HomeDrawCountdown drawDate={powerballDraw?.drawDate.toISOString() ?? null} />
                 </div>
                 <div className="rounded-2xl bg-white p-5 text-center">
                   <p className="text-sm font-semibold text-slate-500">Mega Ball</p>
                   <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                    {megaBallJackpot}
+                    {formatJackpotUsd(megaBallDraw?.jackpot ?? null)}
                   </p>
+                  <HomeDrawCountdown drawDate={megaBallDraw?.drawDate.toISOString() ?? null} />
                 </div>
               </div>
             </aside>
