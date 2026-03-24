@@ -75,7 +75,10 @@ export default async function Home() {
           <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c9a84c,#f5d485)" }}>🎱</div>
           <span className="font-black text-lg tracking-wide" style={{ background: "linear-gradient(90deg,#f5d485,#c9a84c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>LottoUSA</span>
         </div>
-        <p className="text-white/25 text-sm hidden sm:block">ซื้อ Powerball & Mega Millions จากไทย</p>
+        <div className="flex items-center gap-4">
+          <p className="text-white/25 text-sm hidden sm:block">ซื้อ Powerball & Mega Millions จากไทย</p>
+          <a href="/admin" className="text-white/20 hover:text-white/50 text-xs transition">Admin</a>
+        </div>
       </header>
 
       {/* Today banner */}
