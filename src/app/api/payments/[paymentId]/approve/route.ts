@@ -31,7 +31,7 @@ export async function PATCH(_: NextRequest, { params }: { params: Promise<{ paym
     data: { status: "APPROVED" },
   })
 
-  // Build LINE Notify message
+  // Send the confirmed numbers only after payment is approved.
   const { order } = payment
   const drawTypeLabel = order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
   const itemLines = order.items
@@ -39,7 +39,9 @@ export async function PATCH(_: NextRequest, { params }: { params: Promise<{ paym
     .join("\n")
 
   const message = `
-✅ ชำระเงินแล้ว — ออเดอร์ใหม่
+✅ ยืนยันชำระเงินแล้ว
+
+ส่งเลขเข้ากลุ่มซื้อได้เลย
 
 👤 ${order.user.name}
 📞 ${order.user.phone ?? "-"}

@@ -6,7 +6,6 @@ import { getExchangeRate } from "@/lib/exchange-rate"
 import { LOTTERY_RULES, MARGIN_USD } from "@/lib/lottery-rules"
 import { isCutoffPassed } from "@/lib/cutoff"
 import { z } from "zod"
-import { sendAdminMessage } from "@/lib/telegram"
 
 const itemSchema = z.object({
   mainNumbers: z.array(z.string().regex(/^\d{1,2}$/)).min(1).max(10),
@@ -132,14 +131,6 @@ export async function POST(req: NextRequest) {
       include: { items: true },
     })
   })
-
-  // Notify admin via Telegram
-  const drawLabel = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
-  const drawDateThai = draw.drawDate.toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit" })
-  const itemLines = order.items.map((item, i) => `  ${i + 1}. ${item.mainNumbers} | ${item.specialNumber}`).join("\n")
-  await sendAdminMessage(
-    `🛒 *ออเดอร์ใหม่*\n\n👤 ${session.user.name}\n🎱 ${drawLabel} งวด ${drawDateThai}\n\nเลขที่จอง:\n${itemLines}\n\n💰 $${order.totalUSD} = ${order.totalTHB} ฿\n⏳ รอสลิปโอน`
-  )
 
   return NextResponse.json(order, { status: 201 })
 }

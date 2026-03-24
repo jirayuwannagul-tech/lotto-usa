@@ -49,11 +49,8 @@ export async function POST(req: NextRequest) {
     })
     if (fullOrder) {
       const drawLabel = fullOrder.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
-      const itemLines = fullOrder.items
-        .map((item, i) => `  ${i + 1}. ${item.mainNumbers} | ${item.specialNumber}`)
-        .join("\n")
       await sendAdminMessage(
-        `📎 *สลิปใหม่ — รอตรวจสอบ*\n\n👤 ${fullOrder.user.name}\n🎱 ${drawLabel}\n\nเลขที่จอง:\n${itemLines}\n\n💰 ${Number(fullOrder.totalTHB).toFixed(0)} ฿\n🧾 เปิดดูสลิปใน Admin Panel`
+        `📎 *สลิปใหม่ — รอตรวจสอบ*\n\n👤 ${fullOrder.user.name}\n🎱 ${drawLabel}\n💰 ${Number(fullOrder.totalTHB).toFixed(0)} ฿\n🧾 เปิดดูสลิปใน Admin Panel แล้วกดอนุมัติเพื่อส่งเลขเข้ากลุ่มซื้อ`
       )
     }
 
