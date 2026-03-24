@@ -8,7 +8,10 @@ export default function LogoutButton() {
     <Button
       variant="ghost"
       size="sm"
-      onClick={() => signOut({ callbackUrl: "/" })}
+      onClick={async () => {
+        await signOut({ redirect: false })
+        window.location.href = "/"
+      }}
       className="text-white/50 hover:text-white text-xs"
     >
       ออกจากระบบ
