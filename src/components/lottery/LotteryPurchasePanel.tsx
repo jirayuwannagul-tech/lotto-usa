@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { NumberPicker } from "@/components/customer/NumberPicker"
 import { DrawType } from "@/lib/lottery-rules"
 
@@ -20,7 +20,19 @@ export function LotteryPurchasePanel({
   drawType,
   accentClass,
 }: LotteryPurchasePanelProps) {
-  const [submittedSets, setSubmittedSets] = useState<NumberSet[]>([])
+  const router = useRouter()
+
+  function handleOrder(sets: NumberSet[]) {
+    sessionStorage.setItem(
+      "lottery_checkout",
+      JSON.stringify({
+        title,
+        drawType,
+        sets,
+      })
+    )
+    router.push("/payment")
+  }
 
   return (
     <div className="mt-10 rounded-3xl border border-slate-200 bg-slate-50 p-8">
@@ -33,26 +45,10 @@ export function LotteryPurchasePanel({
       <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6">
         <NumberPicker
           drawType={drawType}
-          onConfirm={setSubmittedSets}
+          onConfirm={handleOrder}
           confirmLabel="สั่งซื้อหวย"
         />
       </div>
-
-      {submittedSets.length > 0 && (
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6">
-          <p className="text-sm font-semibold text-slate-500">รายการที่กดสั่งซื้อแล้ว</p>
-          <div className="mt-4 space-y-3">
-            {submittedSets.map((set, index) => (
-              <div key={`${set.mainNumbers.join("-")}-${set.specialNumber}-${index}`} className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm font-semibold text-slate-700">ชุดที่ {index + 1}</p>
-                <p className="mt-2 font-mono text-base text-slate-950">
-                  {set.mainNumbers.join(" - ")} ● {set.specialNumber}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
