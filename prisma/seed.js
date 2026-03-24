@@ -1,7 +1,9 @@
 const { PrismaClient } = require("@prisma/client")
+const { PrismaPg } = require("@prisma/adapter-pg")
 const bcrypt = require("bcryptjs")
 
-const prisma = new PrismaClient()
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+const prisma = new PrismaClient({ adapter })
 
 async function main() {
   const adminHash = await bcrypt.hash("admin1234", 12)
