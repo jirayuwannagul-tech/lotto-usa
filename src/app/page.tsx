@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { CircleUserRound } from "lucide-react"
+import LogoutButton from "@/components/shared/LogoutButton"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { LotterySection } from "@/components/customer/LotterySection"
@@ -71,12 +71,11 @@ export default async function Home() {
                   href="/dashboard"
                   className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-950 sm:inline-flex"
                 >
-                  แดชบอร์ด
+                  Dashboard
                 </Link>
-                <div className="flex h-11 min-w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
-                  <CircleUserRound className="mr-2 size-4 text-slate-500" />
-                  <span className="hidden sm:inline">{session.user.name}</span>
-                </div>
+                <LogoutButton
+                  className="border border-slate-200 bg-white px-4 text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                />
               </>
             ) : (
               <>
@@ -84,13 +83,13 @@ export default async function Home() {
                   href="/login"
                   className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-950 sm:inline-flex"
                 >
-                  เข้าสู่ระบบ
+                  Login
                 </Link>
                 <Link
                   href="/register"
                   className="inline-flex items-center rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400"
                 >
-                  สมัครสมาชิก
+                  Register
                 </Link>
               </>
             )}
