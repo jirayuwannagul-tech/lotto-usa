@@ -3,4 +3,4 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "npx prisma db push --accept-data-loss && npm start"
+startCommand = "npx prisma db push --accept-data-loss && echo 'Starting Next.js...' && node_modules/.bin/next start -p ${PORT:-3000} -H 0.0.0.0"
