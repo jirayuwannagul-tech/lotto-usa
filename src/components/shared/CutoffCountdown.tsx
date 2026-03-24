@@ -33,28 +33,32 @@ export function CutoffCountdown({ cutoffAt, drawDate, drawType, compact = false 
 
   if (compact) {
     return (
-      <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 ${isOpen ? "bg-green-500/10 border border-green-500/20" : "bg-red-500/10 border border-red-500/20"}`}>
-        <div className={`w-1.5 h-1.5 rounded-full ${isOpen ? "bg-green-400 animate-pulse" : "bg-red-400"}`} />
-        <span className={`font-mono text-xs font-bold ${isOpen ? "text-green-400" : "text-red-400"}`}>
-          {isOpen ? timeLeft : "ปิดแล้ว"}
+      <div
+        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${
+          isOpen ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"
+        }`}
+      >
+        <div className={`h-2 w-2 rounded-full ${isOpen ? "bg-emerald-500" : "bg-rose-500"}`} />
+        <span className={`font-mono text-xs font-semibold ${isOpen ? "text-emerald-700" : "text-rose-700"}`}>
+          {isOpen ? `ปิดรับใน ${timeLeft}` : "ปิดรับแล้ว"}
         </span>
       </div>
     )
   }
 
-  const drawLabel = drawType === "POWERBALL" ? "🔴 พาวเวอร์บอล" : "🔵 เมกา มิลเลียนส์"
+  const drawLabel = drawType === "POWERBALL" ? "พาวเวอร์บอล" : "เมกา มิลเลียนส์"
   const drawDateTH = new Date(drawDate).toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" })
 
   return (
-    <div className={`rounded-xl p-4 border ${isOpen ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"}`}>
+    <div className={`rounded-2xl border p-4 ${isOpen ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"}`}>
       <div className="flex items-center gap-2 mb-1">
-        <div className={`w-2 h-2 rounded-full ${isOpen ? "bg-green-400 animate-pulse" : "bg-red-400"}`} />
-        <span className={`text-sm font-medium ${isOpen ? "text-green-400" : "text-red-400"}`}>
+        <div className={`h-2 w-2 rounded-full ${isOpen ? "bg-emerald-500" : "bg-rose-500"}`} />
+        <span className={`text-sm font-medium ${isOpen ? "text-emerald-700" : "text-rose-700"}`}>
           {isOpen ? "กำลังรับออเดอร์" : "ปิดรับออเดอร์แล้ว"}
         </span>
       </div>
-      <div className="text-3xl font-mono font-bold text-white">{timeLeft}</div>
-      <div className="text-white/60 text-sm mt-1">
+      <div className="text-3xl font-semibold tracking-tight text-slate-950">{isOpen ? timeLeft : "ปิดรับแล้ว"}</div>
+      <div className="mt-1 text-sm text-slate-600">
         {drawLabel} — งวด {drawDateTH}
       </div>
     </div>

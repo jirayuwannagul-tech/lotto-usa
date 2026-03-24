@@ -6,23 +6,27 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 interface LoginFormProps {
   redirectTo?: string
   portal?: "customer" | "admin"
   showRegisterLink?: boolean
+  theme?: "light" | "dark"
 }
 
 export default function LoginForm({
   redirectTo = "/dashboard",
   portal = "customer",
   showRegisterLink = true,
+  theme = "light",
 }: LoginFormProps) {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const isDark = theme === "dark"
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -51,39 +55,61 @@ export default function LoginForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-white/70 text-sm mb-1">อีเมล</label>
+        <label className={cn("mb-1 block text-sm", isDark ? "text-white/70" : "text-slate-700")}>
+          อีเมล
+        </label>
         <Input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="example@email.com"
-          className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+          className={cn(
+            isDark
+              ? "border-white/20 bg-white/10 text-white placeholder:text-white/40"
+              : "h-11 rounded-xl border-slate-200 bg-white text-slate-950 placeholder:text-slate-400"
+          )}
           required
         />
       </div>
       <div>
-        <label className="block text-white/70 text-sm mb-1">รหัสผ่าน</label>
+        <label className={cn("mb-1 block text-sm", isDark ? "text-white/70" : "text-slate-700")}>
+          รหัสผ่าน
+        </label>
         <Input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
-          className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+          className={cn(
+            isDark
+              ? "border-white/20 bg-white/10 text-white placeholder:text-white/40"
+              : "h-11 rounded-xl border-slate-200 bg-white text-slate-950 placeholder:text-slate-400"
+          )}
           required
         />
       </div>
-      {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+      {error && (
+        <p className={cn("text-center text-sm", isDark ? "text-red-400" : "text-rose-600")}>{error}</p>
+      )}
       <Button
         type="submit"
         disabled={loading}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+        className={cn(
+          "w-full font-semibold",
+          isDark
+            ? "bg-blue-600 text-white hover:bg-blue-700"
+            : "h-11 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500"
+        )}
       >
         {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
       </Button>
       {showRegisterLink && (
-        <p className="text-center text-white/50 text-sm">
+        <p className={cn("text-center text-sm", isDark ? "text-white/50" : "text-slate-500")}>
           ยังไม่มีบัญชี?{" "}
-          <Link href="/register" className="text-blue-400 hover:underline">
+          <Link
+            href="/register"
+            className={cn(isDark ? "text-blue-400 hover:underline" : "font-medium text-emerald-600 hover:underline")}
+          >
             สมัครสมาชิก
           </Link>
         </p>

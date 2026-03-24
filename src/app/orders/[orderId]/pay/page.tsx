@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState, use } from "react"
+import { use, useEffect, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { StatusBadge } from "@/components/shared/StatusBadge"
 
 interface Order {
   id: string
@@ -16,6 +16,21 @@ interface Order {
   payment: { id: string; status: string } | null
 }
 
+function getDrawLabel(type: string) {
+  return type === "POWERBALL" ? "พาวเวอร์บอล" : "เมกา มิลเลียนส์"
+}
+
+function formatDrawDate(date: string) {
+  return new Date(date).toLocaleDateString("th-TH", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+}
+
+const uploadableStatuses = new Set(["PENDING_PAYMENT", "REJECTED"])
+
 export default function PayPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = use(params)
   const router = useRouter()
@@ -24,7 +39,7 @@ export default function PayPage({ params }: { params: Promise<{ orderId: string 
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState("")
-  const getDrawLabel = (type: string) => (type === "POWERBALL" ? "🔴 พาวเวอร์บอล" : "🔵 เมกา มิลเลียนส์")
+  const [copiedField, setCopiedField] = useState<"account" | "amount" | null>(null)
 
   useEffect(() => {
     fetch(`/api/orders/${orderId}`).then((r) => r.json()).then(setOrder)
@@ -43,142 +58,233 @@ export default function PayPage({ params }: { params: Promise<{ orderId: string 
     const res = await fetch("/api/payments", { method: "POST", body: formData })
     setLoading(false)
     if (!res.ok) {
-      const d = await res.json()
-      setError(d.error ?? "เกิดข้อผิดพลาด")
+      const data = await res.json()
+      setError(data.error ?? "เกิดข้อผิดพลาด")
     } else {
       setDone(true)
     }
   }
 
-  if (!order) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
-      <p className="text-white/50">กำลังโหลด...</p>
-    </div>
-  )
+  async function copyValue(value: string, field: "account" | "amount") {
+    await navigator.clipboard.writeText(value)
+    setCopiedField(field)
+    window.setTimeout(() => setCopiedField((current) => (current === field ? null : current)), 1500)
+  }
+
+  if (!order) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <p className="text-sm text-slate-500">กำลังโหลดข้อมูลรายการ...</p>
+      </div>
+    )
+  }
 
   const bankName = process.env.NEXT_PUBLIC_BANK_NAME ?? "ธนาคารกสิกรไทย"
   const bankAccount = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "xxx-x-xxxxx-x"
   const bankHolder = process.env.NEXT_PUBLIC_BANK_HOLDER ?? "ชื่อบัญชี"
+  const canUpload = uploadableStatuses.has(order.status)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
-      <header className="border-b border-white/10 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-white/60 hover:text-white">← กลับ</button>
-          <span className="text-white font-semibold">💳 ชำระเงิน</span>
+    <div className="min-h-screen bg-slate-50 text-slate-950">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4 sm:px-6">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
+          >
+            ← กลับ
+          </button>
+          <Link href="/dashboard" className="text-sm font-medium text-emerald-600 hover:text-emerald-500">
+            ไปที่แดชบอร์ด
+          </Link>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+      <main className="mx-auto max-w-5xl px-5 py-8 sm:px-6">
         {done ? (
-          <Card className="bg-white/5 border-white/10">
-            <CardContent className="py-10 text-center space-y-4">
-              <div className="text-5xl">✅</div>
-              <h2 className="text-white text-xl font-bold">ส่งสลิปเรียบร้อย</h2>
-              <p className="text-white/60">รอผู้ดูแลระบบตรวจสลิปและยืนยัน</p>
-              <p className="text-white/40 text-sm">ระบบจะแจ้งผลให้คุณหลังตรวจสอบเสร็จ</p>
-              <Button onClick={() => router.push("/dashboard")} className="bg-blue-500 hover:bg-blue-600 text-white">
-                กลับไปที่แดชบอร์ด
-              </Button>
-            </CardContent>
-          </Card>
+          <section className="mx-auto max-w-2xl rounded-3xl border border-emerald-200 bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-3xl">
+              ✓
+            </div>
+            <h1 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950">
+              ส่งสลิปเรียบร้อยแล้ว
+            </h1>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              รายการนี้จะอยู่ในสถานะรอตรวจสลิป เมื่อผู้ดูแลตรวจสอบเสร็จแล้ว คุณจะเห็นความคืบหน้าในแดชบอร์ด
+            </p>
+            <Link
+              href="/dashboard"
+              className="mt-6 inline-flex rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
+            >
+              กลับไปที่แดชบอร์ด
+            </Link>
+          </section>
         ) : (
-          <>
-            {/* Order summary */}
-            <Card className="bg-white/5 border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white text-base">
-                  สรุปออเดอร์ — {getDrawLabel(order.draw.type)}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {order.items.map((item, i) => (
-                  <div key={item.id} className="flex items-center gap-2 font-mono text-sm">
-                    <span className="text-white/40 w-8">{i + 1}.</span>
-                    <span className="text-white">{item.mainNumbers}</span>
-                    <span className={`font-bold ${order.draw.type === "POWERBALL" ? "text-red-400" : "text-blue-400"}`}>
-                      ● {item.specialNumber}
-                    </span>
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+            <section className="space-y-5">
+              <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.22em] text-emerald-600">ขั้นตอนที่ 1</p>
+                    <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                      ตรวจสอบรายการก่อนชำระเงิน
+                    </h1>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">
+                      รายการนี้เป็น {getDrawLabel(order.draw.type)} งวด {formatDrawDate(order.draw.drawDate)}
+                    </p>
                   </div>
-                ))}
-                <div className="border-t border-white/10 pt-2 space-y-1 text-sm">
-                  <div className="flex justify-between text-white/50">
-                    <span>{order.items.length} ใบ × $3.50</span>
+                  <StatusBadge status={order.status} />
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  {order.items.map((item, index) => (
+                    <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">ชุดที่ {index + 1}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {item.mainNumbers.split(",").map((n) => (
+                          <span
+                            key={n}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-semibold text-slate-900"
+                          >
+                            {n}
+                          </span>
+                        ))}
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white">
+                          {item.specialNumber}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>{order.items.length} ใบ</span>
                     <span>${Number(order.totalUSD).toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-white/50">
+                  <div className="mt-2 flex justify-between text-sm text-slate-600">
                     <span>อัตรา $1 = {Number(order.rateUsed).toFixed(2)} บาท</span>
-                  </div>
-                  <div className="flex justify-between text-white font-bold text-base">
-                    <span>ยอดชำระ</span>
                     <span>{Number(order.totalTHB).toFixed(0)} บาท</span>
                   </div>
+                  <div className="mt-3 border-t border-slate-200 pt-3 text-lg font-semibold text-slate-950">
+                    ยอดที่ต้องโอน {Number(order.totalTHB).toFixed(0)} บาท
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              </article>
 
-            {/* Bank info */}
-            <Card className="bg-blue-500/10 border-blue-500/30">
-              <CardContent className="p-4 space-y-2">
-                <p className="text-blue-300 font-semibold">🏦 โอนเงินมาที่</p>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span className="text-white/50">ธนาคาร</span><span className="text-white">{bankName}</span></div>
-                  <div className="flex justify-between"><span className="text-white/50">ชื่อบัญชี</span><span className="text-white">{bankHolder}</span></div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/50">เลขที่บัญชี</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white font-mono">{bankAccount}</span>
+              {!canUpload && (
+                <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">สถานะรายการ</p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                    รายการนี้ไม่ต้องส่งสลิปซ้ำแล้ว
+                  </h2>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    ถ้าคุณส่งสลิปไปแล้วหรือผู้ดูแลกำลังดำเนินการอยู่ สามารถกลับไปดูความคืบหน้าได้จากแดชบอร์ด
+                  </p>
+                  <Link
+                    href="/dashboard"
+                    className="mt-5 inline-flex rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:border-slate-400"
+                  >
+                    กลับไปที่แดชบอร์ด
+                  </Link>
+                </article>
+              )}
+            </section>
+
+            <aside className="space-y-5">
+              <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-xs font-semibold tracking-[0.22em] text-emerald-600">ขั้นตอนที่ 2</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">โอนเงินตามข้อมูลนี้</h2>
+                <div className="mt-5 space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">ธนาคาร</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-950">{bankName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">ชื่อบัญชี</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-950">{bankHolder}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">เลขที่บัญชี</p>
+                    <div className="mt-1 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                      <span className="font-mono text-sm font-semibold text-slate-950">{bankAccount}</span>
                       <button
-                        onClick={() => navigator.clipboard.writeText(bankAccount)}
-                        className="text-blue-400 text-xs hover:text-blue-300"
+                        type="button"
+                        onClick={() => copyValue(bankAccount, "account")}
+                        className="text-sm font-medium text-emerald-600 hover:text-emerald-500"
                       >
-                        📋 คัดลอก
+                        {copiedField === "account" ? "คัดลอกแล้ว" : "คัดลอก"}
                       </button>
                     </div>
                   </div>
-                  <div className="flex justify-between pt-1 border-t border-white/10">
-                    <span className="text-white/50">จำนวนเงิน</span>
-                    <span className="text-yellow-400 font-bold">{Number(order.totalTHB).toFixed(0)} บาท</span>
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">จำนวนเงิน</p>
+                    <div className="mt-1 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                      <span className="text-base font-semibold text-slate-950">
+                        {Number(order.totalTHB).toFixed(0)} บาท
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => copyValue(String(Number(order.totalTHB).toFixed(0)), "amount")}
+                        className="text-sm font-medium text-emerald-600 hover:text-emerald-500"
+                      >
+                        {copiedField === "amount" ? "คัดลอกแล้ว" : "คัดลอก"}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </article>
 
-            {/* Slip upload */}
-            <form onSubmit={handleSubmit}>
-              <Card className="bg-white/5 border-white/10">
-                <CardContent className="p-4 space-y-3">
-                  <p className="text-white font-medium">📎 แนบสลิปการโอน</p>
-                  <label className="block cursor-pointer">
-                    <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${file ? "border-green-500/50 bg-green-500/10" : "border-white/20 hover:border-white/40"}`}>
+              {canUpload && (
+                <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="text-xs font-semibold tracking-[0.22em] text-emerald-600">ขั้นตอนที่ 3</p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">แนบสลิปการโอน</h2>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">
+                    หลังส่งสลิปแล้ว รายการนี้จะเข้าสู่คิวรอตรวจสอบโดยผู้ดูแลระบบ
+                  </p>
+
+                  <label className="mt-5 block cursor-pointer">
+                    <div
+                      className={`rounded-2xl border-2 border-dashed p-6 text-center transition ${
+                        file
+                          ? "border-emerald-300 bg-emerald-50"
+                          : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                      }`}
+                    >
                       {file ? (
-                        <div>
-                          <p className="text-green-400 font-medium">✅ {file.name}</p>
-                          <p className="text-white/40 text-sm">{(file.size / 1024).toFixed(0)} KB</p>
-                        </div>
+                        <>
+                          <p className="text-sm font-semibold text-emerald-700">{file.name}</p>
+                          <p className="mt-1 text-sm text-emerald-600">{(file.size / 1024).toFixed(0)} KB</p>
+                        </>
                       ) : (
-                        <div>
-                          <p className="text-3xl mb-2">📷</p>
-                          <p className="text-white/60">แตะเพื่อเลือกรูปสลิป</p>
-                          <p className="text-white/30 text-sm">รองรับ JPG, PNG</p>
-                        </div>
+                        <>
+                          <p className="text-sm font-semibold text-slate-950">แตะเพื่อเลือกรูปสลิป</p>
+                          <p className="mt-1 text-sm text-slate-500">รองรับ JPG, PNG และ WEBP</p>
+                        </>
                       )}
                     </div>
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                    />
                   </label>
 
-                  {error && <p className="text-red-400 text-sm">{error}</p>}
+                  {error && <p className="mt-4 text-sm text-rose-600">{error}</p>}
 
-                  <p className="text-white/30 text-xs text-center">
-                    ⚠️ ออเดอร์จะได้รับการยืนยันหลังผู้ดูแลระบบตรวจสลิป
-                  </p>
-                  <Button type="submit" disabled={!file || loading} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold disabled:opacity-40">
-                    {loading ? "กำลังส่งสลิป..." : "ส่งสลิป & ยืนยันออเดอร์"}
-                  </Button>
-                </CardContent>
-              </Card>
-            </form>
-          </>
+                  <button
+                    type="submit"
+                    disabled={!file || loading}
+                    className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                  >
+                    {loading ? "กำลังส่งสลิป..." : "ส่งสลิป"}
+                  </button>
+                </form>
+              )}
+            </aside>
+          </div>
         )}
       </main>
     </div>

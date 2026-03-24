@@ -10,12 +10,19 @@ import { Button } from "@/components/ui/button"
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ name: "", email: "", phone: "", lineId: "", password: "", confirm: "" })
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    lineId: "",
+    password: "",
+    confirm: "",
+  })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
   function update(field: string) {
-    return (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [field]: e.target.value }))
+    return (e: React.ChangeEvent<HTMLInputElement>) => setForm((current) => ({ ...current, [field]: e.target.value }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -24,6 +31,7 @@ export default function RegisterPage() {
       setError("รหัสผ่านไม่ตรงกัน")
       return
     }
+
     setLoading(true)
     setError("")
 
@@ -43,56 +51,103 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🎱</div>
-          <h1 className="text-3xl font-bold text-white">LottoUSA</h1>
-          <p className="text-blue-300 mt-1">สมัครสมาชิกใหม่</p>
-        </div>
+    <div className="min-h-screen bg-slate-50 px-4 py-12">
+      <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_460px] lg:items-center">
+        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <p className="text-xs font-semibold tracking-[0.22em] text-emerald-600">สมัครสมาชิก</p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
+            สร้างบัญชีไว้เพื่อดูรายการเดิมและส่งสลิปได้ง่ายขึ้น
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+            ใช้บัญชีเดียวในการติดตามเลขที่ซื้อ รายการรอชำระเงิน และผลหลังผู้ดูแลอัปเดตสถานะให้เรียบร้อยแล้ว
+          </p>
+        </section>
 
-        <Card className="bg-white/10 border-white/20 backdrop-blur">
+        <Card className="border-slate-200 bg-white shadow-sm">
           <CardHeader>
-            <CardTitle className="text-white text-center">สมัครสมาชิก</CardTitle>
+            <CardTitle className="text-center text-slate-950">สมัครสมาชิกใหม่</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-white">ชื่อ - นามสกุล *</Label>
-                <Input value={form.name} onChange={update("name")} placeholder="สมชาย ใจดี" className="bg-white/20 border-white/30 text-white placeholder:text-white/50" required />
+                <Label className="text-slate-700">ชื่อ - นามสกุล *</Label>
+                <Input
+                  value={form.name}
+                  onChange={update("name")}
+                  placeholder="สมชาย ใจดี"
+                  className="h-11 rounded-xl border-slate-200 bg-white text-slate-950 placeholder:text-slate-400"
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label className="text-white">อีเมล *</Label>
-                <Input type="email" value={form.email} onChange={update("email")} placeholder="example@email.com" className="bg-white/20 border-white/30 text-white placeholder:text-white/50" required />
+                <Label className="text-slate-700">อีเมล *</Label>
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={update("email")}
+                  placeholder="example@email.com"
+                  className="h-11 rounded-xl border-slate-200 bg-white text-slate-950 placeholder:text-slate-400"
+                  required
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label className="text-white">เบอร์โทรศัพท์</Label>
-                  <Input value={form.phone} onChange={update("phone")} placeholder="089-xxx-xxxx" className="bg-white/20 border-white/30 text-white placeholder:text-white/50" />
+                  <Label className="text-slate-700">เบอร์โทรศัพท์</Label>
+                  <Input
+                    value={form.phone}
+                    onChange={update("phone")}
+                    placeholder="089-xxx-xxxx"
+                    className="h-11 rounded-xl border-slate-200 bg-white text-slate-950 placeholder:text-slate-400"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-white">ไลน์ไอดี</Label>
-                  <Input value={form.lineId} onChange={update("lineId")} placeholder="@lineid" className="bg-white/20 border-white/30 text-white placeholder:text-white/50" />
+                  <Label className="text-slate-700">ไลน์ไอดี</Label>
+                  <Input
+                    value={form.lineId}
+                    onChange={update("lineId")}
+                    placeholder="@lineid"
+                    className="h-11 rounded-xl border-slate-200 bg-white text-slate-950 placeholder:text-slate-400"
+                  />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-white">รหัสผ่าน *</Label>
-                <Input type="password" value={form.password} onChange={update("password")} placeholder="••••••••" className="bg-white/20 border-white/30 text-white placeholder:text-white/50" required />
+                <Label className="text-slate-700">รหัสผ่าน *</Label>
+                <Input
+                  type="password"
+                  value={form.password}
+                  onChange={update("password")}
+                  placeholder="••••••••"
+                  className="h-11 rounded-xl border-slate-200 bg-white text-slate-950 placeholder:text-slate-400"
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label className="text-white">ยืนยันรหัสผ่าน *</Label>
-                <Input type="password" value={form.confirm} onChange={update("confirm")} placeholder="••••••••" className="bg-white/20 border-white/30 text-white placeholder:text-white/50" required />
+                <Label className="text-slate-700">ยืนยันรหัสผ่าน *</Label>
+                <Input
+                  type="password"
+                  value={form.confirm}
+                  onChange={update("confirm")}
+                  placeholder="••••••••"
+                  className="h-11 rounded-xl border-slate-200 bg-white text-slate-950 placeholder:text-slate-400"
+                  required
+                />
               </div>
 
-              {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+              {error && <p className="text-center text-sm text-rose-600">{error}</p>}
 
-              <Button type="submit" disabled={loading} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="h-11 w-full rounded-xl bg-emerald-600 font-semibold text-white hover:bg-emerald-500"
+              >
                 {loading ? "กำลังสมัคร..." : "สมัครสมาชิก"}
               </Button>
 
-              <p className="text-center text-white/70 text-sm">
+              <p className="text-center text-sm text-slate-500">
                 มีบัญชีแล้ว?{" "}
-                <Link href="/login" className="text-blue-300 hover:underline">เข้าสู่ระบบ</Link>
+                <Link href="/login" className="font-medium text-emerald-600 hover:underline">
+                  เข้าสู่ระบบ
+                </Link>
               </p>
             </form>
           </CardContent>

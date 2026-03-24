@@ -41,11 +41,23 @@ export function AdminApproveButton({ paymentId }: Props) {
           value={rejectNote}
           onChange={(e) => setRejectNote(e.target.value)}
           placeholder="เหตุผล..."
-          className="text-xs border border-red-500/30 bg-red-500/10 text-white rounded px-2 py-1 w-full"
+          className="w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs text-slate-900"
         />
         <div className="flex gap-1">
-          <Button size="sm" variant="ghost" onClick={() => setShowReject(false)} className="text-white/50 text-xs flex-1">ยกเลิก</Button>
-          <Button size="sm" onClick={reject} disabled={loading === "reject"} className="bg-red-500 hover:bg-red-600 text-white text-xs flex-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowReject(false)}
+            className="flex-1 border border-slate-200 text-xs text-slate-600"
+          >
+            ยกเลิก
+          </Button>
+          <Button
+            size="sm"
+            onClick={reject}
+            disabled={loading === "reject"}
+            className="flex-1 bg-rose-600 text-xs text-white hover:bg-rose-500"
+          >
             {loading === "reject" ? "..." : "ยืนยันปฏิเสธ"}
           </Button>
         </div>
@@ -59,17 +71,17 @@ export function AdminApproveButton({ paymentId }: Props) {
         size="sm"
         onClick={approve}
         disabled={!!loading}
-        className="bg-green-500 hover:bg-green-600 text-white text-xs"
+        className="bg-emerald-600 text-xs text-white hover:bg-emerald-500"
       >
-        {loading === "approve" ? "..." : "✅ อนุมัติ"}
+        {loading === "approve" ? "..." : "อนุมัติ"}
       </Button>
       <Button
         size="sm"
         variant="ghost"
         onClick={() => setShowReject(true)}
-        className="text-red-400 hover:text-red-300 text-xs border border-red-500/30"
+        className="border border-rose-200 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-700"
       >
-        ❌ ปฏิเสธ
+        ปฏิเสธ
       </Button>
     </div>
   )

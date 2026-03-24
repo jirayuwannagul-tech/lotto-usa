@@ -2,6 +2,10 @@ import { prisma } from "@/lib/prisma"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { AdminApproveButton } from "@/components/admin/AdminApproveButton"
 
+function getDrawLabel(type: string) {
+  return type === "POWERBALL" ? "พาวเวอร์บอล" : "เมกา มิลเลียนส์"
+}
+
 export default async function AdminPage() {
   const draws = await prisma.draw.findMany({
     orderBy: { drawDate: "desc" },
@@ -17,199 +21,204 @@ export default async function AdminPage() {
     take: 10,
   })
 
-  const allOrders = draws.flatMap((d) => d.orders)
-  const pendingPayments = allOrders.filter((o) => o.status === "PENDING_APPROVAL")
-  const approvedOrders = allOrders.filter((o) =>
-    ["APPROVED", "TICKET_UPLOADED", "MATCHED"].includes(o.status)
+  const allOrders = draws.flatMap((draw) =>
+    draw.orders.map((order) => ({
+      ...order,
+      drawMeta: {
+        type: draw.type,
+      },
+    }))
   )
-  const matchedOrders = allOrders.filter((o) => o.status === "MATCHED")
-  const totalRevenueTHB = approvedOrders.reduce((s, o) => s + Number(o.totalTHB), 0)
+  const pendingPayments = allOrders.filter((order) => order.status === "PENDING_APPROVAL")
+  const approvedOrders = allOrders.filter((order) =>
+    ["APPROVED", "TICKET_UPLOADED", "MATCHED"].includes(order.status)
+  )
+  const matchedOrders = allOrders.filter((order) => order.status === "MATCHED")
+  const totalRevenueTHB = approvedOrders.reduce((sum, order) => sum + Number(order.totalTHB), 0)
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-[2rem] border border-cyan-950/60 bg-slate-950/55 p-6 shadow-[0_30px_80px_-40px_rgba(8,145,178,0.55)]">
-        <p className="text-xs font-semibold tracking-[0.24em] text-cyan-300/75">ADMIN OVERVIEW</p>
+    <div className="space-y-6">
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold tracking-[0.24em] text-slate-400">ADMIN OVERVIEW</p>
         <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight text-white">ภาพรวมการปฏิบัติงานวันนี้</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-              ดูออเดอร์ที่รอตรวจสลิป ยอดที่อนุมัติแล้ว และสถานะการอัปโหลดตั๋วของแต่ละงวดจากพื้นที่หลังบ้านชุดเดียว
+            <h2 className="text-3xl font-semibold tracking-tight text-slate-950">ภาพรวมการปฏิบัติงาน</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              หน้านี้สรุปรายการที่รอตรวจสลิป ออเดอร์ที่ชำระแล้ว และงวดต่าง ๆ ไว้ในที่เดียวเพื่อให้ทำงานต่อได้เร็ว
             </p>
           </div>
-          <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/10 px-5 py-4">
-            <p className="text-xs font-semibold tracking-[0.2em] text-emerald-300/80">REVENUE APPROVED</p>
-            <p className="mt-2 text-3xl font-semibold text-white">
+          <div className="rounded-2xl bg-slate-900 px-5 py-4 text-white">
+            <p className="text-xs font-semibold tracking-[0.2em] text-slate-400">REVENUE APPROVED</p>
+            <p className="mt-2 text-3xl font-semibold">
               {totalRevenueTHB.toLocaleString("th-TH", { maximumFractionDigits: 0 })} ฿
             </p>
           </div>
         </div>
       </section>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: "ออเดอร์ทั้งหมด", value: allOrders.length, color: "text-white", sub: null },
-            { label: "รอตรวจสลิป", value: pendingPayments.length, color: "text-orange-400", sub: pendingPayments.length > 0 ? "⚠️ รีบตรวจ" : null },
-            { label: "ชำระแล้ว", value: approvedOrders.length, color: "text-blue-400", sub: null },
-            { label: "ซื้อตั๋วแล้ว", value: matchedOrders.length, color: "text-green-400", sub: null },
-          ].map((s) => (
-            <div key={s.label} className="bg-white/5 border border-white/8 rounded-2xl p-4 text-center">
-              <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-white/40 text-xs mt-1">{s.label}</p>
-              {s.sub && <p className="text-orange-400/70 text-xs mt-0.5">{s.sub}</p>}
-            </div>
-          ))}
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: "ออเดอร์ทั้งหมด", value: allOrders.length },
+          { label: "รอตรวจสลิป", value: pendingPayments.length },
+          { label: "ชำระแล้ว", value: approvedOrders.length },
+          { label: "จับคู่ตั๋วแล้ว", value: matchedOrders.length },
+        ].map((item) => (
+          <article key={item.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">{item.label}</p>
+            <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{item.value}</p>
+          </article>
+        ))}
+      </div>
 
-        {/* Pending approval */}
-        {pendingPayments.length > 0 && (
-          <div>
-            <h2 className="text-white/70 text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse inline-block" />
-              รอตรวจสลิป ({pendingPayments.length})
-            </h2>
-            <div className="space-y-3">
-              {pendingPayments.map((order) => (
-                <div key={order.id} className="bg-orange-500/5 border border-orange-500/15 rounded-2xl p-4">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p className="text-white font-semibold truncate">{order.user.name}</p>
-                        {order.user.phone && (
-                          <span className="text-white/30 text-xs shrink-0">{order.user.phone}</span>
-                        )}
-                      </div>
-                      <div className="space-y-1 mb-2">
-                        {order.items.map((item) => (
-                          <div key={item.id} className="flex items-center gap-1.5 flex-wrap">
+      {pendingPayments.length > 0 && (
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">รอตรวจสลิป</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                รายการที่ต้องอนุมัติ
+              </h2>
+            </div>
+            <p className="text-sm text-slate-500">ตรวจสลิปก่อนส่งต่อให้ทีมซื้อจริง</p>
+          </div>
+
+          <div className="mt-5 space-y-4">
+            {pendingPayments.map((order) => (
+              <article key={order.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-slate-950">{order.user.name}</p>
+                      {order.user.phone && <span className="text-sm text-slate-500">{order.user.phone}</span>}
+                      <StatusBadge status={order.status} />
+                    </div>
+                    <p className="mt-1 text-sm text-slate-500">{getDrawLabel(order.drawMeta.type)}</p>
+
+                    <div className="mt-4 space-y-3">
+                      {order.items.map((item) => (
+                        <div key={item.id} className="rounded-2xl border border-white bg-white p-3">
+                          <div className="flex flex-wrap gap-2">
                             {item.mainNumbers.split(",").map((n) => (
-                              <span key={n} className="w-7 h-7 rounded-full bg-white/8 border border-white/15 flex items-center justify-center text-xs font-bold text-white/80">
+                              <span
+                                key={n}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-900"
+                              >
                                 {n}
                               </span>
                             ))}
-                            <span className="w-7 h-7 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-xs font-bold text-orange-300">
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-xs font-semibold text-white">
                               {item.specialNumber}
                             </span>
                           </div>
-                        ))}
-                      </div>
-                      <p className="text-white/40 text-sm">
-                        {order.items.length} ใบ — {Number(order.totalTHB).toFixed(0)} ฿
-                      </p>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex flex-col gap-2 items-end shrink-0">
-                      {order.payment?.slipUrl && (
-                        <a
-                          href={`/api/payments/${order.payment.id}/slip`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs px-2.5 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-colors"
-                        >
-                          🖼 ดูสลิป
-                        </a>
-                      )}
-                      {order.payment && (
-                        <AdminApproveButton paymentId={order.payment.id} orderId={order.id} />
-                      )}
-                    </div>
+
+                    <p className="mt-4 text-sm text-slate-600">
+                      {order.items.length} ใบ • {Number(order.totalTHB).toFixed(0)} บาท
+                    </p>
+                  </div>
+
+                  <div className="flex w-full flex-col gap-2 lg:w-auto lg:items-end">
+                    {order.payment?.slipUrl && (
+                      <a
+                        href={`/api/payments/${order.payment.id}/slip`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-950"
+                      >
+                        ดูสลิป
+                      </a>
+                    )}
+                    {order.payment && <AdminApproveButton paymentId={order.payment.id} orderId={order.id} />}
                   </div>
                 </div>
-              ))}
-            </div>
+              </article>
+            ))}
           </div>
-        )}
+        </section>
+      )}
 
-        {/* Orders by draw */}
-        {draws.map((draw) => {
-          if (draw.orders.length === 0) return null
-          const drawRevenue = draw.orders
-            .filter((o) => ["APPROVED", "TICKET_UPLOADED", "MATCHED"].includes(o.status))
-            .reduce((s, o) => s + Number(o.totalTHB), 0)
-          const isPowerball = draw.type === "POWERBALL"
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">แยกตามงวด</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+            รายการทั้งหมดตามรอบการออกรางวัล
+          </h2>
+        </div>
 
-          return (
-            <div key={draw.id}>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-white font-semibold flex items-center gap-2">
-                  {isPowerball ? "🔴 Powerball" : "🔵 Mega Millions"}
-                  <span className="text-white/40 font-normal text-sm">
-                    งวด {new Date(draw.drawDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })}
-                  </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${draw.isOpen ? "bg-green-500/15 text-green-400" : "bg-white/5 text-white/30"}`}>
-                    {draw.isOpen ? "เปิด" : "ปิด"}
-                  </span>
-                </h2>
-                {drawRevenue > 0 && (
-                  <span className="text-green-400 text-sm font-semibold">
-                    {drawRevenue.toLocaleString("th-TH", { maximumFractionDigits: 0 })} ฿
-                  </span>
-                )}
-              </div>
+        <div className="mt-5 space-y-5">
+          {draws.map((draw) => {
+            if (draw.orders.length === 0) return null
 
-              <div className="bg-white/3 border border-white/8 rounded-2xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/8">
-                      <th className="text-left py-3 px-4 text-white/30 font-medium text-xs">ชื่อ</th>
-                      <th className="text-left py-3 px-4 text-white/30 font-medium text-xs">เลขที่จอง</th>
-                      <th className="text-center py-3 px-3 text-white/30 font-medium text-xs">ใบ</th>
-                      <th className="text-right py-3 px-4 text-white/30 font-medium text-xs">ยอด</th>
-                      <th className="text-center py-3 px-4 text-white/30 font-medium text-xs">สถานะ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {draw.orders.map((order, idx) => (
-                      <tr
-                        key={order.id}
-                        className={`border-b border-white/5 hover:bg-white/3 transition-colors ${idx === draw.orders.length - 1 ? "border-b-0" : ""}`}
-                      >
-                        <td className="py-3 px-4">
-                          <p className="text-white text-sm">{order.user.name}</p>
-                          {order.user.phone && (
-                            <p className="text-white/30 text-xs">{order.user.phone}</p>
-                          )}
-                        </td>
-                        <td className="py-3 px-4">
-                          {order.items.map((item) => (
-                            <div key={item.id} className="font-mono text-white/60 text-xs flex items-center gap-1">
-                              {item.mainNumbers}
-                              <span className={isPowerball ? "text-red-400" : "text-blue-400"}>
-                                ●{item.specialNumber}
-                              </span>
-                              {item.matchedAt && <span className="text-green-400">✓</span>}
-                            </div>
-                          ))}
-                        </td>
-                        <td className="py-3 px-3 text-center text-white/50 text-sm">
-                          {order.items.length}
-                        </td>
-                        <td className="py-3 px-4 text-right text-white font-medium text-sm">
-                          {Number(order.totalTHB).toFixed(0)} ฿
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <StatusBadge status={order.status} />
-                        </td>
+            return (
+              <article key={draw.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-950">{getDrawLabel(draw.type)}</h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      งวด{" "}
+                      {new Date(draw.drawDate).toLocaleDateString("th-TH", {
+                        day: "numeric",
+                        month: "short",
+                        year: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                      draw.isOpen ? "bg-emerald-50 text-emerald-700" : "bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {draw.isOpen ? "เปิดขาย" : "ปิดงวดแล้ว"}
+                  </span>
+                </div>
+
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-medium text-slate-500">ลูกค้า</th>
+                        <th className="px-4 py-3 text-left font-medium text-slate-500">เลขที่ซื้อ</th>
+                        <th className="px-4 py-3 text-center font-medium text-slate-500">จำนวนใบ</th>
+                        <th className="px-4 py-3 text-right font-medium text-slate-500">ยอด</th>
+                        <th className="px-4 py-3 text-center font-medium text-slate-500">สถานะ</th>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-white/3">
-                      <td colSpan={2} className="py-2.5 px-4 text-right text-white/30 text-xs">รวม</td>
-                      <td className="py-2.5 px-3 text-center text-white font-bold text-sm">
-                        {draw.orders.reduce((s, o) => s + o.items.length, 0)} ใบ
-                      </td>
-                      <td className="py-2.5 px-4 text-right text-white font-bold text-sm">
-                        {draw.orders.reduce((s, o) => s + Number(o.totalTHB), 0).toFixed(0)} ฿
-                      </td>
-                      <td />
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-          )
-        })}
-
+                    </thead>
+                    <tbody>
+                      {draw.orders.map((order) => (
+                        <tr key={order.id} className="border-t border-slate-200 align-top">
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-slate-950">{order.user.name}</p>
+                            {order.user.phone && <p className="text-xs text-slate-500">{order.user.phone}</p>}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="space-y-1">
+                              {order.items.map((item) => (
+                                <div key={item.id} className="font-mono text-xs text-slate-600">
+                                  {item.mainNumbers} • {item.specialNumber}
+                                  {item.matchedAt && <span className="ml-2 text-emerald-600">จับคู่แล้ว</span>}
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center text-slate-700">{order.items.length}</td>
+                          <td className="px-4 py-3 text-right font-medium text-slate-950">
+                            {Number(order.totalTHB).toFixed(0)} ฿
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <StatusBadge status={order.status} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </section>
     </div>
   )
 }

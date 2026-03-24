@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -45,10 +44,10 @@ export default function DrawsPage() {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const value = e.target.value
       if (field === "type") {
-        const { drawDate, cutoffAt } = getNextDrawFormValues(value as "POWERBALL" | "MEGA_MILLIONS")
-        setForm((f) => ({ ...f, type: value, drawDate, cutoffAt }))
+        const values = getNextDrawFormValues(value as "POWERBALL" | "MEGA_MILLIONS")
+        setForm((current) => ({ ...current, type: value, drawDate: values.drawDate, cutoffAt: values.cutoffAt }))
       } else {
-        setForm((f) => ({ ...f, [field]: value }))
+        setForm((current) => ({ ...current, [field]: value }))
       }
     }
   }
@@ -62,6 +61,7 @@ export default function DrawsPage() {
       body: JSON.stringify(form),
     })
     setLoading(false)
+
     const { drawDate, cutoffAt } = getNextDrawFormValues("POWERBALL")
     setForm({ type: "POWERBALL", drawDate, cutoffAt, jackpot: "" })
     fetchDraws()
@@ -77,83 +77,113 @@ export default function DrawsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <section className="rounded-[2rem] border border-slate-800 bg-slate-950/60 p-6">
-        <p className="text-xs font-semibold tracking-[0.24em] text-cyan-300/75">DRAW CONTROL</p>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">จัดการงวดหวย</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-          เพิ่มงวดใหม่ ปรับเวลาปิดรับ และตรวจสถานะการเปิดขายของแต่ละเกมจากหน้าจัดการนี้
+    <div className="mx-auto max-w-5xl space-y-6">
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold tracking-[0.24em] text-slate-400">DRAW CONTROL</p>
+        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">จัดการงวดหวย</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+          เพิ่มงวดใหม่ ปรับเวลาปิดรับ และปิดงวดที่ไม่เปิดขายแล้วจากหน้าหลังบ้านนี้
         </p>
       </section>
 
-        {/* Create draw */}
-        <Card className="border-slate-800 bg-slate-950/70">
-          <CardHeader>
-            <CardTitle className="text-white text-base">+ เพิ่มงวดใหม่</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={createDraw} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-white/70 text-xs">ประเภท</Label>
-                  <select value={form.type} onChange={update("type")} className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2 text-sm mt-1">
-                    <option value="POWERBALL">🔴 Powerball</option>
-                    <option value="MEGA_MILLIONS">🔵 Mega Millions</option>
-                  </select>
-                </div>
-                <div>
-                  <Label className="text-white/70 text-xs">Jackpot (เช่น $450M)</Label>
-                  <Input value={form.jackpot} onChange={update("jackpot")} placeholder="$450,000,000" className="bg-white/10 border-white/20 text-white mt-1" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-white/70 text-xs">วันออกรางวัล (UTC)</Label>
-                  <Input type="datetime-local" value={form.drawDate} onChange={update("drawDate")} className="bg-white/10 border-white/20 text-white mt-1" required />
-                </div>
-                <div>
-                  <Label className="text-white/70 text-xs">ปิดรับออเดอร์ (7AM LA = 14:00 UTC)</Label>
-                  <Input type="datetime-local" value={form.cutoffAt} onChange={update("cutoffAt")} className="bg-white/10 border-white/20 text-white mt-1" required />
-                </div>
-              </div>
-              <Button type="submit" disabled={loading} className="bg-blue-500 hover:bg-blue-600 text-white">
-                {loading ? "กำลังสร้าง..." : "สร้างงวด"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-slate-950">เพิ่มงวดใหม่</h3>
+        <form onSubmit={createDraw} className="mt-5 space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label className="text-slate-700">ประเภท</Label>
+              <select
+                value={form.type}
+                onChange={update("type")}
+                className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-950"
+              >
+                <option value="POWERBALL">พาวเวอร์บอล</option>
+                <option value="MEGA_MILLIONS">เมกา มิลเลียนส์</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-slate-700">Jackpot</Label>
+              <Input
+                value={form.jackpot}
+                onChange={update("jackpot")}
+                placeholder="$450,000,000"
+                className="mt-2 h-11 rounded-xl border-slate-200 bg-white"
+              />
+            </div>
+          </div>
 
-        {/* Draw list */}
-        <div className="space-y-3">
-          {draws.map((d) => (
-            <Card key={d.id} className="border-slate-800 bg-slate-950/70">
-              <CardContent className="p-4 flex justify-between items-center">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label className="text-slate-700">วันออกรางวัล (UTC)</Label>
+              <Input
+                type="datetime-local"
+                value={form.drawDate}
+                onChange={update("drawDate")}
+                className="mt-2 h-11 rounded-xl border-slate-200 bg-white"
+                required
+              />
+            </div>
+            <div>
+              <Label className="text-slate-700">ปิดรับออเดอร์ (UTC)</Label>
+              <Input
+                type="datetime-local"
+                value={form.cutoffAt}
+                onChange={update("cutoffAt")}
+                className="mt-2 h-11 rounded-xl border-slate-200 bg-white"
+                required
+              />
+            </div>
+          </div>
+
+          <Button type="submit" disabled={loading} className="bg-slate-900 text-white hover:bg-slate-800">
+            {loading ? "กำลังสร้าง..." : "สร้างงวด"}
+          </Button>
+        </form>
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-slate-950">งวดทั้งหมด</h3>
+        <div className="mt-5 space-y-3">
+          {draws.map((draw) => (
+            <article key={draw.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-white font-medium">
-                    {d.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"}
-                    {d.jackpot && <span className="text-yellow-400 ml-2 text-sm">{d.jackpot}</span>}
+                  <p className="text-sm font-semibold text-slate-950">
+                    {draw.type === "POWERBALL" ? "พาวเวอร์บอล" : "เมกา มิลเลียนส์"}
+                    {draw.jackpot && <span className="ml-2 text-slate-500">{draw.jackpot}</span>}
                   </p>
-                  <p className="text-white/50 text-xs">
-                    ออกรางวัล: {new Date(d.drawDate).toLocaleString("th-TH")}
+                  <p className="mt-1 text-sm text-slate-500">
+                    ออกรางวัล {new Date(draw.drawDate).toLocaleString("th-TH")}
                   </p>
-                  <p className="text-white/50 text-xs">
-                    ปิดรับ: {new Date(d.cutoffAt).toLocaleString("th-TH")}
+                  <p className="text-sm text-slate-500">
+                    ปิดรับ {new Date(draw.cutoffAt).toLocaleString("th-TH")}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs px-2 py-1 rounded-full ${d.isOpen ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}`}>
-                    {d.isOpen ? "เปิด" : "ปิด"}
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                      draw.isOpen ? "bg-emerald-50 text-emerald-700" : "bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {draw.isOpen ? "เปิดขาย" : "ปิดงวดแล้ว"}
                   </span>
-                  {d.isOpen && (
-                    <Button size="sm" variant="ghost" onClick={() => closeDraw(d.id)} className="text-red-400 hover:text-red-300 text-xs border border-red-500/30">
+                  {draw.isOpen && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => closeDraw(draw.id)}
+                      className="border border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-700"
+                    >
                       ปิดงวด
                     </Button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </article>
           ))}
         </div>
+      </section>
     </div>
   )
 }

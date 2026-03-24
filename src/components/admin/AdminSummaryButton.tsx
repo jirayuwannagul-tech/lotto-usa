@@ -30,12 +30,12 @@ export function AdminSummaryButton() {
       <button
         onClick={handleGenerate}
         disabled={loading}
-        className="text-xs px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 transition-colors disabled:opacity-50"
+        className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-950 disabled:opacity-50"
       >
-        {loading ? "กำลังส่ง..." : "📊 สรุปวันนี้"}
+        {loading ? "กำลังส่ง..." : "ส่งสรุปวันนี้"}
       </button>
       {result && (
-        <div className="absolute top-full right-0 mt-2 whitespace-nowrap text-xs bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-white/80 z-20">
+        <div className="absolute right-0 top-full z-20 mt-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm">
           {result}
         </div>
       )}

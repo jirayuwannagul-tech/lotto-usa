@@ -24,11 +24,21 @@ function randomPick(max: number, count: number): string[] {
   return picked.sort()
 }
 
-function NumberGrid({ max, selected, onToggle, limit }: {
-  max: number; selected: string[]; onToggle: (n: string) => void; limit: number
+function NumberGrid({
+  max,
+  selected,
+  onToggle,
+  limit,
+  selectedClass,
+}: {
+  max: number
+  selected: string[]
+  onToggle: (n: string) => void
+  limit: number
+  selectedClass: string
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-2">
       {Array.from({ length: max }, (_, i) => {
         const n = String(i + 1).padStart(2, "0")
         const isSelected = selected.includes(n)
@@ -36,13 +46,14 @@ function NumberGrid({ max, selected, onToggle, limit }: {
         return (
           <button
             key={n}
+            type="button"
             onClick={() => !isFull && onToggle(n)}
-            className={`w-9 h-9 rounded-full text-sm font-bold transition-all
+            className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition
               ${isSelected
-                ? "bg-blue-500 text-white scale-110 shadow-lg shadow-blue-500/30"
+                ? selectedClass
                 : isFull
-                  ? "bg-white/5 text-white/20 cursor-not-allowed"
-                  : "bg-white/10 text-white hover:bg-white/20 hover:scale-105"
+                  ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
               }`}
           >
             {n}
@@ -56,6 +67,10 @@ function NumberGrid({ max, selected, onToggle, limit }: {
 export function NumberPicker({ drawType, onConfirm }: Props) {
   const rule = LOTTERY_RULES[drawType]
   const specialLabel = drawType === "POWERBALL" ? "พาวเวอร์บอล" : "เมก้าบอล"
+  const specialSelectedClass =
+    drawType === "POWERBALL"
+      ? "border-rose-500 bg-rose-500 text-white"
+      : "border-sky-500 bg-sky-500 text-white"
   const [sets, setSets] = useState<NumberSet[]>([{ mainNumbers: [], specialNumber: "" }])
   const [activeSet, setActiveSet] = useState(0)
 
@@ -117,13 +132,14 @@ export function NumberPicker({ drawType, onConfirm }: Props) {
           return (
             <button
               key={i}
+              type="button"
               onClick={() => setActiveSet(i)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all border
+              className={`rounded-full border px-3 py-1.5 text-sm font-medium transition
                 ${activeSet === i
-                  ? "bg-blue-500 text-white border-blue-400"
+                  ? "border-slate-950 bg-slate-950 text-white"
                   : valid
-                    ? "bg-green-500/20 text-green-400 border-green-500/30"
-                    : "bg-white/10 text-white/60 border-white/20"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "border-slate-200 bg-white text-slate-500"
                 }`}
             >
               ชุด {i + 1} {valid ? "✓" : ""}
@@ -131,8 +147,9 @@ export function NumberPicker({ drawType, onConfirm }: Props) {
           )
         })}
         <button
+          type="button"
           onClick={addSet}
-          className="px-3 py-1.5 rounded-full text-sm bg-white/10 text-white/60 border border-white/20 hover:bg-white/20"
+          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
         >
           + เพิ่มชุด
         </button>
@@ -141,17 +158,35 @@ export function NumberPicker({ drawType, onConfirm }: Props) {
       {/* Main numbers */}
       <div>
         <div className="flex justify-between items-center mb-2">
-          <span className="text-white/80 text-sm">
+          <span className="text-sm text-slate-700">
             เลือก {rule.mainCount} เลข (1-{rule.mainMax})
-            <span className="ml-2 text-blue-400 font-mono">
+            <span className="ml-2 font-mono text-emerald-600">
               {current.mainNumbers.length}/{rule.mainCount}
             </span>
           </span>
           <div className="flex gap-2">
-            <button onClick={() => quickPick(activeSet)} className="text-xs text-blue-400 hover:text-blue-300">🎲 สุ่ม</button>
-            <button onClick={() => clearSet(activeSet)} className="text-xs text-white/40 hover:text-white/60">ล้าง</button>
+            <button
+              type="button"
+              onClick={() => quickPick(activeSet)}
+              className="text-xs font-medium text-emerald-600 hover:text-emerald-500"
+            >
+              สุ่มเลข
+            </button>
+            <button
+              type="button"
+              onClick={() => clearSet(activeSet)}
+              className="text-xs text-slate-500 hover:text-slate-700"
+            >
+              ล้าง
+            </button>
             {sets.length > 1 && (
-              <button onClick={() => removeSet(activeSet)} className="text-xs text-red-400 hover:text-red-300">ลบชุดนี้</button>
+              <button
+                type="button"
+                onClick={() => removeSet(activeSet)}
+                className="text-xs text-rose-600 hover:text-rose-500"
+              >
+                ลบชุดนี้
+              </button>
             )}
           </div>
         </div>
@@ -160,29 +195,31 @@ export function NumberPicker({ drawType, onConfirm }: Props) {
           selected={current.mainNumbers}
           onToggle={(n) => updateMain(activeSet, n)}
           limit={rule.mainCount}
+          selectedClass="border-emerald-500 bg-emerald-500 text-white"
         />
       </div>
 
       {/* Special number */}
       <div>
-        <div className="text-white/80 text-sm mb-2">
+        <div className="mb-2 text-sm text-slate-700">
           {specialLabel} (1-{rule.specialMax})
-          <span className="ml-2 text-blue-400">{current.specialNumber || "ยังไม่เลือก"}</span>
+          <span className="ml-2 font-medium text-slate-950">{current.specialNumber || "ยังไม่เลือก"}</span>
         </div>
         <NumberGrid
           max={rule.specialMax}
           selected={current.specialNumber ? [current.specialNumber] : []}
           onToggle={(n) => updateSpecial(activeSet, n)}
           limit={1}
+          selectedClass={specialSelectedClass}
         />
       </div>
 
       {/* Selected display */}
       {current.mainNumbers.length > 0 && (
-        <div className="bg-white/5 rounded-lg p-3 font-mono text-white text-center">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center font-mono text-slate-900">
           {current.mainNumbers.join(" - ")}
           {current.specialNumber && (
-            <span className={`ml-3 ${drawType === "POWERBALL" ? "text-red-400" : "text-blue-400"}`}>
+            <span className={`ml-3 font-semibold ${drawType === "POWERBALL" ? "text-rose-600" : "text-sky-600"}`}>
               ● {current.specialNumber}
             </span>
           )}
@@ -190,17 +227,19 @@ export function NumberPicker({ drawType, onConfirm }: Props) {
       )}
 
       {/* Summary + Confirm */}
-      <div className="border-t border-white/10 pt-4">
-        <div className="flex justify-between text-white/60 text-sm mb-3">
+      <div className="border-t border-slate-200 pt-4">
+        <div className="mb-3 flex justify-between text-sm text-slate-600">
           <span>{sets.length} ใบ × ${pricePerTicket.toFixed(2)}</span>
-          <span className="text-white font-semibold">${(sets.length * pricePerTicket).toFixed(2)}</span>
+          <span className="font-semibold text-slate-950">${(sets.length * pricePerTicket).toFixed(2)}</span>
         </div>
         <Button
           onClick={() => allValid && onConfirm(sets)}
           disabled={!allValid}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold disabled:opacity-40"
+          className="h-11 w-full rounded-xl bg-emerald-600 font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
         >
-          {allValid ? "ดำเนินการชำระเงิน →" : `เลือกเลขให้ครบทุกชุดก่อน (${sets.filter(s => s.mainNumbers.length === rule.mainCount && s.specialNumber).length}/${sets.length})`}
+          {allValid
+            ? "ตรวจสอบรายการต่อ"
+            : `เลือกเลขให้ครบทุกชุดก่อน (${sets.filter((s) => s.mainNumbers.length === rule.mainCount && s.specialNumber).length}/${sets.length})`}
         </Button>
       </div>
     </div>

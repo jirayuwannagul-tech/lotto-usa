@@ -195,6 +195,7 @@ function PortalCard({
   }
 
   const ready = main.length === rule.mainCount && special !== ""
+  const pricePerTicket = rule.priceUSD + 1.5
 
   return (
     <article className="flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6">
@@ -222,6 +223,7 @@ function PortalCard({
         <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-950">
           {draw.jackpot ?? "กำลังอัปเดต"}
         </p>
+        <p className="mt-2 text-sm text-slate-500">ราคาต่อใบประมาณ ${pricePerTicket.toFixed(2)}</p>
       </div>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -448,7 +450,7 @@ function CartCard({
       <div className="mt-5">
         <h3 className="text-2xl font-semibold tracking-tight text-slate-950">ตะกร้าของคุณ</h3>
         <p className="mt-3 text-sm leading-7 text-slate-500">
-          ตรวจสอบตั๋วทั้งหมดตรงนี้ก่อนดำเนินการชำระเงิน
+          เลือกเลขให้ครบก่อน แล้วค่อยสร้างรายการเพื่อไปหน้าชำระเงิน
         </p>
       </div>
 
@@ -521,13 +523,22 @@ function CartCard({
 
       {error && <p className="mt-4 text-sm text-rose-500">{error}</p>}
 
+      {items.length > 0 && (
+        <div className="mt-4 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          <p>ข้อมูลบัญชีรับโอนจะแสดงในหน้าชำระเงินของแต่ละรายการเท่านั้น</p>
+          {drawCount > 1 && (
+            <p>ตอนนี้คุณเลือกหลายงวด ระบบจะสร้างรายการแยกตามงวดและพาไปดูต่อในแดชบอร์ด</p>
+          )}
+        </div>
+      )}
+
       <button
         type="button"
         onClick={checkout}
         disabled={items.length === 0 || loading}
         className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
       >
-        {loading ? "กำลังสร้างรายการ..." : isLoggedIn ? "ไปชำระเงิน" : "เข้าสู่ระบบเพื่อชำระเงิน"}
+        {loading ? "กำลังสร้างรายการ..." : isLoggedIn ? "สร้างรายการและไปหน้าชำระเงิน" : "เข้าสู่ระบบเพื่อสร้างรายการ"}
         <ArrowRight className="ml-2 size-4" />
       </button>
     </article>

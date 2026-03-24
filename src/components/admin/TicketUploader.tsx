@@ -48,16 +48,20 @@ export function TicketUploader({ drawId }: { drawId: string }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-white font-medium text-sm">อัปโหลดรูปตั๋ว (OCR จับคู่อัตโนมัติ)</p>
+      <p className="text-sm font-medium text-slate-950">อัปโหลดรูปตั๋ว (OCR จับคู่อัตโนมัติ)</p>
 
       <label className="block cursor-pointer">
-        <div className={`border-2 border-dashed rounded-xl p-5 text-center transition-colors ${files.length ? "border-blue-500/50 bg-blue-500/10" : "border-white/20 hover:border-white/40"}`}>
+        <div
+          className={`rounded-2xl border-2 border-dashed p-5 text-center transition-colors ${
+            files.length ? "border-sky-300 bg-sky-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
+          }`}
+        >
           {files.length > 0 ? (
-            <p className="text-blue-400 font-medium">เลือก {files.length} ไฟล์แล้ว</p>
+            <p className="font-medium text-sky-700">เลือก {files.length} ไฟล์แล้ว</p>
           ) : (
             <>
-              <p className="text-3xl mb-1">📷</p>
-              <p className="text-white/60 text-sm">เลือกรูปตั๋วหลายรูปพร้อมกันได้</p>
+              <p className="text-sm font-medium text-slate-950">เลือกรูปตั๋วหลายรูปพร้อมกันได้</p>
+              <p className="mt-1 text-sm text-slate-500">ระบบจะอ่านเลขจากภาพและจับคู่ให้อัตโนมัติ</p>
             </>
           )}
         </div>
@@ -72,29 +76,33 @@ export function TicketUploader({ drawId }: { drawId: string }) {
 
       {loading && (
         <div className="space-y-1">
-          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-500 transition-all rounded-full" style={{ width: `${progress}%` }} />
+          <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+            <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${progress}%` }} />
           </div>
-          <p className="text-white/50 text-xs text-center">กำลังอ่านตั๋ว... {progress}%</p>
+          <p className="text-center text-xs text-slate-500">กำลังอ่านตั๋ว... {progress}%</p>
         </div>
       )}
 
       {results.length > 0 && (
         <div className="space-y-2">
           {results.map((r, i) => (
-            <div key={i} className={`rounded-lg p-3 text-sm ${r.matched ? "bg-green-500/10 border border-green-500/30" : "bg-red-500/10 border border-red-500/30"}`}>
+            <div
+              key={i}
+              className={`rounded-xl border p-3 text-sm ${
+                r.matched ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"
+              }`}
+            >
               {r.matched ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-green-400">✅</span>
-                  <span className="text-white font-medium">{r.customerName}</span>
-                  <span className="font-mono text-white/70">{r.numbers}</span>
+                  <span className="text-emerald-700">จับคู่สำเร็จ</span>
+                  <span className="font-medium text-slate-950">{r.customerName}</span>
+                  <span className="font-mono text-slate-600">{r.numbers}</span>
                 </div>
               ) : (
                 <div>
-                  <span className="text-red-400">⚠️ </span>
-                  <span className="text-white/70">{r.message}</span>
+                  <span className="text-rose-700">{r.message}</span>
                   {r.ocrResult && (
-                    <p className="text-white/40 text-xs mt-1 font-mono">
+                    <p className="mt-1 font-mono text-xs text-slate-500">
                       OCR อ่านได้: {r.ocrResult.mainNumbers.join(",")} ● {r.ocrResult.specialNumber}
                     </p>
                   )}
@@ -108,9 +116,9 @@ export function TicketUploader({ drawId }: { drawId: string }) {
       <Button
         onClick={handleUpload}
         disabled={!files.length || loading}
-        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold disabled:opacity-40"
+        className="w-full bg-slate-900 font-semibold text-white hover:bg-slate-800 disabled:opacity-40"
       >
-        {loading ? "กำลังประมวลผล..." : `🔍 อัปโหลด & จับคู่ OCR (${files.length} ไฟล์)`}
+        {loading ? "กำลังประมวลผล..." : `อัปโหลดและจับคู่ (${files.length} ไฟล์)`}
       </Button>
     </div>
   )
