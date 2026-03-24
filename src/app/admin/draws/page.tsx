@@ -15,9 +15,44 @@ interface Draw {
   jackpot?: string
 }
 
+function getNextDrawDates(type: string): { drawDate: string; cutoffAt: string } {
+  // Draw days (0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat) in US ET
+  const drawDays = type === "POWERBALL" ? [1, 3, 6] : [2, 5]
+  // Draw time offset from midnight ET: Powerball 22:59, Mega 23:00
+  const drawHourET = type === "POWERBALL" ? 22 : 23
+  const drawMinET = type === "POWERBALL" ? 59 : 0
+  // EDT = UTC-4 (March–November), EST = UTC-5 (Nov–March)
+  const utcOffset = 4 // assume EDT
+
+  const now = new Date()
+  // Find next draw day in ET
+  const nowET = new Date(now.getTime() - utcOffset * 3600000)
+  let daysAhead = 1
+  for (let i = 1; i <= 7; i++) {
+    const candidate = new Date(nowET)
+    candidate.setDate(nowET.getDate() + i)
+    if (drawDays.includes(candidate.getDay())) { daysAhead = i; break }
+  }
+  const drawDayET = new Date(nowET)
+  drawDayET.setDate(nowET.getDate() + daysAhead)
+  drawDayET.setHours(drawHourET, drawMinET, 0, 0)
+  const drawDateUTC = new Date(drawDayET.getTime() + utcOffset * 3600000)
+
+  // Cutoff = 7AM PDT (UTC-7) = 14:00 UTC on draw day in ET
+  const cutoffDayET = new Date(drawDayET)
+  cutoffDayET.setHours(0, 0, 0, 0)
+  const cutoffUTC = new Date(cutoffDayET.getTime() + utcOffset * 3600000 + 14 * 3600000)
+
+  const fmt = (d: Date) => d.toISOString().slice(0, 16)
+  return { drawDate: fmt(drawDateUTC), cutoffAt: fmt(cutoffUTC) }
+}
+
 export default function DrawsPage() {
   const [draws, setDraws] = useState<Draw[]>([])
-  const [form, setForm] = useState({ type: "POWERBALL", drawDate: "", cutoffAt: "", jackpot: "" })
+  const [form, setForm] = useState(() => {
+    const { drawDate, cutoffAt } = getNextDrawDates("POWERBALL")
+    return { type: "POWERBALL", drawDate, cutoffAt, jackpot: "" }
+  })
   const [loading, setLoading] = useState(false)
 
   async function fetchDraws() {
@@ -28,8 +63,15 @@ export default function DrawsPage() {
   useEffect(() => { fetchDraws() }, [])
 
   function update(field: string) {
-    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-      setForm((f) => ({ ...f, [field]: e.target.value }))
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const value = e.target.value
+      if (field === "type") {
+        const { drawDate, cutoffAt } = getNextDrawDates(value)
+        setForm((f) => ({ ...f, type: value, drawDate, cutoffAt }))
+      } else {
+        setForm((f) => ({ ...f, [field]: value }))
+      }
+    }
   }
 
   async function createDraw(e: React.FormEvent) {
@@ -41,7 +83,8 @@ export default function DrawsPage() {
       body: JSON.stringify(form),
     })
     setLoading(false)
-    setForm({ type: "POWERBALL", drawDate: "", cutoffAt: "", jackpot: "" })
+    const { drawDate, cutoffAt } = getNextDrawDates("POWERBALL")
+    setForm({ type: "POWERBALL", drawDate, cutoffAt, jackpot: "" })
     fetchDraws()
   }
 
