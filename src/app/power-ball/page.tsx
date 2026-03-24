@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { LotteryPurchasePanel } from "@/components/lottery/LotteryPurchasePanel"
 
 export default function PowerBallPage() {
   return (
@@ -11,13 +12,7 @@ export default function PowerBallPage() {
           </Link>
         </div>
 
-        <div className="mt-10 rounded-3xl border border-slate-200 bg-slate-50 p-8">
-          <p className="text-sm font-semibold text-slate-500">หน้าซื้อหวย</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">Power Ball</h1>
-          <p className="mt-4 text-base leading-8 text-slate-600">
-            หน้านี้สำหรับซื้อหวย Power Ball โดยเฉพาะ รอบนี้ผมเพิ่ม route ให้ปุ่มจากหน้าแรกเข้ามาถึงได้ก่อน
-          </p>
-        </div>
+        <LotteryPurchasePanel title="Power Ball" drawType="POWERBALL" accentClass="text-rose-600" />
       </div>
     </div>
   )

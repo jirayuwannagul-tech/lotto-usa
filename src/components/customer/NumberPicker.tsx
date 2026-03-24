@@ -12,6 +12,7 @@ interface NumberSet {
 interface Props {
   drawType: DrawType
   onConfirm: (sets: NumberSet[]) => void
+  confirmLabel?: string
 }
 
 function randomPick(max: number, count: number): string[] {
@@ -64,7 +65,7 @@ function NumberGrid({
   )
 }
 
-export function NumberPicker({ drawType, onConfirm }: Props) {
+export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจสอบรายการต่อ" }: Props) {
   const rule = LOTTERY_RULES[drawType]
   const specialLabel = drawType === "POWERBALL" ? "พาวเวอร์บอล" : "เมก้าบอล"
   const specialSelectedClass =
@@ -238,7 +239,7 @@ export function NumberPicker({ drawType, onConfirm }: Props) {
           className="h-11 w-full rounded-xl bg-emerald-600 font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
         >
           {allValid
-            ? "ตรวจสอบรายการต่อ"
+            ? confirmLabel
             : `เลือกเลขให้ครบทุกชุดก่อน (${sets.filter((s) => s.mainNumbers.length === rule.mainCount && s.specialNumber).length}/${sets.length})`}
         </Button>
       </div>
