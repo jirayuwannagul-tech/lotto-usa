@@ -50,24 +50,24 @@ export default async function Home() {
               </p>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-2">
-                <button
-                  type="button"
+                <Link
+                  href="/power-ball"
                   className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-center transition hover:border-slate-300 hover:bg-white"
                 >
                   <p className="text-sm font-semibold text-slate-500">Power Ball</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
                     ไปหน้าซื้อหวย
                   </p>
-                </button>
-                <button
-                  type="button"
+                </Link>
+                <Link
+                  href="/mega-ball"
                   className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-center transition hover:border-slate-300 hover:bg-white"
                 >
                   <p className="text-sm font-semibold text-slate-500">Mega Ball</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
                     ไปหน้าซื้อหวย
                   </p>
-                </button>
+                </Link>
               </div>
             </div>
 
