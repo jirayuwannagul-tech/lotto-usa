@@ -39,7 +39,7 @@ export default async function Home() {
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center">
               <Image
-                src="/Gemini_Generated_Image_itzhiyitzhiyitzh.png"
+                src="/lotto-usa-logo.png"
                 alt="LottoUSA"
                 width={240}
                 height={78}
