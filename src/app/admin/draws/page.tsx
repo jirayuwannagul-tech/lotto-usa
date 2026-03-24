@@ -16,35 +16,37 @@ interface Draw {
 }
 
 function getNextDrawDates(type: string): { drawDate: string; cutoffAt: string } {
-  // Draw days (0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat) in US ET
+  // Draw days in ET: 1=Mon,2=Tue,3=Wed,5=Fri,6=Sat
   const drawDays = type === "POWERBALL" ? [1, 3, 6] : [2, 5]
-  // Draw time offset from midnight ET: Powerball 22:59, Mega 23:00
+  // Draw time in ET: Powerball 22:59, Mega Millions 23:00
   const drawHourET = type === "POWERBALL" ? 22 : 23
   const drawMinET = type === "POWERBALL" ? 59 : 0
-  // EDT = UTC-4 (March–November), EST = UTC-5 (Nov–March)
-  const utcOffset = 4 // assume EDT
+  // March–Nov: EDT = UTC-4
+  const etOffset = 4
 
   const now = new Date()
-  // Find next draw day in ET
-  const nowET = new Date(now.getTime() - utcOffset * 3600000)
-  let daysAhead = 1
+  // Shift now to ET to get correct ET day-of-week
+  const nowET = new Date(now.getTime() - etOffset * 3600000)
+
   for (let i = 1; i <= 7; i++) {
-    const candidate = new Date(nowET)
-    candidate.setDate(nowET.getDate() + i)
-    if (drawDays.includes(candidate.getDay())) { daysAhead = i; break }
+    const candidateET = new Date(nowET)
+    candidateET.setUTCDate(nowET.getUTCDate() + i)
+    if (!drawDays.includes(candidateET.getUTCDay())) continue
+
+    // Draw time: ET hour → UTC (Date.UTC handles 22+4=26 → next day 02:xx)
+    const drawDateUTC = new Date(Date.UTC(
+      candidateET.getUTCFullYear(), candidateET.getUTCMonth(), candidateET.getUTCDate(),
+      drawHourET + etOffset, drawMinET
+    ))
+    // Cutoff: 7AM PDT (UTC-7) = 14:00 UTC on the ET draw day
+    const cutoffUTC = new Date(Date.UTC(
+      candidateET.getUTCFullYear(), candidateET.getUTCMonth(), candidateET.getUTCDate(),
+      14, 0
+    ))
+    const fmt = (d: Date) => d.toISOString().slice(0, 16)
+    return { drawDate: fmt(drawDateUTC), cutoffAt: fmt(cutoffUTC) }
   }
-  const drawDayET = new Date(nowET)
-  drawDayET.setDate(nowET.getDate() + daysAhead)
-  drawDayET.setHours(drawHourET, drawMinET, 0, 0)
-  const drawDateUTC = new Date(drawDayET.getTime() + utcOffset * 3600000)
-
-  // Cutoff = 7AM PDT (UTC-7) = 14:00 UTC on draw day in ET
-  const cutoffDayET = new Date(drawDayET)
-  cutoffDayET.setHours(0, 0, 0, 0)
-  const cutoffUTC = new Date(cutoffDayET.getTime() + utcOffset * 3600000 + 14 * 3600000)
-
-  const fmt = (d: Date) => d.toISOString().slice(0, 16)
-  return { drawDate: fmt(drawDateUTC), cutoffAt: fmt(cutoffUTC) }
+  return { drawDate: "", cutoffAt: "" }
 }
 
 export default function DrawsPage() {
