@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { NumberPicker } from "@/components/customer/NumberPicker"
@@ -10,7 +11,7 @@ import { LOTTERY_RULES, DrawType } from "@/lib/lottery-rules"
 interface NumberSet { mainNumbers: string[]; specialNumber: string }
 interface Draw { id: string; type: string; drawDate: string; cutoffAt: string; jackpot?: string }
 
-export default function NewOrderPage() {
+function NewOrderContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const drawId = searchParams.get("drawId")
@@ -138,5 +139,17 @@ export default function NewOrderPage() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function NewOrderPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+        <p className="text-white/50">กำลังโหลด...</p>
+      </div>
+    }>
+      <NewOrderContent />
+    </Suspense>
   )
 }
