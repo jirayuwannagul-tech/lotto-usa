@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { signIn } from "next-auth/react"
+import { Input } from "@/components/ui/input"
 import { LOTTERY_RULES, DrawType } from "@/lib/lottery-rules"
 
 // ─── Types ───────────────────────────────────────────────
@@ -259,16 +261,51 @@ function CartPanel({ items, draws, isLoggedIn, onRemove }: {
   )
 }
 
+// ─── Login Form ───────────────────────────────────────────
+function LoginPanel() {
+  const router = useRouter()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true); setError("")
+    const res = await signIn("credentials", { email, password, redirect: false })
+    setLoading(false)
+    if (res?.error) setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง")
+    else { router.refresh() }
+  }
+
+  return (
+    <div className="rounded-2xl p-[1px]" style={{ background: "linear-gradient(135deg,rgba(201,168,76,.5),rgba(255,255,255,.05),rgba(201,168,76,.2))" }}>
+      <div className="rounded-2xl p-5" style={{ background: "linear-gradient(160deg,rgba(15,12,30,.97),rgba(10,8,20,.95))" }}>
+        <h3 className="font-black text-base mb-1 text-center" style={{ background: "linear-gradient(90deg,#f5d485,#c9a84c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          เข้าสู่ระบบ
+        </h3>
+        <p className="text-white/30 text-xs text-center mb-4">เพื่อซื้อและติดตามออเดอร์</p>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="อีเมล" className="bg-white/10 border-white/20 text-white placeholder:text-white/30" required />
+          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="รหัสผ่าน" className="bg-white/10 border-white/20 text-white placeholder:text-white/30" required />
+          {error && <p className="text-red-400 text-xs text-center">{error}</p>}
+          <button type="submit" disabled={loading} className="w-full py-2.5 rounded-xl font-bold text-slate-900 transition hover:opacity-90"
+            style={{ background: "linear-gradient(90deg,#f5d485,#c9a84c)" }}>
+            {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+          </button>
+          <p className="text-center text-white/30 text-xs">ยังไม่มีบัญชี? <a href="/register" className="text-yellow-400 hover:underline">สมัครสมาชิก</a></p>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Export ──────────────────────────────────────────
 export function LotterySection({ draws, isLoggedIn }: { draws: Draw[]; isLoggedIn: boolean }) {
   const [cart, setCart] = useState<CartItem[]>([])
 
-  function addToCart(item: CartItem) {
-    setCart((prev) => [...prev, item])
-  }
-  function removeFromCart(idx: number) {
-    setCart((prev) => prev.filter((_, i) => i !== idx))
-  }
+  function addToCart(item: CartItem) { setCart((prev) => [...prev, item]) }
+  function removeFromCart(idx: number) { setCart((prev) => prev.filter((_, i) => i !== idx)) }
 
   const powerball = draws.find((d) => d.type === "POWERBALL")
   const mega = draws.find((d) => d.type === "MEGA_MILLIONS")
@@ -277,24 +314,21 @@ export function LotterySection({ draws, isLoggedIn }: { draws: Draw[]; isLoggedI
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       {/* Left — pickers */}
       <div className="lg:col-span-3 space-y-5">
-        {powerball ? (
-          <DrawPicker draw={powerball} onAddToCart={addToCart} />
-        ) : (
+        {powerball ? <DrawPicker draw={powerball} onAddToCart={addToCart} /> : (
           <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <p className="text-white/25 text-sm">Powerball — ยังไม่มีงวดที่เปิดรับ</p>
           </div>
         )}
-        {mega ? (
-          <DrawPicker draw={mega} onAddToCart={addToCart} />
-        ) : (
+        {mega ? <DrawPicker draw={mega} onAddToCart={addToCart} /> : (
           <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <p className="text-white/25 text-sm">Mega Millions — ยังไม่มีงวดที่เปิดรับ</p>
           </div>
         )}
       </div>
 
-      {/* Right — cart */}
-      <div className="lg:col-span-2 space-y-4">
+      {/* Right — login or cart */}
+      <div className="lg:col-span-2 space-y-4 sticky top-6">
+        {!isLoggedIn && <LoginPanel />}
         <CartPanel items={cart} draws={draws} isLoggedIn={isLoggedIn} onRemove={removeFromCart} />
       </div>
     </div>
