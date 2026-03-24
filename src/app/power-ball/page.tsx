@@ -4,6 +4,8 @@ import { redirect } from "next/navigation"
 import { LotteryPurchasePanel } from "@/components/lottery/LotteryPurchasePanel"
 import { authOptions } from "@/lib/auth"
 
+export const dynamic = "force-dynamic"
+
 export default async function PowerBallPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect("/login")
