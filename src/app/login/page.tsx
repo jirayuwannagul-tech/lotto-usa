@@ -11,44 +11,49 @@ export default async function LoginPage() {
   if (session) redirect("/dashboard")
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-12">
-      <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_420px] lg:items-center">
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-xs font-semibold tracking-[0.22em] text-emerald-600">เข้าสู่ระบบลูกค้า</p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
-            กลับมาดูรายการและชำระเงินต่อได้จากหน้าเดียว
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-            หลังเข้าสู่ระบบแล้ว คุณจะเห็นรายการที่ซื้อไป รายการที่รอชำระเงิน และปุ่มซื้อเพิ่มในแดชบอร์ดเดียวกัน
-          </p>
-
-          <div className="mt-6 space-y-3">
-            {[
-              "ดูเลขที่ซื้อทั้งหมดจากแดชบอร์ด",
-              "กดเข้าหน้าชำระเงินเมื่อพร้อมโอน",
-              "ติดตามสถานะหลังส่งสลิปได้จากบัญชีเดิม",
-            ].map((item, index) => (
-              <div key={item} className="flex gap-3 rounded-2xl bg-slate-50 p-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sm font-semibold text-slate-950">
-                  {index + 1}
-                </div>
-                <p className="text-sm leading-6 text-slate-600">{item}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-center text-slate-950">เข้าสู่ระบบบัญชี</CardTitle>
+    <div className="min-h-screen bg-slate-100 px-4 py-12">
+      <div className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-md items-center">
+        <Card className="w-full rounded-3xl border-slate-200 bg-white shadow-sm">
+          <CardHeader className="space-y-4 border-b border-slate-100 pb-6 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold tracking-[0.28em] text-white">
+              LU
+            </div>
+            <div>
+              <p className="text-xs font-semibold tracking-[0.22em] text-emerald-600">CUSTOMER LOGIN</p>
+              <CardTitle className="mt-3 text-3xl tracking-tight text-slate-950">
+                เข้าสู่ระบบลูกค้า
+              </CardTitle>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                ใช้หน้านี้เพื่อดูรายการที่ซื้อไว้ ไปหน้าชำระเงิน และติดตามสถานะหลังส่งสลิป
+              </p>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+
+          <CardContent className="space-y-5 p-6">
             <LoginForm redirectTo="/dashboard" portal="customer" theme="light" />
-            <p className="text-center text-sm text-slate-500">
-              <Link href="/" className="font-medium text-emerald-600 hover:underline">
-                กลับไปหน้าแรก
-              </Link>
-            </p>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left">
+              <p className="text-sm font-semibold text-slate-950">หลังเข้าสู่ระบบแล้วจะทำอะไรได้บ้าง</p>
+              <div className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+                <p>ดูเลขที่ซื้อไว้ทั้งหมดในแดชบอร์ด</p>
+                <p>กดเข้าหน้าชำระเงินของแต่ละรายการได้ทันที</p>
+                <p>เช็กสถานะหลังผู้ดูแลตรวจสลิปและอัปเดตตั๋ว</p>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-center text-sm text-slate-500">
+              <p>
+                ยังไม่มีบัญชี?{" "}
+                <Link href="/register" className="font-medium text-emerald-600 hover:underline">
+                  สมัครสมาชิก
+                </Link>
+              </p>
+              <p>
+                <Link href="/" className="text-slate-500 hover:text-slate-700">
+                  กลับไปหน้าแรก
+                </Link>
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
