@@ -22,6 +22,16 @@ function formatJackpotUsd(value: string | null) {
   return value.startsWith("$") ? `USD ${value.slice(1)}` : `USD ${value}`
 }
 
+function getSalesDayBadge(drawLabel: string) {
+  if (drawLabel === "Power Ball") {
+    return "inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-rose-700"
+  }
+  if (drawLabel === "Mega Ball") {
+    return "inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-sky-700"
+  }
+  return "inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-slate-700"
+}
+
 export default async function Home() {
   const session = await getServerSession(authOptions)
   const drawCount = await prisma.draw.count({ where: { isOpen: true } })
@@ -94,9 +104,10 @@ export default async function Home() {
 
               <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5">
                 <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">AMERICA / LAX</p>
-                <p className="mt-2 text-lg font-semibold text-slate-950">
-                  วันนี้เปิดรับออเดอร์: {salesDay.drawLabel}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <p className="text-lg font-semibold text-slate-950">วันนี้เปิดรับออเดอร์:</p>
+                  <span className={getSalesDayBadge(salesDay.drawLabel)}>{salesDay.drawLabel}</span>
+                </div>
                 <p className="mt-2 text-sm leading-7 text-slate-600">
                   รอบออเดอร์ปัจจุบันอ้างอิงเวลาอเมริกาเท่านั้น และจะเปลี่ยนวันอัตโนมัติทุกวันเวลา 7:00 AM
                   ตามเวลา Los Angeles
@@ -107,18 +118,18 @@ export default async function Home() {
               <div className="mt-10 grid gap-4 sm:grid-cols-2">
                 <Link
                   href={lotteryHref}
-                  className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-center transition hover:border-slate-300 hover:bg-white"
+                  className="rounded-3xl border border-rose-200 bg-rose-50 px-6 py-8 text-center transition hover:border-rose-300 hover:bg-white"
                 >
-                  <p className="text-sm font-semibold text-slate-500">Power Ball</p>
+                  <p className="text-sm font-semibold text-rose-600">Power Ball</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
                     ไปหน้าซื้อหวย
                   </p>
                 </Link>
                 <Link
                   href={megaHref}
-                  className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-8 text-center transition hover:border-slate-300 hover:bg-white"
+                  className="rounded-3xl border border-sky-200 bg-sky-50 px-6 py-8 text-center transition hover:border-sky-300 hover:bg-white"
                 >
-                  <p className="text-sm font-semibold text-slate-500">Mega Ball</p>
+                  <p className="text-sm font-semibold text-sky-600">Mega Ball</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
                     ไปหน้าซื้อหวย
                   </p>
@@ -132,14 +143,14 @@ export default async function Home() {
               </p>
               <div className="mt-6 space-y-4">
                 <div className="rounded-2xl bg-white p-5 text-center">
-                  <p className="text-sm font-semibold text-slate-500">Power Ball</p>
+                  <p className="text-sm font-semibold text-rose-600">Power Ball</p>
                   <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
                     {formatJackpotUsd(powerballDraw?.jackpot ?? null)}
                   </p>
                   <HomeDrawCountdown drawDate={powerballDraw?.drawDate.toISOString() ?? null} />
                 </div>
                 <div className="rounded-2xl bg-white p-5 text-center">
-                  <p className="text-sm font-semibold text-slate-500">Mega Ball</p>
+                  <p className="text-sm font-semibold text-sky-600">Mega Ball</p>
                   <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
                     {formatJackpotUsd(megaBallDraw?.jackpot ?? null)}
                   </p>
