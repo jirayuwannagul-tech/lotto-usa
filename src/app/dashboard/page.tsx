@@ -42,7 +42,7 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 sm:px-6 sm:py-14">
       <div className="mx-auto max-w-6xl space-y-6">
         <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
             <div>
               <p className="text-xs font-semibold tracking-[0.24em] text-emerald-600">MEMBER DASHBOARD</p>
               <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
@@ -51,20 +51,6 @@ export default async function DashboardPage() {
               <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
                 ใช้หน้านี้เพื่อตรวจสอบสถานะออเดอร์ของคุณ ว่าแอดมินอนุมัติแล้วหรือยัง และอัปโหลดรูปหวยแล้วหรือไม่
               </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/power-ball"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-white hover:text-slate-950"
-              >
-                ซื้อ Power Ball
-              </Link>
-              <Link
-                href="/mega-ball"
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-white hover:text-slate-950"
-              >
-                ซื้อ Mega Ball
-              </Link>
             </div>
           </div>
         </section>
