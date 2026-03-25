@@ -19,6 +19,19 @@ export default async function AdminTicketsPage() {
     take: 20,
   })
 
+  const manualOptions = readyOrders.flatMap((order) =>
+    order.items
+      .filter((item) => !item.matchedAt)
+      .map((item) => ({
+        drawId: order.draw.id,
+        orderItemId: item.id,
+        orderId: order.id,
+        customerName: order.user.name,
+        customerEmail: order.user.email,
+        numbers: `${item.mainNumbers} | ${item.specialNumber}`,
+      }))
+  )
+
   const drawOptions = draws.map((draw) => ({
     id: draw.id,
     label: `${draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"} - ${draw.drawDate.toLocaleDateString("th-TH")}`,
@@ -34,7 +47,7 @@ export default async function AdminTicketsPage() {
         </p>
       </div>
 
-      <TicketUploadForm draws={drawOptions} />
+      <TicketUploadForm draws={drawOptions} manualOptions={manualOptions} />
 
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h3 className="text-lg font-semibold text-slate-950">รายการที่พร้อมอัปโหลดรูป</h3>

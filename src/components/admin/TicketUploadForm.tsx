@@ -8,6 +8,15 @@ interface DrawOption {
   label: string
 }
 
+interface ManualOption {
+  drawId: string
+  orderItemId: string
+  orderId: string
+  customerName: string
+  customerEmail: string
+  numbers: string
+}
+
 interface UploadCandidate {
   orderItemId: string
   orderId: string
@@ -34,13 +43,35 @@ interface UploadResult {
   message?: string
 }
 
-export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
+function normalizeManualLine(value: string) {
+  const [mainPart, specialPart] = value.split("|").map((part) => part.trim())
+  if (!mainPart || !specialPart) return null
+  const mainNumbers = mainPart
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => part.padStart(2, "0"))
+    .sort()
+  if (mainNumbers.length !== 5) return null
+  const specialNumber = specialPart.padStart(2, "0")
+  return `${mainNumbers.join(",")} | ${specialNumber}`
+}
+
+export function TicketUploadForm({
+  draws,
+  manualOptions,
+}: {
+  draws: DrawOption[]
+  manualOptions: ManualOption[]
+}) {
   const [drawId, setDrawId] = useState(draws[0]?.id ?? "")
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [result, setResult] = useState<UploadResult | null>(null)
   const [selectedMatches, setSelectedMatches] = useState<Record<number, string>>({})
+  const [manualNumbers, setManualNumbers] = useState("")
+  const [manualMatchIds, setManualMatchIds] = useState<string[]>([])
   const [confirming, setConfirming] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -54,6 +85,7 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
     setMessage(null)
     setResult(null)
     setSelectedMatches({})
+    setManualMatchIds([])
 
     try {
       const formData = new FormData()
@@ -76,7 +108,12 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
   }
 
   async function handleConfirm() {
-    const selectedOrderItemIds = Object.values(selectedMatches).filter(Boolean)
+    const selectedOrderItemIds = Array.from(
+      new Set([
+        ...Object.values(selectedMatches).filter(Boolean),
+        ...manualMatchIds,
+      ])
+    )
 
     if (selectedOrderItemIds.length === 0 || !result?.ticketPhotoUrl) {
       setMessage("กรุณาเลือกรายการที่ต้องการยืนยัน")
@@ -110,6 +147,28 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
     } finally {
       setConfirming(false)
     }
+  }
+
+  function handleFindManualMatches() {
+    const targetLines = manualNumbers
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map(normalizeManualLine)
+      .filter((line): line is string => Boolean(line))
+
+    if (targetLines.length === 0) {
+      setMessage("กรุณากรอกเลขอย่างน้อย 1 ชุด ในรูปแบบ 01,02,03,04,05 | 09")
+      setManualMatchIds([])
+      return
+    }
+
+    const matches = manualOptions
+      .filter((option) => option.drawId === drawId && targetLines.includes(option.numbers))
+      .map((option) => option.orderItemId)
+
+    setManualMatchIds(matches)
+    setMessage(matches.length > 0 ? `พบรายการตรงกัน ${matches.length} ชุด` : "ยังไม่พบรายการที่ตรงกับเลขที่กรอก")
   }
 
   return (
@@ -245,6 +304,45 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {result?.ticketPhotoUrl && (
+        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5">
+          <p className="text-sm font-semibold text-slate-700">Manual fallback</p>
+          <p className="mt-2 text-sm leading-7 text-slate-600">
+            ถ้า OCR อ่านไม่ออกหรือจับคู่ไม่เจอ ให้กรอกเลขเอง หนึ่งบรรทัดต่อหนึ่งชุด ในรูปแบบ 01,02,03,04,05 | 09
+          </p>
+          <textarea
+            value={manualNumbers}
+            onChange={(e) => setManualNumbers(e.target.value)}
+            rows={5}
+            className="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 font-mono text-sm text-slate-700"
+            placeholder={"01,02,03,04,05 | 09\n06,13,18,25,31 | 16"}
+          />
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleFindManualMatches}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              ค้นหารายการจากเลขที่กรอก
+            </button>
+            {manualMatchIds.length > 0 && (
+              <span className="text-sm text-emerald-700">พร้อมยืนยัน {manualMatchIds.length} ชุด</span>
+            )}
+          </div>
+          {manualMatchIds.length > 0 && (
+            <div className="mt-4 space-y-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+              {manualOptions
+                .filter((option) => manualMatchIds.includes(option.orderItemId))
+                .map((option) => (
+                  <p key={option.orderItemId}>
+                    {option.customerName} / {option.customerEmail} / <span className="font-mono">{option.numbers}</span>
+                  </p>
+                ))}
+            </div>
+          )}
         </div>
       )}
     </form>

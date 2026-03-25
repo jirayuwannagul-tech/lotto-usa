@@ -49,6 +49,12 @@ export default function LoginForm({
         return
       }
 
+      if (portal === "customer" && role === "ADMIN") {
+        await signOut({ redirect: false })
+        setError("บัญชีแอดมินต้องเข้าใช้งานผ่านหน้า /admin-login เท่านั้น")
+        return
+      }
+
       const nextPath = role === "ADMIN" ? "/admin" : redirectTo
       window.localStorage.setItem("lotto_last_login_email", email)
       router.push(nextPath)

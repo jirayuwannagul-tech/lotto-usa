@@ -17,6 +17,7 @@ def test_homepage_loads():
 
     assert response.status_code == 200
     assert "LottoUSA" in response.text
+    assert ">Admin<" not in response.text
 
 
 def test_login_page_loads():
@@ -24,6 +25,7 @@ def test_login_page_loads():
 
     assert response.status_code == 200
     assert "เข้าสู่ระบบ" in response.text or "Login" in response.text
+    assert "/admin-login" not in response.text
 
 
 def test_register_has_referral_code_field():
@@ -40,6 +42,13 @@ def test_payment_page_has_slip_upload():
     assert response.status_code == 200
     assert "อัปโหลดสลิป" in response.text
     assert "ส่งสลิปให้แอดมินตรวจสอบ" in response.text
+
+
+def test_admin_tickets_redirect_for_guests():
+    response = fetch("/admin/tickets", allow_redirects=False)
+
+    assert response.status_code in {302, 307, 308}
+    assert response.headers["Location"] == "/admin-login"
 
 
 def test_guest_cannot_open_powerball_directly():
