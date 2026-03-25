@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { syncUpcomingDraws } from "@/lib/draw-schedule"
 import { HomeDrawCountdown } from "@/components/home/HomeDrawCountdown"
 import { authOptions } from "@/lib/auth"
+import LogoutButton from "@/components/shared/LogoutButton"
 
 export const dynamic = "force-dynamic"
 
@@ -56,7 +57,13 @@ export default async function Home() {
             </Link>
             <div className="flex items-center gap-3 text-sm font-semibold">
               {isCustomer ? (
-                <span className="text-slate-700">{session.user.name}</span>
+                <>
+                  <span className="text-slate-700">{session.user.name}</span>
+                  <LogoutButton
+                    redirectTo="/"
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-950"
+                  />
+                </>
               ) : (
                 <>
                   <Link href="/login" className="text-slate-500 transition hover:text-slate-950">
