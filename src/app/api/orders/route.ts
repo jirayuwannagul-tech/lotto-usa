@@ -57,6 +57,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (session.user.role !== "CUSTOMER") {
+    return NextResponse.json({ error: "เฉพาะสมาชิกเท่านั้นที่สามารถสั่งซื้อหวยได้" }, { status: 403 })
+  }
   await ensureReferralTables()
 
   const body = await req.json().catch(() => null)

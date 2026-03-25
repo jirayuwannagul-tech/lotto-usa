@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic"
 export default async function MegaBallPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect("/login")
+  if (session.user.role === "ADMIN") redirect("/admin")
 
   const drawCount = await prisma.draw.count({ where: { isOpen: true } })
   if (drawCount === 0) {
