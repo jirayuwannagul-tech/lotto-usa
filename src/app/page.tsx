@@ -68,34 +68,39 @@ export default async function Home() {
                 unoptimized
               />
             </Link>
-            <div className="flex items-center gap-3 text-sm font-semibold">
+            <div className="text-sm font-semibold">
               {isCustomer ? (
-                <>
-                  <Link
-                    href="/dashboard"
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
-                  >
-                    Dashboard
-                  </Link>
-                  <LogoutButton
-                    redirectTo="/"
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-950"
-                  />
-                </>
+                <div className="text-right">
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href="/dashboard"
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
+                    >
+                      Dashboard
+                    </Link>
+                    <LogoutButton
+                      redirectTo="/"
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-950"
+                    />
+                  </div>
+                  {session?.user?.name ? (
+                    <p className="mt-2 text-sm font-medium text-slate-500">{session.user.name}</p>
+                  ) : null}
+                </div>
               ) : isAdmin ? (
                 <LogoutButton
                   redirectTo="/"
                   className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-950"
                 />
               ) : (
-                <>
+                <div className="flex items-center gap-3">
                   <Link href="/login" className="text-slate-500 transition hover:text-slate-950">
                     Login
                   </Link>
                   <Link href="/register" className="text-slate-500 transition hover:text-slate-950">
                     Register
                   </Link>
-                </>
+                </div>
               )}
             </div>
           </div>
