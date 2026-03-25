@@ -211,7 +211,10 @@ async function handleTicketPhoto(chatId: number, fileId: string) {
     return
   }
 
-  await sendMessage(chatId, `🔢 อ่านได้: \`${ocr.mainNumbers.join(",")} ●${ocr.specialNumber}\``)
+  await sendMessage(
+    chatId,
+    `🔢 อ่านได้:\n${ocr.plays.map((play, index) => `${index + 1}. \`${play.mainNumbers.join(",")} ●${play.specialNumber}\``).join("\n")}`
+  )
 
   // Match กับ open draws ทั้งหมด
   const unmatchedItems = await prisma.orderItem.findMany({
@@ -232,22 +235,28 @@ async function handleTicketPhoto(chatId: number, fileId: string) {
     },
   })
 
-  const matchedItem = unmatchedItems.find((item) =>
-    numbersMatch(item.mainNumbers, item.specialNumber, ocr.mainNumbers, ocr.specialNumber)
-  ) ?? null
+  const matchedItems = ocr.plays
+    .map((play) => (
+      unmatchedItems.find((item) =>
+        numbersMatch(item.mainNumbers, item.specialNumber, play.mainNumbers, play.specialNumber)
+      ) ?? null
+    ))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
 
-  if (!matchedItem) {
+  if (matchedItems.length === 0) {
     await sendMessage(chatId, [
       "⚠️ *จับคู่ไม่ได้*",
-      `เลขที่อ่าน: \`${ocr.mainNumbers.join(",")} ●${ocr.specialNumber}\``,
+      `เลขที่อ่าน:\n${ocr.plays.map((play, index) => `${index + 1}. \`${play.mainNumbers.join(",")} ●${play.specialNumber}\``).join("\n")}`,
       "ไม่ตรงกับออเดอร์ที่รออยู่ กรุณาตรวจสอบด้วยตัวเอง",
     ].join("\n"))
     return
   }
 
-  // Update matched item
-  await prisma.orderItem.update({
-    where: { id: matchedItem.id },
+  const matchedIds = Array.from(new Set(matchedItems.map((item) => item.id)))
+  const affectedOrderIds = Array.from(new Set(matchedItems.map((item) => item.orderId)))
+
+  await prisma.orderItem.updateMany({
+    where: { id: { in: matchedIds } },
     data: {
       ticketPhotoUrl: photoUrl,
       ocrRawText: ocr.raw,
@@ -255,26 +264,29 @@ async function handleTicketPhoto(chatId: number, fileId: string) {
     },
   })
 
-  // Check if all items in order matched
-  const allItems = await prisma.orderItem.findMany({
-    where: { orderId: matchedItem.orderId },
-  })
-  const allMatched = allItems.every((i) => i.matchedAt !== null || i.id === matchedItem.id)
-
-  await prisma.order.update({
-    where: { id: matchedItem.orderId },
-    data: { status: allMatched ? "MATCHED" : "TICKET_UPLOADED" },
-  })
-
-  const draw = matchedItem.order.draw
-  const drawDate = new Date(draw.drawDate).toLocaleDateString("th-TH", { day: "numeric", month: "short" })
-  const drawLabel = draw.type === "POWERBALL" ? "🔴" : "🔵"
+  const statusLines: string[] = []
+  for (const orderId of affectedOrderIds) {
+    const allItems = await prisma.orderItem.findMany({
+      where: { orderId },
+    })
+    const allMatched = allItems.every((i) => i.matchedAt !== null)
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status: allMatched ? "MATCHED" : "TICKET_UPLOADED" },
+    })
+    const matchedOrder = matchedItems.find((item) => item.orderId === orderId)
+    if (matchedOrder) {
+      const draw = matchedOrder.order.draw
+      const drawDate = new Date(draw.drawDate).toLocaleDateString("th-TH", { day: "numeric", month: "short" })
+      const drawLabel = draw.type === "POWERBALL" ? "🔴" : "🔵"
+      statusLines.push(
+        `${drawLabel} งวด ${drawDate}\n👤 ${matchedOrder.order.user.name}\n🎫 จับคู่ได้ ${matchedItems.filter((item) => item.orderId === orderId).length} ชุด\n${allMatched ? "🎉 ออเดอร์นี้ครบทุกใบแล้ว" : "📋 ยังมีใบอื่นรออยู่"}`
+      )
+    }
+  }
 
   await sendMessage(chatId, [
     "✅ *จับคู่สำเร็จ!*",
-    `${drawLabel} งวด ${drawDate}`,
-    `👤 ${matchedItem.order.user.name}`,
-    `🎱 \`${matchedItem.mainNumbers} ●${matchedItem.specialNumber}\``,
-    allMatched ? "🎉 ออเดอร์นี้ครบทุกใบแล้ว" : "📋 ยังมีใบอื่นรออยู่",
+    ...statusLines,
   ].join("\n"))
 }

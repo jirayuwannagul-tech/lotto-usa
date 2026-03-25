@@ -5,8 +5,10 @@ function getOpenAI() {
 }
 
 export interface OcrResult {
-  mainNumbers: string[]
-  specialNumber: string
+  plays: {
+    mainNumbers: string[]
+    specialNumber: string
+  }[]
   raw: string
 }
 
@@ -34,13 +36,14 @@ export async function readLotteryTicket(imageUrl: string): Promise<OcrResult | n
             {
               type: "text",
               text: `This is a US lottery ticket (Powerball or Mega Millions).
-Extract the lottery numbers. Return ONLY valid JSON in this exact format:
-{"mainNumbers": ["03","12","25","41","60"], "specialNumber": "13"}
+Extract ALL lottery plays visible in the image. Return ONLY valid JSON in this exact format:
+{"plays":[{"mainNumbers":["03","12","25","41","60"],"specialNumber":"13"}]}
 
 Rules:
 - mainNumbers: exactly 5 numbers, zero-padded to 2 digits, sorted ascending
 - specialNumber: the Powerball or Mega Ball number, zero-padded to 2 digits
-- If multiple plays on one ticket, return the FIRST play only
+- Return every visible play in order from top to bottom
+- Do not return duplicates
 - Return ONLY the JSON, no other text`,
             },
           ],
@@ -55,11 +58,19 @@ Rules:
     if (!jsonMatch) return null
 
     const parsed = JSON.parse(jsonMatch[0])
-    if (!parsed.mainNumbers || !parsed.specialNumber) return null
+    const plays = Array.isArray(parsed.plays)
+      ? parsed.plays
+      : parsed.mainNumbers && parsed.specialNumber
+        ? [{ mainNumbers: parsed.mainNumbers, specialNumber: parsed.specialNumber }]
+        : null
+
+    if (!plays || plays.length === 0) return null
 
     return {
-      mainNumbers: parsed.mainNumbers.map((n: string) => n.padStart(2, "0")),
-      specialNumber: String(parsed.specialNumber).padStart(2, "0"),
+      plays: plays.map((play: { mainNumbers: string[]; specialNumber: string }) => ({
+        mainNumbers: play.mainNumbers.map((n: string) => n.padStart(2, "0")).sort(),
+        specialNumber: String(play.specialNumber).padStart(2, "0"),
+      })),
       raw,
     }
   } catch {

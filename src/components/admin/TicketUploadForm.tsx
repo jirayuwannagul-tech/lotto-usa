@@ -22,11 +22,15 @@ interface UploadResult {
   requiresReview?: boolean
   ticketPhotoUrl?: string
   ocrRawText?: string
-  ocrResult?: {
+  ocrResults?: {
     mainNumbers: string[]
     specialNumber: string
-  }
-  candidates?: UploadCandidate[]
+  }[]
+  matchGroups?: {
+    playIndex: number
+    numbers: string
+    candidates: UploadCandidate[]
+  }[]
   message?: string
 }
 
@@ -36,7 +40,7 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [result, setResult] = useState<UploadResult | null>(null)
-  const [selectedOrderItemId, setSelectedOrderItemId] = useState("")
+  const [selectedMatches, setSelectedMatches] = useState<Record<number, string>>({})
   const [confirming, setConfirming] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -49,7 +53,7 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
     setLoading(true)
     setMessage(null)
     setResult(null)
-    setSelectedOrderItemId("")
+    setSelectedMatches({})
 
     try {
       const formData = new FormData()
@@ -72,7 +76,9 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
   }
 
   async function handleConfirm() {
-    if (!selectedOrderItemId || !result?.ticketPhotoUrl) {
+    const selectedOrderItemIds = Object.values(selectedMatches).filter(Boolean)
+
+    if (selectedOrderItemIds.length === 0 || !result?.ticketPhotoUrl) {
       setMessage("กรุณาเลือกรายการที่ต้องการยืนยัน")
       return
     }
@@ -85,7 +91,7 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderItemId: selectedOrderItemId,
+          orderItemIds: selectedOrderItemIds,
           ticketPhotoUrl: result.ticketPhotoUrl,
           ocrRawText: result.ocrRawText,
         }),
@@ -99,7 +105,7 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
 
       setMessage("ยืนยันรายการสำเร็จ และอัปเดตสถานะออเดอร์แล้ว")
       setResult(null)
-      setSelectedOrderItemId("")
+      setSelectedMatches({})
       setFile(null)
     } finally {
       setConfirming(false)
@@ -164,9 +170,13 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
             <div className="space-y-4">
               <div className="rounded-2xl bg-white p-4">
                 <p className="text-sm font-semibold text-slate-700">เลขที่ AI อ่านได้</p>
-                {result.ocrResult ? (
+                {result.ocrResults && result.ocrResults.length > 0 ? (
                   <div className="mt-3 space-y-1 font-mono text-sm text-slate-700">
-                    <p>{result.ocrResult.mainNumbers.join(",")} | {result.ocrResult.specialNumber}</p>
+                    {result.ocrResults.map((play, index) => (
+                      <p key={`${play.mainNumbers.join(",")}-${play.specialNumber}-${index}`}>
+                        ชุด {index + 1}: {play.mainNumbers.join(",")} | {play.specialNumber}
+                      </p>
+                    ))}
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-slate-500">AI ยังอ่านเลขไม่ได้</p>
@@ -175,27 +185,44 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
 
               <div className="rounded-2xl bg-white p-4">
                 <p className="text-sm font-semibold text-slate-700">เลือกออเดอร์ที่ตรงกับตั๋ว</p>
-                {result.candidates && result.candidates.length > 0 ? (
+                {result.matchGroups && result.matchGroups.length > 0 ? (
                   <div className="mt-3 space-y-3">
-                    {result.candidates.map((candidate) => (
-                      <label
-                        key={candidate.orderItemId}
-                        className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-3"
-                      >
-                        <input
-                          type="radio"
-                          name="candidateOrderItem"
-                          value={candidate.orderItemId}
-                          checked={selectedOrderItemId === candidate.orderItemId}
-                          onChange={(e) => setSelectedOrderItemId(e.target.value)}
-                          className="mt-1"
-                        />
-                        <div className="text-sm text-slate-600">
-                          <p className="font-semibold text-slate-950">{candidate.customerName}</p>
-                          <p>{candidate.customerEmail}</p>
-                          <p className="font-mono">{candidate.numbers}</p>
-                        </div>
-                      </label>
+                    {result.matchGroups.map((group) => (
+                      <div key={group.playIndex} className="rounded-2xl border border-slate-200 p-3">
+                        <p className="text-sm font-semibold text-slate-950">ชุด {group.playIndex + 1}</p>
+                        <p className="mt-1 font-mono text-sm text-slate-600">{group.numbers}</p>
+                        {group.candidates.length > 0 ? (
+                          <div className="mt-3 space-y-3">
+                            {group.candidates.map((candidate) => (
+                              <label
+                                key={`${group.playIndex}-${candidate.orderItemId}`}
+                                className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-3"
+                              >
+                                <input
+                                  type="radio"
+                                  name={`candidateOrderItem-${group.playIndex}`}
+                                  value={candidate.orderItemId}
+                                  checked={selectedMatches[group.playIndex] === candidate.orderItemId}
+                                  onChange={(e) =>
+                                    setSelectedMatches((current) => ({
+                                      ...current,
+                                      [group.playIndex]: e.target.value,
+                                    }))
+                                  }
+                                  className="mt-1"
+                                />
+                                <div className="text-sm text-slate-600">
+                                  <p className="font-semibold text-slate-950">{candidate.customerName}</p>
+                                  <p>{candidate.customerEmail}</p>
+                                  <p className="font-mono">{candidate.numbers}</p>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-sm text-rose-600">ยังไม่เจอรายการที่ตรงกับชุดนี้</p>
+                        )}
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -209,7 +236,7 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
                 <button
                   type="button"
                   onClick={handleConfirm}
-                  disabled={confirming || !selectedOrderItemId}
+                  disabled={confirming || Object.values(selectedMatches).filter(Boolean).length === 0}
                   className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
                 >
                   {confirming ? "กำลังยืนยัน..." : "ยืนยันรายการนี้"}

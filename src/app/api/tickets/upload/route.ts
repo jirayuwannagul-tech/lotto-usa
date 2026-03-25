@@ -53,16 +53,26 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  const matchedCandidates = unmatchedItems
-    .filter((item) => numbersMatch(item.mainNumbers, item.specialNumber, ocr.mainNumbers, ocr.specialNumber))
-    .map((item) => ({
-      orderItemId: item.id,
-      orderId: item.orderId,
-      customerName: item.order.user.name,
-      customerEmail: item.order.user.email,
-      numbers: `${item.mainNumbers} | ${item.specialNumber}`,
-      orderStatus: item.order.status,
-    }))
+  const matchGroups = ocr.plays.map((play, playIndex) => {
+    const candidates = unmatchedItems
+      .filter((item) => numbersMatch(item.mainNumbers, item.specialNumber, play.mainNumbers, play.specialNumber))
+      .map((item) => ({
+        orderItemId: item.id,
+        orderId: item.orderId,
+        customerName: item.order.user.name,
+        customerEmail: item.order.user.email,
+        numbers: `${item.mainNumbers} | ${item.specialNumber}`,
+        orderStatus: item.order.status,
+      }))
+
+    return {
+      playIndex,
+      numbers: `${play.mainNumbers.join(",")} | ${play.specialNumber}`,
+      candidates,
+    }
+  })
+
+  const matchedCandidates = matchGroups.flatMap((group) => group.candidates)
 
   if (matchedCandidates.length > 0) {
     return NextResponse.json({
@@ -70,14 +80,14 @@ export async function POST(req: NextRequest) {
       requiresReview: true,
       ticketPhotoUrl,
       ocrRawText: ocr.raw,
-      ocrResult: { mainNumbers: ocr.mainNumbers, specialNumber: ocr.specialNumber },
-      candidates: matchedCandidates,
-      message: "AI อ่านเลขแล้ว กรุณาตรวจสอบและยืนยันรายการที่ถูกต้อง",
+      ocrResults: ocr.plays,
+      matchGroups,
+      message: "AI อ่านเลขหลายชุดแล้ว กรุณาตรวจสอบและยืนยันรายการที่ถูกต้อง",
     })
   }
 
   await sendLineNotify(
-    `⚠️ OCR จับคู่ตั๋วไม่ได้\nเลขที่อ่านได้: ${ocr.mainNumbers.join(",")} | ${ocr.specialNumber}\nกรุณาตรวจสอบด้วยตัวเอง`
+    `⚠️ OCR จับคู่ตั๋วไม่ได้\nเลขที่อ่านได้:\n${ocr.plays.map((play) => `${play.mainNumbers.join(",")} | ${play.specialNumber}`).join("\n")}\nกรุณาตรวจสอบด้วยตัวเอง`
   )
 
   return NextResponse.json({
@@ -85,8 +95,8 @@ export async function POST(req: NextRequest) {
     requiresReview: true,
     ticketPhotoUrl,
     ocrRawText: ocr.raw,
-    ocrResult: { mainNumbers: ocr.mainNumbers, specialNumber: ocr.specialNumber },
-    candidates: [],
+    ocrResults: ocr.plays,
+    matchGroups: [],
     message: "OCR อ่านได้แต่จับคู่กับออเดอร์ไม่ได้ แจ้ง Admin ทาง LINE แล้ว",
   })
 }

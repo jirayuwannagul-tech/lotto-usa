@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 
 type ConfirmBody = {
   orderItemId?: string
+  orderItemIds?: string[]
   ticketPhotoUrl?: string
   ocrRawText?: string
 }
@@ -22,45 +23,55 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 })
   }
 
-  if (!body.orderItemId || !body.ticketPhotoUrl) {
+  const orderItemIds = Array.from(
+    new Set(
+      (body.orderItemIds?.length ? body.orderItemIds : body.orderItemId ? [body.orderItemId] : [])
+        .filter(Boolean)
+    )
+  )
+
+  if (orderItemIds.length === 0 || !body.ticketPhotoUrl) {
     return NextResponse.json({ error: "ข้อมูลยืนยันไม่ครบ" }, { status: 400 })
   }
 
-  const item = await prisma.orderItem.findUnique({
-    where: { id: body.orderItemId },
-    include: {
-      order: true,
-    },
+  const items = await prisma.orderItem.findMany({
+    where: { id: { in: orderItemIds } },
+    include: { order: true },
   })
 
-  if (!item) {
+  if (items.length !== orderItemIds.length) {
     return NextResponse.json({ error: "ไม่พบรายการที่ต้องการยืนยัน" }, { status: 404 })
   }
 
-  await prisma.orderItem.update({
-    where: { id: item.id },
+  const matchedAt = new Date()
+
+  await prisma.orderItem.updateMany({
+    where: { id: { in: orderItemIds } },
     data: {
       ticketPhotoUrl: body.ticketPhotoUrl,
       ocrRawText: body.ocrRawText ?? null,
-      matchedAt: new Date(),
+      matchedAt,
     },
   })
 
-  const allItems = await prisma.orderItem.findMany({
-    where: { orderId: item.orderId },
-  })
+  const affectedOrderIds = Array.from(new Set(items.map((item) => item.orderId)))
 
-  const allMatched = allItems.every((orderItem) => orderItem.matchedAt !== null || orderItem.id === item.id)
+  for (const orderId of affectedOrderIds) {
+    const allItems = await prisma.orderItem.findMany({
+      where: { orderId },
+    })
 
-  await prisma.order.update({
-    where: { id: item.orderId },
-    data: { status: allMatched ? "MATCHED" : "TICKET_UPLOADED" },
-  })
+    const allMatched = allItems.every((orderItem) => orderItem.matchedAt !== null)
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status: allMatched ? "MATCHED" : "TICKET_UPLOADED" },
+    })
+  }
 
   return NextResponse.json({
     ok: true,
-    orderId: item.orderId,
-    orderItemId: item.id,
-    status: allMatched ? "MATCHED" : "TICKET_UPLOADED",
+    orderIds: affectedOrderIds,
+    orderItemIds,
   })
 }
