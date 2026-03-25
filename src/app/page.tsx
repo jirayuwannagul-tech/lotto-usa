@@ -126,6 +126,9 @@ export default async function Home() {
                   รอบออเดอร์ปัจจุบันอ้างอิงเวลาอเมริกาเท่านั้น และจะเปลี่ยนวันอัตโนมัติทุกวันเวลา 7:00 AM
                   ตามเวลา Los Angeles
                 </p>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  รับออเดอร์เวลาไทย: <span className="font-semibold text-slate-950">{salesDay.thaiWindowLabel}</span>
+                </p>
                 <p className="mt-2 text-xs text-slate-500">รอบนี้: {salesDay.salesDateLabel} (LAX)</p>
               </div>
 

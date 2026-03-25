@@ -2,6 +2,7 @@ import type { DrawType } from "@prisma/client"
 import { fromZonedTime, formatInTimeZone, toZonedTime } from "date-fns-tz"
 
 export const LA_TIME_ZONE = "America/Los_Angeles"
+export const THAI_TIME_ZONE = "Asia/Bangkok"
 export const SALES_ROLLOVER_HOUR = 7
 
 const SALES_DRAW_BY_WEEKDAY: Record<number, DrawType | null> = {
@@ -74,6 +75,9 @@ export function getSalesDayContext(now = new Date()) {
     ),
     salesDateShortLabel: formatInTimeZone(currentSalesDayStart, LA_TIME_ZONE, "EEE d MMM yyyy"),
     currentTimeLabel: formatInTimeZone(now, LA_TIME_ZONE, "EEE d MMM yyyy HH:mm zzz"),
+    thaiWindowLabel: `${formatInTimeZone(previousSalesDayStart, THAI_TIME_ZONE, "d MMM yyyy HH:mm")} น. - ${formatInTimeZone(currentSalesDayStart, THAI_TIME_ZONE, "d MMM yyyy HH:mm")} น.`,
+    thaiWindowStartLabel: formatInTimeZone(previousSalesDayStart, THAI_TIME_ZONE, "d MMM yyyy HH:mm"),
+    thaiWindowEndLabel: formatInTimeZone(currentSalesDayStart, THAI_TIME_ZONE, "d MMM yyyy HH:mm"),
     isAfterRollOver: getLosAngelesNow(now).getHours() >= SALES_ROLLOVER_HOUR,
   }
 }
