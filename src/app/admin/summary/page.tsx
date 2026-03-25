@@ -1,11 +1,29 @@
 import { prisma } from "@/lib/prisma"
 
+export const dynamic = "force-dynamic"
+
+function formatCurrency(value: { toString(): string } | number | null | undefined) {
+  return `${Number(value ?? 0).toLocaleString("th-TH", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })} บาท`
+}
+
 export default async function AdminSummaryPage() {
-  const [orderCount, pendingCount, approvedCount, memberCount, latestOrders] = await Promise.all([
+  const [orderCount, pendingCount, approvedCount, memberCount, totalSales, pendingSales, approvedSales, latestOrders] = await Promise.all([
     prisma.order.count(),
     prisma.order.count({ where: { status: { in: ["PENDING_PAYMENT", "PENDING_APPROVAL"] } } }),
     prisma.order.count({ where: { status: { in: ["APPROVED", "TICKET_UPLOADED", "MATCHED"] } } }),
     prisma.user.count({ where: { role: "CUSTOMER" } }),
+    prisma.order.aggregate({ _sum: { totalTHB: true } }),
+    prisma.order.aggregate({
+      where: { status: { in: ["PENDING_PAYMENT", "PENDING_APPROVAL"] } },
+      _sum: { totalTHB: true },
+    }),
+    prisma.order.aggregate({
+      where: { status: { in: ["APPROVED", "TICKET_UPLOADED", "MATCHED"] } },
+      _sum: { totalTHB: true },
+    }),
     prisma.order.findMany({
       include: { user: true, draw: true },
       orderBy: { createdAt: "desc" },
@@ -18,6 +36,9 @@ export default async function AdminSummaryPage() {
     { label: "ออเดอร์รอดำเนินการ", value: pendingCount },
     { label: "ออเดอร์ยืนยันแล้ว", value: approvedCount },
     { label: "สมาชิกทั้งหมด", value: memberCount },
+    { label: "ยอดรวมทั้งหมด", value: formatCurrency(totalSales._sum.totalTHB) },
+    { label: "ยอดรอดำเนินการ", value: formatCurrency(pendingSales._sum.totalTHB) },
+    { label: "ยอดอนุมัติแล้ว", value: formatCurrency(approvedSales._sum.totalTHB) },
   ]
 
   return (
