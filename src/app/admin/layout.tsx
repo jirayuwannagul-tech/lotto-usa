@@ -2,14 +2,15 @@ import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { AdminSummaryButton } from "@/components/admin/AdminSummaryButton"
+import { AdminNavLink } from "@/components/admin/AdminNavLink"
 import LogoutButton from "@/components/shared/LogoutButton"
 import { authOptions } from "@/lib/auth"
 
 const adminLinks = [
-  { href: "/admin", label: "ภาพรวมระบบ" },
-  { href: "/admin/draws", label: "จัดการงวด" },
-  { href: "/admin/tickets", label: "อัปโหลดตั๋ว" },
-  { href: "/admin/results", label: "ประกาศผล" },
+  { href: "/admin/orders", label: "ยืนยันออเดอร์" },
+  { href: "/admin/tickets", label: "อัปโหลดรูปหวย" },
+  { href: "/admin/summary", label: "สรุปออเดอร์" },
+  { href: "/admin/members", label: "รายชื่อสมาชิก" },
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -23,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="mx-auto grid min-h-screen max-w-7xl lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="border-b border-slate-800 bg-slate-900 text-slate-100 lg:min-h-screen lg:border-b-0 lg:border-r">
           <div className="px-6 py-6">
-            <Link href="/admin" className="inline-flex items-center gap-3">
+            <Link href="/admin/summary" className="inline-flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-800 text-sm font-semibold tracking-[0.3em] text-white">
                 OPS
               </div>
@@ -39,13 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
           <nav className="flex flex-wrap gap-2 px-6 pb-6 lg:flex-col">
             {adminLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="inline-flex rounded-xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-700 hover:bg-slate-800 hover:text-white"
-              >
-                {link.label}
-              </Link>
+              <AdminNavLink key={link.href} href={link.href} label={link.label} />
             ))}
           </nav>
 
