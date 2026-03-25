@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { getExchangeRate } from "@/lib/exchange-rate"
 import { LOTTERY_RULES, MARGIN_USD } from "@/lib/lottery-rules"
 import { isCutoffPassed } from "@/lib/cutoff"
+import { createCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
 import { z } from "zod"
 
 const itemSchema = z.object({
@@ -55,6 +56,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  await ensureReferralTables()
 
   const body = await req.json().catch(() => null)
   const parsed = createOrderSchema.safeParse(body)
@@ -130,6 +132,12 @@ export async function POST(req: NextRequest) {
       },
       include: { items: true },
     })
+  })
+
+  await createCommissionForOrder({
+    orderId: order.id,
+    referredUserId: session.user.id,
+    totalTHB: Number(order.totalTHB),
   })
 
   return NextResponse.json(order, { status: 201 })

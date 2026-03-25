@@ -3,12 +3,14 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendAdminMessage } from "@/lib/telegram"
+import { approveCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
 
 export async function PATCH(_: NextRequest, { params }: { params: Promise<{ paymentId: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  await ensureReferralTables()
 
   const { paymentId } = await params
 
@@ -30,6 +32,8 @@ export async function PATCH(_: NextRequest, { params }: { params: Promise<{ paym
     where: { id: payment.orderId },
     data: { status: "APPROVED" },
   })
+
+  await approveCommissionForOrder(payment.orderId)
 
   // Send the confirmed numbers only after payment is approved.
   const { order } = payment

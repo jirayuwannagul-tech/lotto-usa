@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { ensureReferralTables } from "@/lib/referrals"
 
 type Params = {
   params: Promise<{
@@ -14,6 +15,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  await ensureReferralTables()
 
   const { userId } = await params
 
@@ -37,6 +39,10 @@ export async function DELETE(_req: Request, { params }: Params) {
   const orderIds = user.orders.map((order) => order.id)
 
   const deleted = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`DELETE FROM "Commission" WHERE "referredUserId" = ${userId} OR "referrerUserId" = ${userId}`
+    await tx.$executeRaw`DELETE FROM "UserReferral" WHERE "userId" = ${userId} OR "referrerUserId" = ${userId}`
+    await tx.$executeRaw`DELETE FROM "ReferrerProfile" WHERE "userId" = ${userId}`
+
     const paymentsDeleted = orderIds.length
       ? await tx.payment.deleteMany({
           where: { orderId: { in: orderIds } },

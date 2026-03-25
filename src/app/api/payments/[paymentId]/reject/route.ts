@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { cancelCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ paymentId: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  await ensureReferralTables()
 
   const { paymentId } = await params
   const { rejectNote } = await req.json()
@@ -28,6 +30,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pa
       })
     }
   })
+
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    select: { orderId: true },
+  })
+
+  if (payment) {
+    await cancelCommissionForOrder(payment.orderId)
+  }
 
   return NextResponse.json({ success: true })
 }
