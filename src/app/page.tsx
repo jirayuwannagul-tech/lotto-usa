@@ -47,6 +47,7 @@ export default async function Home() {
   const powerballDraw = pickDraw(draws, "POWERBALL")
   const megaBallDraw = pickDraw(draws, "MEGA_MILLIONS")
   const isCustomer = session?.user?.role === "CUSTOMER"
+  const isAdmin = session?.user?.role === "ADMIN"
   const lotteryHref = isCustomer ? "/power-ball" : "/login"
   const megaHref = isCustomer ? "/mega-ball" : "/login"
   const salesDay = getSalesDayContext()
@@ -75,6 +76,19 @@ export default async function Home() {
                     className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
                   >
                     Dashboard
+                  </Link>
+                  <LogoutButton
+                    redirectTo="/"
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-950"
+                  />
+                </>
+              ) : isAdmin ? (
+                <>
+                  <Link
+                    href="/admin"
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
+                  >
+                    Admin
                   </Link>
                   <LogoutButton
                     redirectTo="/"
