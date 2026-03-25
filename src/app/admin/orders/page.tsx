@@ -2,6 +2,21 @@ import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { AdminApproveButton } from "@/components/admin/AdminApproveButton"
 
+function formatOrderDate(date: Date) {
+  return date.toLocaleDateString("th-TH", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+}
+
+function paymentStatusLabel(status: string | null) {
+  if (status === "PENDING") return "รอตรวจสอบ"
+  if (status === "APPROVED") return "อนุมัติแล้ว"
+  if (status === "REJECTED") return "ปฏิเสธแล้ว"
+  return "ยังไม่มีสลิป"
+}
+
 export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({
     include: {
@@ -20,73 +35,98 @@ export default async function AdminOrdersPage() {
         <p className="text-xs font-semibold tracking-[0.24em] text-slate-400">ADMIN / ORDERS</p>
         <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">ยืนยันออเดอร์ลูกค้า</h2>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-          ตรวจสอบออเดอร์ล่าสุด ดูเลขที่ลูกค้าสั่งซื้อ และกดยืนยันรับออเดอร์เมื่อชำระเงินเรียบร้อยแล้ว
+          ดูออเดอร์แบบตาราง ตรวจสอบเจ้าของออเดอร์ เลขที่ซื้อ สลิป และกดอนุมัติหรือปฏิเสธได้จากหน้าเดียว
         </p>
       </div>
 
-      <div className="grid gap-4">
-        {orders.map((order) => (
-          <article key={order.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">
-                    ORDER ID {order.id.slice(-8).toUpperCase()}
-                  </p>
-                  <div className="mt-3 space-y-1">
-                    <p className="text-sm font-medium text-slate-500">ชื่อลูกค้า: {order.user.name}</p>
-                    <p className="text-sm text-slate-500">อีเมลลูกค้า: {order.user.email}</p>
-                  </div>
-                </div>
-                <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-                  <p>ประเภท: {order.draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"}</p>
-                  <p>สถานะ: {order.status}</p>
-                  <p>ยอดรวม: {Number(order.totalTHB).toLocaleString("th-TH")} บาท</p>
-                  <p>ชำระเงิน: {order.payment?.status ?? "ยังไม่มีสลิป"}</p>
-                </div>
-                {order.payment && (
-                  <div className="flex flex-wrap gap-3">
-                    <Link
-                      href={`/api/payments/${order.payment.id}/slip`}
-                      target="_blank"
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      ดูสลิป
-                    </Link>
-                    {order.payment.rejectNote && (
-                      <span className="rounded-xl bg-rose-50 px-4 py-2 text-sm text-rose-700">
-                        เหตุผลที่ปฏิเสธ: {order.payment.rejectNote}
-                      </span>
-                    )}
-                  </div>
-                )}
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm font-semibold text-slate-700">เลขที่ลูกค้าซื้อ</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {order.items.map((item) => (
-                      <span
-                        key={item.id}
-                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-700"
-                      >
-                        {item.mainNumbers} | {item.specialNumber}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-[1200px] text-sm">
+            <thead className="border-b border-slate-200 text-left text-slate-400">
+              <tr>
+                <th className="pb-4 pr-4 font-medium">วันที่</th>
+                <th className="pb-4 pr-4 font-medium">Order ID</th>
+                <th className="pb-4 pr-4 font-medium">ชื่อลูกค้า</th>
+                <th className="pb-4 pr-4 font-medium">อีเมล</th>
+                <th className="pb-4 pr-4 font-medium">หวย</th>
+                <th className="pb-4 pr-4 font-medium">เลขที่ซื้อ</th>
+                <th className="pb-4 pr-4 font-medium">ยอดรวม</th>
+                <th className="pb-4 pr-4 font-medium">สถานะชำระเงิน</th>
+                <th className="pb-4 pr-4 font-medium">สลิป</th>
+                <th className="pb-4 pr-0 font-medium">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-700">
+              {orders.map((order) => {
+                const itemLines = order.items.map((item) => `${item.mainNumbers} | ${item.specialNumber}`)
+                const previewLines = itemLines.slice(0, 3)
+                const hasMoreLines = itemLines.length > 3
 
-              <div className="flex shrink-0 items-center gap-3">
-                {order.payment?.status === "PENDING" ? (
-                  <AdminApproveButton paymentId={order.payment.id} orderId={order.id} />
-                ) : (
-                  <span className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-500">
-                    {order.payment?.status === "APPROVED" ? "ยืนยันแล้ว" : "รอสลิป"}
-                  </span>
-                )}
-              </div>
-            </div>
-          </article>
-        ))}
+                return (
+                  <tr key={order.id} className="border-b border-slate-100 align-top">
+                    <td className="py-4 pr-4">{formatOrderDate(order.createdAt)}</td>
+                    <td className="py-4 pr-4 font-semibold text-slate-950">{order.id.slice(-8).toUpperCase()}</td>
+                    <td className="py-4 pr-4 font-medium text-slate-950">{order.user.name}</td>
+                    <td className="py-4 pr-4">{order.user.email}</td>
+                    <td className="py-4 pr-4">{order.draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"}</td>
+                    <td className="py-4 pr-4">
+                      <div className="min-w-[240px] rounded-2xl bg-slate-50 p-3">
+                        <div className="space-y-1 font-mono text-xs text-slate-700">
+                          {previewLines.map((line, index) => (
+                            <p key={`${order.id}-preview-${index}`}>{line}</p>
+                          ))}
+                        </div>
+                        {hasMoreLines && (
+                          <details className="mt-2">
+                            <summary className="cursor-pointer text-xs font-semibold text-sky-700">
+                              ดูเพิ่มเติม
+                            </summary>
+                            <div className="mt-2 space-y-1 font-mono text-xs text-slate-700">
+                              {itemLines.slice(3).map((line, index) => (
+                                <p key={`${order.id}-full-${index}`}>{line}</p>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-4 pr-4 font-medium text-slate-950">
+                      {Number(order.totalTHB).toLocaleString("th-TH")} บาท
+                    </td>
+                    <td className="py-4 pr-4">{paymentStatusLabel(order.payment?.status ?? null)}</td>
+                    <td className="py-4 pr-4">
+                      {order.payment ? (
+                        <div className="space-y-2">
+                          <Link
+                            href={`/api/payments/${order.payment.id}/slip`}
+                            target="_blank"
+                            className="inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                          >
+                            ดูสลิป
+                          </Link>
+                          {order.payment.rejectNote && (
+                            <p className="max-w-[180px] text-xs text-rose-600">{order.payment.rejectNote}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400">ยังไม่มีสลิป</span>
+                      )}
+                    </td>
+                    <td className="py-4 pr-0">
+                      {order.payment?.status === "PENDING" ? (
+                        <AdminApproveButton paymentId={order.payment.id} orderId={order.id} />
+                      ) : (
+                        <span className="inline-flex rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">
+                          {order.payment?.status === "APPROVED" ? "ยืนยันแล้ว" : "รอสลิป"}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   )
