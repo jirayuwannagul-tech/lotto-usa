@@ -14,6 +14,59 @@ function getStatusLabel(status: string, paymentStatus: string | null) {
   return status
 }
 
+function getPrizeLabel(type: string, matchMain: number, matchSpecial: boolean): string | null {
+  const special = type === "POWERBALL" ? "Powerball" : "Mega Ball"
+  if (matchMain === 5 && matchSpecial) return "แจ็คพอต"
+  if (matchMain === 5) return "Match 5"
+  if (matchMain === 4 && matchSpecial) return `Match 4+${special}`
+  if (matchMain === 4) return "Match 4"
+  if (matchMain === 3 && matchSpecial) return `Match 3+${special}`
+  if (matchMain === 3) return "Match 3"
+  if (matchMain === 2 && matchSpecial) return `Match 2+${special}`
+  if (matchMain === 1 && matchSpecial) return `Match 1+${special}`
+  if (matchMain === 0 && matchSpecial) return `Match ${special}`
+  return null
+}
+
+function getResultSummary(order: {
+  draw: { type: string; winningMain: string | null; winningSpecial: string | null }
+  items: { id: string; mainNumbers: string; specialNumber: string }[]
+}) {
+  if (!order.draw.winningMain || !order.draw.winningSpecial) {
+    return {
+      title: "รอสรุปผลรางวัล",
+      detail: "งวดนี้ยังไม่ประกาศผลรางวัล",
+      tone: "border-amber-200 bg-amber-50 text-amber-700",
+    }
+  }
+
+  const winningMain = order.draw.winningMain.split(",").map((n) => n.trim()).sort()
+  const winningSpecial = order.draw.winningSpecial.trim()
+  const winningItems = order.items
+    .map((item) => {
+      const itemMain = item.mainNumbers.split(",").map((n) => n.trim()).sort()
+      const matchMain = itemMain.filter((n) => winningMain.includes(n)).length
+      const matchSpecial = item.specialNumber.trim() === winningSpecial
+      const prize = getPrizeLabel(order.draw.type, matchMain, matchSpecial)
+      return prize ? `${item.mainNumbers} | ${item.specialNumber} → ${prize}` : null
+    })
+    .filter((value): value is string => Boolean(value))
+
+  if (winningItems.length === 0) {
+    return {
+      title: "ไม่ถูกรางวัล",
+      detail: "ระบบตรวจแล้ว งวดนี้ยังไม่พบเลขที่ถูกรางวัล",
+      tone: "border-slate-200 bg-slate-50 text-slate-700",
+    }
+  }
+
+  return {
+    title: "ถูกรางวัล",
+    detail: winningItems.join("\n"),
+    tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  }
+}
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
 
@@ -86,6 +139,11 @@ export default async function DashboardPage() {
             <div className="mt-6 grid gap-4">
               {orders.map((order) => (
                 <article key={order.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+                  {(() => {
+                    const resultSummary = getResultSummary(order)
+                    const uploadedTickets = order.items.filter((item) => item.ticketPhotoUrl)
+
+                    return (
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="space-y-3">
                       <div>
@@ -117,6 +175,32 @@ export default async function DashboardPage() {
                           ))}
                         </div>
                       </div>
+
+                      <div className="rounded-2xl bg-white p-4">
+                        <p className="text-sm font-semibold text-slate-700">รูปหวยที่แอดมินอัปโหลด</p>
+                        {uploadedTickets.length > 0 ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {uploadedTickets.map((item, index) => (
+                              <Link
+                                key={item.id}
+                                href={`/api/order-items/${item.id}/ticket`}
+                                target="_blank"
+                                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-950"
+                              >
+                                ดูรูปหวยชุดที่ {index + 1}
+                              </Link>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-sm text-slate-500">ยังไม่มีการอัปโหลดรูปหวยจากแอดมิน</p>
+                        )}
+                      </div>
+
+                      <div className={`rounded-2xl border p-4 ${resultSummary.tone}`}>
+                        <p className="text-sm font-semibold">ช่องแจ้งสถานะ</p>
+                        <p className="mt-3 text-base font-semibold">{resultSummary.title}</p>
+                        <p className="mt-2 whitespace-pre-line text-sm leading-7">{resultSummary.detail}</p>
+                      </div>
                     </div>
 
                     <div className="shrink-0">
@@ -125,6 +209,8 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                   </div>
+                    )
+                  })()}
                 </article>
               ))}
             </div>
