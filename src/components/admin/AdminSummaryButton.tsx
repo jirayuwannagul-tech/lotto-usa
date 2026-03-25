@@ -13,7 +13,7 @@ export function AdminSummaryButton() {
       const res = await fetch("/api/admin/daily-summary", { method: "POST" })
       const data = await res.json()
       if (res.ok) {
-        setResult("✅ ส่งสรุปทาง LINE แล้ว")
+        setResult("✅ ส่งสรุปเข้า Telegram แล้ว")
       } else {
         setResult(`❌ ${data.error ?? "เกิดข้อผิดพลาด"}`)
       }

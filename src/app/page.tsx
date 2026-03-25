@@ -6,6 +6,7 @@ import { syncUpcomingDraws } from "@/lib/draw-schedule"
 import { HomeDrawCountdown } from "@/components/home/HomeDrawCountdown"
 import { authOptions } from "@/lib/auth"
 import LogoutButton from "@/components/shared/LogoutButton"
+import { getSalesDayContext } from "@/lib/sales-day"
 
 export const dynamic = "force-dynamic"
 
@@ -38,6 +39,7 @@ export default async function Home() {
   const isCustomer = session?.user?.role === "CUSTOMER"
   const lotteryHref = isCustomer ? "/power-ball" : "/login"
   const megaHref = isCustomer ? "/mega-ball" : "/login"
+  const salesDay = getSalesDayContext()
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
@@ -89,6 +91,18 @@ export default async function Home() {
                 ตอนนี้รองรับการซื้อ Power Ball และ Mega Ball โดยจะแยก flow การใช้งานออกเป็นขั้นตอนถัดไป
                 ตามที่กำหนดภายหลัง
               </p>
+
+              <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">AMERICA / LAX</p>
+                <p className="mt-2 text-lg font-semibold text-slate-950">
+                  วันนี้เปิดรับออเดอร์: {salesDay.drawLabel}
+                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  รอบออเดอร์ปัจจุบันอ้างอิงเวลาอเมริกาเท่านั้น และจะเปลี่ยนวันอัตโนมัติทุกวันเวลา 7:00 AM
+                  ตามเวลา Los Angeles
+                </p>
+                <p className="mt-2 text-xs text-slate-500">รอบนี้: {salesDay.salesDateLabel} (LAX)</p>
+              </div>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-2">
                 <Link

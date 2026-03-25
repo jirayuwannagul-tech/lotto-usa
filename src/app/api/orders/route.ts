@@ -6,6 +6,7 @@ import { getExchangeRate } from "@/lib/exchange-rate"
 import { LOTTERY_RULES, MARGIN_USD } from "@/lib/lottery-rules"
 import { isCutoffPassed } from "@/lib/cutoff"
 import { createCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
+import { sendRealtimeMessage } from "@/lib/telegram"
 import { z } from "zod"
 
 const itemSchema = z.object({
@@ -140,6 +141,11 @@ export async function POST(req: NextRequest) {
     itemCount: order.items.length,
     rateUsed: Number(order.rateUsed),
   })
+
+  const drawLabel = draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"
+  await sendRealtimeMessage(
+    `🆕 *มีออเดอร์ใหม่*\n\n👤 ${session.user.name}\n🎯 ${drawLabel}\n🎫 ${order.items.length} ชุด\n💰 ${Number(order.totalTHB).toLocaleString("th-TH", { maximumFractionDigits: 0 })} บาท\n\nยังรอการชำระเงิน/แนบสลิป`
+  )
 
   return NextResponse.json(order, { status: 201 })
 }

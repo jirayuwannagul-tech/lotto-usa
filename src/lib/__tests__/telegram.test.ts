@@ -35,6 +35,9 @@ describe("sendMessage & sendAdminMessage (fetch mocked)", () => {
     mockFetch.mockResolvedValue({ ok: true })
     process.env.TELEGRAM_BOT_TOKEN = "test-token-123"
     process.env.TELEGRAM_ADMIN_CHAT_IDS = "111,222"
+    process.env.TELEGRAM_REALTIME_CHAT_IDS = "333"
+    process.env.TELEGRAM_DAILY_SUMMARY_CHAT_IDS = "444"
+    process.env.TELEGRAM_APPROVAL_CHAT_IDS = "555"
   })
 
   afterEach(() => {
@@ -42,6 +45,9 @@ describe("sendMessage & sendAdminMessage (fetch mocked)", () => {
     mockFetch.mockReset()
     delete process.env.TELEGRAM_BOT_TOKEN
     delete process.env.TELEGRAM_ADMIN_CHAT_IDS
+    delete process.env.TELEGRAM_REALTIME_CHAT_IDS
+    delete process.env.TELEGRAM_DAILY_SUMMARY_CHAT_IDS
+    delete process.env.TELEGRAM_APPROVAL_CHAT_IDS
   })
 
   it("sendMessage calls Telegram API", async () => {
@@ -73,5 +79,29 @@ describe("sendMessage & sendAdminMessage (fetch mocked)", () => {
     const { sendAdminMessage } = await import("../telegram")
     await sendAdminMessage("Test")
     expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it("sendRealtimeMessage uses realtime chat IDs", async () => {
+    const { sendRealtimeMessage } = await import("../telegram")
+    await sendRealtimeMessage("Realtime")
+    const [, options] = mockFetch.mock.calls[0]
+    const body = JSON.parse(options.body)
+    expect(body.chat_id).toBe("333")
+  })
+
+  it("sendDailySummaryMessage uses daily summary chat IDs", async () => {
+    const { sendDailySummaryMessage } = await import("../telegram")
+    await sendDailySummaryMessage("Summary")
+    const [, options] = mockFetch.mock.calls[0]
+    const body = JSON.parse(options.body)
+    expect(body.chat_id).toBe("444")
+  })
+
+  it("sendApprovalMessage uses approval chat IDs", async () => {
+    const { sendApprovalMessage } = await import("../telegram")
+    await sendApprovalMessage("Approval")
+    const [, options] = mockFetch.mock.calls[0]
+    const body = JSON.parse(options.body)
+    expect(body.chat_id).toBe("555")
   })
 })

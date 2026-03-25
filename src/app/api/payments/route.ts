@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { saveUploadedFile } from "@/lib/upload"
-import { sendAdminMessage } from "@/lib/telegram"
+import { sendApprovalMessage, sendRealtimeMessage } from "@/lib/telegram"
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -49,9 +49,14 @@ export async function POST(req: NextRequest) {
     })
     if (fullOrder) {
       const drawLabel = fullOrder.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
-      await sendAdminMessage(
-        `📎 *สลิปใหม่ — รอตรวจสอบ*\n\n👤 ${fullOrder.user.name}\n🎱 ${drawLabel}\n💰 ${Number(fullOrder.totalTHB).toFixed(0)} ฿\n🧾 เปิดดูสลิปใน Admin Panel แล้วกดอนุมัติเพื่อส่งเลขเข้ากลุ่มซื้อ`
-      )
+      const adminOrdersUrl = new URL("/admin/orders", req.url).toString()
+      const approvalText =
+        `📎 *มีออเดอร์รอกดอนุมัติ*\n\n👤 ${fullOrder.user.name}\n🎱 ${drawLabel}\n🎫 ${fullOrder.items.length} ชุด\n💰 ${Number(fullOrder.totalTHB).toFixed(0)} ฿\n\n🔗 ${adminOrdersUrl}`
+
+      await Promise.all([
+        sendRealtimeMessage(approvalText),
+        sendApprovalMessage(approvalText),
+      ])
     }
 
     return NextResponse.json(payment, { status: 201 })

@@ -2,12 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendLineNotify } from "@/lib/line-notify"
+import { getSalesDayContext } from "@/lib/sales-day"
+import { sendDailySummaryMessage } from "@/lib/telegram"
 
-// Called by Vercel Cron at 10:00 AM LA time (17:00 UTC standard / 18:00 UTC daylight)
-// Can also be triggered manually by admin via POST
 export async function GET(req: NextRequest) {
-  // Allow Vercel cron with CRON_SECRET
   const authHeader = req.headers.get("authorization")
   const cronSecret = process.env.CRON_SECRET
   const isCron = cronSecret && authHeader === `Bearer ${cronSecret}`
@@ -20,6 +18,9 @@ export async function GET(req: NextRequest) {
   }
 
   const summary = await generateSummary()
+  if (isCron) {
+    await sendDailySummaryMessage(summary.message)
+  }
   return NextResponse.json(summary)
 }
 
@@ -30,104 +31,119 @@ export async function POST() {
   }
 
   const summary = await generateSummary()
-  await sendLineNotify(summary.message)
+  await sendDailySummaryMessage(summary.message)
   return NextResponse.json({ ok: true, summary: summary.message })
 }
 
 async function generateSummary() {
   const now = new Date()
+  const salesDay = getSalesDayContext(now)
 
-  // Get all open draws with their approved+ orders
-  const draws = await prisma.draw.findMany({
-    where: { isOpen: true },
-    include: {
-      orders: {
-        where: {
-          status: { in: ["APPROVED", "TICKET_UPLOADED", "MATCHED", "PENDING_APPROVAL"] },
-        },
-        include: {
-          user: { select: { name: true } },
-          items: true,
-        },
+  const approvedOrders = await prisma.order.findMany({
+    where: {
+      createdAt: {
+        gte: salesDay.windowStart,
+        lt: salesDay.windowEnd,
       },
+      status: { in: ["APPROVED", "TICKET_UPLOADED", "MATCHED"] },
     },
-    orderBy: { drawDate: "asc" },
+    include: {
+      user: { select: { name: true } },
+      draw: true,
+      items: true,
+    },
+    orderBy: { createdAt: "asc" },
   })
 
-  // Count pending payments (not yet approved)
   const pendingApprovalCount = await prisma.order.count({
-    where: { status: "PENDING_APPROVAL" },
+    where: {
+      createdAt: {
+        gte: salesDay.windowStart,
+        lt: salesDay.windowEnd,
+      },
+      status: "PENDING_APPROVAL",
+    },
   })
 
   const pendingPaymentCount = await prisma.order.count({
-    where: { status: "PENDING_PAYMENT" },
+    where: {
+      createdAt: {
+        gte: salesDay.windowStart,
+        lt: salesDay.windowEnd,
+      },
+      status: "PENDING_PAYMENT",
+    },
   })
 
-  const laBangkokDateStr = now.toLocaleString("th-TH", {
-    timeZone: "America/Los_Angeles",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
+  const groupedTickets = new Map<string, { drawType: string; numbers: string; count: number }>()
+  for (const order of approvedOrders) {
+    for (const item of order.items) {
+      const numbers = `${item.mainNumbers} | ${item.specialNumber}`
+      const groupKey = `${order.draw.type}:${numbers}`
+      const existing = groupedTickets.get(groupKey)
+      if (existing) {
+        existing.count += 1
+      } else {
+        groupedTickets.set(groupKey, {
+          drawType: order.draw.type,
+          numbers,
+          count: 1,
+        })
+      }
+    }
+  }
+
+  const groupedByDraw = Array.from(groupedTickets.values()).reduce<Record<string, { numbers: string; count: number }[]>>(
+    (acc, item) => {
+      const key = item.drawType
+      acc[key] ??= []
+      acc[key].push({ numbers: item.numbers, count: item.count })
+      return acc
+    },
+    {}
+  )
 
   const lines: string[] = [
-    `📊 สรุปยอดหวย LottoUSA`,
-    `🕙 ${laBangkokDateStr} (LA)`,
+    `📊 *สรุปเลขที่ต้องซื้อประจำวัน*`,
+    `🕖 ส่งสรุปเวลา 7:00 AM LAX`,
+    `📅 รอบออเดอร์: ${salesDay.salesDateLabel} (LAX)`,
+    `🎯 วันนี้เปิดรับ: ${salesDay.drawLabel}`,
+    `🕒 เวลาปัจจุบัน: ${salesDay.currentTimeLabel}`,
     `${"─".repeat(30)}`,
   ]
 
-  if (draws.length === 0) {
-    lines.push("ไม่มีงวดที่เปิดอยู่")
+  if (approvedOrders.length === 0) {
+    lines.push("ยังไม่มีออเดอร์ที่อนุมัติแล้วสำหรับรอบนี้")
   }
 
-  for (const draw of draws) {
-    const isPowerball = draw.type === "POWERBALL"
-    const drawLabel = isPowerball ? "🔴 POWERBALL" : "🔵 MEGA MILLIONS"
-    const drawDateTH = new Date(draw.drawDate).toLocaleDateString("th-TH", {
-      day: "numeric",
-      month: "short",
-    })
-
-    const totalTickets = draw.orders.reduce((s, o) => s + o.items.length, 0)
-    const totalTHB = draw.orders.reduce((s, o) => s + Number(o.totalTHB), 0)
-    const matchedCount = draw.orders.reduce(
-      (s, o) => s + o.items.filter((i) => i.matchedAt).length,
-      0
-    )
-
-    lines.push(``)
-    lines.push(`${drawLabel} — งวด ${drawDateTH}`)
-    lines.push(`รวม: ${draw.orders.length} ออเดอร์, ${totalTickets} ใบ`)
-    lines.push(`ยอดรวม: ${totalTHB.toLocaleString("th-TH", { maximumFractionDigits: 0 })} ฿`)
-    lines.push(`ตั๋วแล้ว: ${matchedCount}/${totalTickets} ใบ`)
+  for (const [drawType, items] of Object.entries(groupedByDraw)) {
+    const drawLabel = drawType === "POWERBALL" ? "🔴 Power Ball" : "🔵 Mega Ball"
+    lines.push("")
+    lines.push(drawLabel)
     lines.push(`${"─".repeat(20)}`)
 
-    for (const order of draw.orders) {
-      const numbers = order.items
-        .map((item) => `${item.mainNumbers} ●${item.specialNumber}`)
-        .join(", ")
-      lines.push(`• ${order.user.name}: ${numbers}`)
+    for (const item of items.sort((a, b) => b.count - a.count || a.numbers.localeCompare(b.numbers))) {
+      lines.push(`• ${item.numbers} = ${item.count} ชุด`)
     }
   }
 
   lines.push(``)
   lines.push(`${"─".repeat(30)}`)
-  lines.push(`⏳ รอตรวจสลิป: ${pendingApprovalCount} ออเดอร์`)
-  lines.push(`💳 รอชำระ: ${pendingPaymentCount} ออเดอร์`)
+  lines.push(`✅ ออเดอร์อนุมัติแล้ว: ${approvedOrders.length} ออเดอร์`)
+  lines.push(`⏳ รอกดอนุมัติ: ${pendingApprovalCount} ออเดอร์`)
+  lines.push(`💳 ยังไม่ส่งสลิป: ${pendingPaymentCount} ออเดอร์`)
+  lines.push(`ℹ️ ออเดอร์ที่เข้าหลัง 7:00 AM LAX จะไปรวมในรอบวันถัดไป`)
 
   const message = lines.join("\n")
 
   return {
     message,
     generatedAt: now.toISOString(),
-    draws: draws.map((d) => ({
-      type: d.type,
-      drawDate: d.drawDate,
-      orderCount: d.orders.length,
-      ticketCount: d.orders.reduce((s, o) => s + o.items.length, 0),
-      totalTHB: d.orders.reduce((s, o) => s + Number(o.totalTHB), 0),
-    })),
+    salesDateLabel: salesDay.salesDateLabel,
+    drawLabel: salesDay.drawLabel,
+    approvedOrders: approvedOrders.length,
+    pendingApprovalCount,
+    pendingPaymentCount,
+    groupedByDraw,
   }
 }

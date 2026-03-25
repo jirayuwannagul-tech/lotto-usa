@@ -2,6 +2,13 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ""
 const BASE = `https://api.telegram.org/bot${BOT_TOKEN}`
 const FILE_BASE = `https://api.telegram.org/file/bot${BOT_TOKEN}`
 
+function getChatIds(envKey: string) {
+  const scoped = process.env[envKey]
+  const fallback = process.env.TELEGRAM_ADMIN_CHAT_IDS
+  const raw = scoped || fallback || ""
+  return raw.split(",").map((s) => s.trim()).filter(Boolean)
+}
+
 // ---- Send ----------------------------------------------------------------
 
 export async function sendMessage(
@@ -44,9 +51,26 @@ export function isAllowedChat(chatId: number): boolean {
 // ---- Admin broadcast -----------------------------------------------------
 
 export async function sendAdminMessage(text: string) {
-  const allowed = process.env.TELEGRAM_ADMIN_CHAT_IDS
-  if (!allowed || !BOT_TOKEN) return
-  const ids = allowed.split(",").map((s) => s.trim()).filter(Boolean)
+  const ids = getChatIds("TELEGRAM_ADMIN_CHAT_IDS")
+  if (ids.length === 0 || !BOT_TOKEN) return
+  await Promise.all(ids.map((id) => sendMessage(id, text)))
+}
+
+export async function sendRealtimeMessage(text: string) {
+  const ids = getChatIds("TELEGRAM_REALTIME_CHAT_IDS")
+  if (ids.length === 0 || !BOT_TOKEN) return
+  await Promise.all(ids.map((id) => sendMessage(id, text)))
+}
+
+export async function sendDailySummaryMessage(text: string) {
+  const ids = getChatIds("TELEGRAM_DAILY_SUMMARY_CHAT_IDS")
+  if (ids.length === 0 || !BOT_TOKEN) return
+  await Promise.all(ids.map((id) => sendMessage(id, text)))
+}
+
+export async function sendApprovalMessage(text: string) {
+  const ids = getChatIds("TELEGRAM_APPROVAL_CHAT_IDS")
+  if (ids.length === 0 || !BOT_TOKEN) return
   await Promise.all(ids.map((id) => sendMessage(id, text)))
 }
 
