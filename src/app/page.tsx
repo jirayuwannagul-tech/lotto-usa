@@ -55,6 +55,9 @@ export default async function Home() {
               <Link href="/register" className="text-slate-500 transition hover:text-slate-950">
                 Register
               </Link>
+              <Link href="/admin-login" className="text-slate-500 transition hover:text-slate-950">
+                Admin
+              </Link>
             </div>
           </div>
 
