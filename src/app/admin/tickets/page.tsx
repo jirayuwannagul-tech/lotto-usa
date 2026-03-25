@@ -30,7 +30,7 @@ export default async function AdminTicketsPage() {
         <p className="text-xs font-semibold tracking-[0.24em] text-slate-400">ADMIN / TICKETS</p>
         <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">อัปโหลดรูปหวย</h2>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-          เลือกงวดที่ต้องการ แล้วอัปโหลดรูปหวยเพื่อให้ระบบจับคู่กับออเดอร์ที่ยืนยันแล้ว
+          เลือกงวดที่ต้องการ แล้วอัปโหลดรูปหวยเพื่อให้ AI อ่านเลขก่อน จากนั้นให้แอดมินยืนยันรายการที่ถูกต้องอีกครั้ง
         </p>
       </div>
 

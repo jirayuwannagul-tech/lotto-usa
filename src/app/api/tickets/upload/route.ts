@@ -33,13 +33,11 @@ export async function POST(req: NextRequest) {
   if (!ocr) {
     return NextResponse.json({
       success: false,
-      matched: false,
       ticketPhotoUrl,
       message: "OCR อ่านตั๋วไม่ได้ กรุณาตรวจสอบรูปภาพ",
     })
   }
 
-  // Find all unmatched OrderItems for this draw
   const unmatchedItems = await prisma.orderItem.findMany({
     where: {
       matchedAt: null,
@@ -55,64 +53,40 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // Try to match OCR result against unmatched items
-  let matchedItem = null
-  for (const item of unmatchedItems) {
-    if (numbersMatch(item.mainNumbers, item.specialNumber, ocr.mainNumbers, ocr.specialNumber)) {
-      matchedItem = item
-      break
-    }
-  }
+  const matchedCandidates = unmatchedItems
+    .filter((item) => numbersMatch(item.mainNumbers, item.specialNumber, ocr.mainNumbers, ocr.specialNumber))
+    .map((item) => ({
+      orderItemId: item.id,
+      orderId: item.orderId,
+      customerName: item.order.user.name,
+      customerEmail: item.order.user.email,
+      numbers: `${item.mainNumbers} | ${item.specialNumber}`,
+      orderStatus: item.order.status,
+    }))
 
-  if (matchedItem) {
-    // Update matched item
-    await prisma.orderItem.update({
-      where: { id: matchedItem.id },
-      data: {
-        ticketPhotoUrl,
-        ocrRawText: ocr.raw,
-        matchedAt: new Date(),
-      },
-    })
-
-    // Check if all items in order are matched
-    const allItems = await prisma.orderItem.findMany({
-      where: { orderId: matchedItem.orderId },
-    })
-    const allMatched = allItems.every((i) => i.matchedAt !== null || i.id === matchedItem!.id)
-
-    if (allMatched) {
-      await prisma.order.update({
-        where: { id: matchedItem.orderId },
-        data: { status: "MATCHED" },
-      })
-    } else {
-      await prisma.order.update({
-        where: { id: matchedItem.orderId },
-        data: { status: "TICKET_UPLOADED" },
-      })
-    }
-
+  if (matchedCandidates.length > 0) {
     return NextResponse.json({
       success: true,
-      matched: true,
+      requiresReview: true,
       ticketPhotoUrl,
-      matchedOrderItemId: matchedItem.id,
-      customerName: matchedItem.order.user.name,
-      numbers: `${matchedItem.mainNumbers} | ${matchedItem.specialNumber}`,
+      ocrRawText: ocr.raw,
+      ocrResult: { mainNumbers: ocr.mainNumbers, specialNumber: ocr.specialNumber },
+      candidates: matchedCandidates,
+      message: "AI อ่านเลขแล้ว กรุณาตรวจสอบและยืนยันรายการที่ถูกต้อง",
     })
   }
 
-  // No match found — alert admin via LINE
   await sendLineNotify(
     `⚠️ OCR จับคู่ตั๋วไม่ได้\nเลขที่อ่านได้: ${ocr.mainNumbers.join(",")} | ${ocr.specialNumber}\nกรุณาตรวจสอบด้วยตัวเอง`
   )
 
   return NextResponse.json({
     success: true,
-    matched: false,
+    requiresReview: true,
     ticketPhotoUrl,
+    ocrRawText: ocr.raw,
     ocrResult: { mainNumbers: ocr.mainNumbers, specialNumber: ocr.specialNumber },
+    candidates: [],
     message: "OCR อ่านได้แต่จับคู่กับออเดอร์ไม่ได้ แจ้ง Admin ทาง LINE แล้ว",
   })
 }

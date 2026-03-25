@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useState } from "react"
 
 interface DrawOption {
@@ -7,11 +8,36 @@ interface DrawOption {
   label: string
 }
 
+interface UploadCandidate {
+  orderItemId: string
+  orderId: string
+  customerName: string
+  customerEmail: string
+  numbers: string
+  orderStatus: string
+}
+
+interface UploadResult {
+  success?: boolean
+  requiresReview?: boolean
+  ticketPhotoUrl?: string
+  ocrRawText?: string
+  ocrResult?: {
+    mainNumbers: string[]
+    specialNumber: string
+  }
+  candidates?: UploadCandidate[]
+  message?: string
+}
+
 export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
   const [drawId, setDrawId] = useState(draws[0]?.id ?? "")
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [result, setResult] = useState<UploadResult | null>(null)
+  const [selectedOrderItemId, setSelectedOrderItemId] = useState("")
+  const [confirming, setConfirming] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -22,6 +48,8 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
 
     setLoading(true)
     setMessage(null)
+    setResult(null)
+    setSelectedOrderItemId("")
 
     try {
       const formData = new FormData()
@@ -36,13 +64,45 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
         return
       }
 
-      if (data?.matched) {
-        setMessage(`จับคู่สำเร็จ: ${data.customerName} - ${data.numbers}`)
-      } else {
-        setMessage(data?.message ?? "อัปโหลดสำเร็จ")
-      }
+      setResult(data)
+      setMessage(data?.message ?? "AI อ่านข้อมูลจากรูปให้แล้ว")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleConfirm() {
+    if (!selectedOrderItemId || !result?.ticketPhotoUrl) {
+      setMessage("กรุณาเลือกรายการที่ต้องการยืนยัน")
+      return
+    }
+
+    setConfirming(true)
+    setMessage(null)
+
+    try {
+      const res = await fetch("/api/tickets/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderItemId: selectedOrderItemId,
+          ticketPhotoUrl: result.ticketPhotoUrl,
+          ocrRawText: result.ocrRawText,
+        }),
+      })
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        setMessage(data?.error ?? "ยืนยันรายการไม่สำเร็จ")
+        return
+      }
+
+      setMessage("ยืนยันรายการสำเร็จ และอัปเดตสถานะออเดอร์แล้ว")
+      setResult(null)
+      setSelectedOrderItemId("")
+      setFile(null)
+    } finally {
+      setConfirming(false)
     }
   }
 
@@ -80,10 +140,86 @@ export function TicketUploadForm({ draws }: { draws: DrawOption[] }) {
           disabled={loading}
           className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
         >
-          {loading ? "กำลังอัปโหลด..." : "อัปโหลดรูปหวย"}
+          {loading ? "กำลังให้ AI อ่านเลข..." : "อัปโหลดรูปหวยให้ AI ตรวจ"}
         </button>
         {message && <p className="text-sm text-slate-600">{message}</p>}
       </div>
+
+      {result && (
+        <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+          <p className="text-sm font-semibold text-slate-700">ผลจาก AI</p>
+          <div className="mt-4 grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              {result.ticketPhotoUrl ? (
+                <Image
+                  src={result.ticketPhotoUrl}
+                  alt="Ticket Preview"
+                  width={600}
+                  height={800}
+                  className="h-auto w-full"
+                  unoptimized
+                />
+              ) : null}
+            </div>
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-white p-4">
+                <p className="text-sm font-semibold text-slate-700">เลขที่ AI อ่านได้</p>
+                {result.ocrResult ? (
+                  <div className="mt-3 space-y-1 font-mono text-sm text-slate-700">
+                    <p>{result.ocrResult.mainNumbers.join(",")} | {result.ocrResult.specialNumber}</p>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-slate-500">AI ยังอ่านเลขไม่ได้</p>
+                )}
+              </div>
+
+              <div className="rounded-2xl bg-white p-4">
+                <p className="text-sm font-semibold text-slate-700">เลือกออเดอร์ที่ตรงกับตั๋ว</p>
+                {result.candidates && result.candidates.length > 0 ? (
+                  <div className="mt-3 space-y-3">
+                    {result.candidates.map((candidate) => (
+                      <label
+                        key={candidate.orderItemId}
+                        className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-3"
+                      >
+                        <input
+                          type="radio"
+                          name="candidateOrderItem"
+                          value={candidate.orderItemId}
+                          checked={selectedOrderItemId === candidate.orderItemId}
+                          onChange={(e) => setSelectedOrderItemId(e.target.value)}
+                          className="mt-1"
+                        />
+                        <div className="text-sm text-slate-600">
+                          <p className="font-semibold text-slate-950">{candidate.customerName}</p>
+                          <p>{candidate.customerEmail}</p>
+                          <p className="font-mono">{candidate.numbers}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-rose-600">
+                    AI อ่านเลขได้ แต่ยังหาคู่ที่ตรงในระบบไม่เจอ ให้ตรวจรูปและออเดอร์ด้วยตัวเองก่อน
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={confirming || !selectedOrderItemId}
+                  className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                >
+                  {confirming ? "กำลังยืนยัน..." : "ยืนยันรายการนี้"}
+                </button>
+                <p className="text-sm text-slate-500">AI เป็นตัวช่วยอ่านเลข และแอดมินเป็นผู้ยืนยันขั้นสุดท้าย</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   )
 }
