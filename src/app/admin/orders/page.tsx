@@ -33,8 +33,10 @@ export default async function AdminOrdersPage() {
                   <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">
                     ORDER ID {order.id.slice(-8).toUpperCase()}
                   </p>
-                  <h3 className="mt-2 text-xl font-semibold text-slate-950">{order.user.name}</h3>
-                  <p className="text-sm text-slate-500">{order.user.email}</p>
+                  <div className="mt-3 space-y-1">
+                    <p className="text-sm font-medium text-slate-500">ชื่อลูกค้า: {order.user.name}</p>
+                    <p className="text-sm text-slate-500">อีเมลลูกค้า: {order.user.email}</p>
+                  </div>
                 </div>
                 <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
                   <p>ประเภท: {order.draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"}</p>
