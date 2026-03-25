@@ -3,8 +3,34 @@ import { DeleteMemberButton } from "@/components/admin/DeleteMemberButton"
 import { MakeReferrerButton } from "@/components/admin/MakeReferrerButton"
 import { ensureReferralTables, getReferralMaps } from "@/lib/referrals"
 
+type MonthlyCommissionSummary = {
+  referrerShareTHB: string
+  profitTHB: string
+  platformShareTHB: string
+  commissionCount: number
+}
+
+type ReferrerMonthlyRow = {
+  referrerUserId: string
+  referrerName: string
+  referralCode: string
+  approvedOrders: number
+  referrerShareTHB: string
+}
+
+function formatCurrency(value: number) {
+  return `${value.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} บาท`
+}
+
 export default async function AdminMembersPage() {
   await ensureReferralTables()
+
+  const monthStart = new Date()
+  monthStart.setDate(1)
+  monthStart.setHours(0, 0, 0, 0)
+
+  const nextMonthStart = new Date(monthStart)
+  nextMonthStart.setMonth(nextMonthStart.getMonth() + 1)
 
   const members = await prisma.user.findMany({
     where: { role: "CUSTOMER" },
@@ -12,9 +38,50 @@ export default async function AdminMembersPage() {
     orderBy: { createdAt: "desc" },
   })
   const { profiles, referrals } = await getReferralMaps()
+  const monthlySummaryRows = await prisma.$queryRaw<MonthlyCommissionSummary[]>`
+    SELECT
+      COALESCE(SUM("amountTHB"), 0)::text AS "referrerShareTHB",
+      COALESCE(SUM(COALESCE("profitTHB", "amountTHB" * 2)), 0)::text AS "profitTHB",
+      COALESCE(SUM(COALESCE("platformShareTHB", "amountTHB")), 0)::text AS "platformShareTHB",
+      COUNT(*)::int AS "commissionCount"
+    FROM "Commission"
+    WHERE "status" IN ('PENDING', 'APPROVED')
+      AND "createdAt" >= ${monthStart}
+      AND "createdAt" < ${nextMonthStart}
+  `
+  const topReferrers = await prisma.$queryRaw<ReferrerMonthlyRow[]>`
+    SELECT
+      c."referrerUserId" AS "referrerUserId",
+      u."name" AS "referrerName",
+      rp."referralCode" AS "referralCode",
+      COUNT(c."id")::int AS "approvedOrders",
+      COALESCE(SUM(c."amountTHB"), 0)::text AS "referrerShareTHB"
+    FROM "Commission" c
+    JOIN "User" u ON u."id" = c."referrerUserId"
+    LEFT JOIN "ReferrerProfile" rp ON rp."userId" = c."referrerUserId"
+    WHERE c."status" IN ('PENDING', 'APPROVED')
+      AND c."createdAt" >= ${monthStart}
+      AND c."createdAt" < ${nextMonthStart}
+    GROUP BY c."referrerUserId", u."name", rp."referralCode"
+    ORDER BY COALESCE(SUM(c."amountTHB"), 0) DESC
+    LIMIT 10
+  `
+
   const profileMap = new Map(profiles.map((profile) => [profile.userId, profile.referralCode]))
   const referralMap = new Map(referrals.map((referral) => [referral.userId, referral]))
   const memberNameMap = new Map(members.map((member) => [member.id, member.name]))
+  const monthlySummary = monthlySummaryRows[0] ?? {
+    referrerShareTHB: "0",
+    profitTHB: "0",
+    platformShareTHB: "0",
+    commissionCount: 0,
+  }
+  const monthlyCards = [
+    { label: "กำไรเดือนนี้", value: formatCurrency(Number(monthlySummary.profitTHB)) },
+    { label: "ผู้แนะนำได้", value: formatCurrency(Number(monthlySummary.referrerShareTHB)) },
+    { label: "ระบบเหลือ", value: formatCurrency(Number(monthlySummary.platformShareTHB)) },
+    { label: "ออเดอร์มีค่าคอม", value: String(monthlySummary.commissionCount) },
+  ]
 
   return (
     <section className="space-y-6">
@@ -24,6 +91,55 @@ export default async function AdminMembersPage() {
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
           ดูรายชื่อสมาชิก ข้อมูลติดต่อ และจำนวนออเดอร์ที่แต่ละคนเคยสร้างไว้
         </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {monthlyCards.map((card) => (
+          <div key={card.label} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-medium text-slate-500">{card.label}</p>
+            <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-950">สรุปค่าคอมผู้แนะนำรายเดือน</h3>
+            <p className="mt-1 text-sm text-slate-500">ระบบแบ่งกำไรจากค่าบริการให้ผู้แนะนำแบบ 50/50</p>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="text-left text-slate-400">
+              <tr>
+                <th className="pb-3 pr-4 font-medium">ผู้แนะนำ</th>
+                <th className="pb-3 pr-4 font-medium">รหัสผู้แนะนำ</th>
+                <th className="pb-3 pr-4 font-medium">ออเดอร์ที่ได้คอม</th>
+                <th className="pb-3 pr-4 font-medium">ค่าคอมเดือนนี้</th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-700">
+              {topReferrers.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-4 text-sm text-slate-500">
+                    เดือนนี้ยังไม่มีค่าคอมผู้แนะนำ
+                  </td>
+                </tr>
+              ) : (
+                topReferrers.map((referrer) => (
+                  <tr key={referrer.referrerUserId} className="border-t border-slate-100">
+                    <td className="py-3 pr-4 font-medium text-slate-950">{referrer.referrerName}</td>
+                    <td className="py-3 pr-4 font-mono text-xs text-emerald-700">{referrer.referralCode}</td>
+                    <td className="py-3 pr-4">{referrer.approvedOrders}</td>
+                    <td className="py-3 pr-4">{formatCurrency(Number(referrer.referrerShareTHB))}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -137,7 +137,8 @@ export async function POST(req: NextRequest) {
   await createCommissionForOrder({
     orderId: order.id,
     referredUserId: session.user.id,
-    totalTHB: Number(order.totalTHB),
+    itemCount: order.items.length,
+    rateUsed: Number(order.rateUsed),
   })
 
   return NextResponse.json(order, { status: 201 })

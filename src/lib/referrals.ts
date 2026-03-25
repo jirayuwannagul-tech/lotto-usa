@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
+import { MARGIN_USD } from "@/lib/lottery-rules"
 
-export const REFERRAL_COMMISSION_RATE = 5
+export const REFERRAL_PROFIT_SHARE_RATE = 50
 
 type ReferrerProfileRow = {
   userId: string
@@ -52,12 +53,29 @@ export async function ensureReferralTables() {
           "referrerUserId" TEXT NOT NULL,
           "referredUserId" TEXT NOT NULL,
           "amountTHB" NUMERIC(12,2) NOT NULL,
-          "rate" NUMERIC(5,2) NOT NULL DEFAULT 5,
+          "rate" NUMERIC(5,2) NOT NULL DEFAULT 50,
+          "profitTHB" NUMERIC(12,2) NOT NULL DEFAULT 0,
+          "platformShareTHB" NUMERIC(12,2) NOT NULL DEFAULT 0,
           "status" TEXT NOT NULL DEFAULT 'PENDING',
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "approvedAt" TIMESTAMP(3),
           "paidAt" TIMESTAMP(3)
         )
+      `)
+
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "Commission"
+        ADD COLUMN IF NOT EXISTS "profitTHB" NUMERIC(12,2) NOT NULL DEFAULT 0
+      `)
+
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "Commission"
+        ADD COLUMN IF NOT EXISTS "platformShareTHB" NUMERIC(12,2) NOT NULL DEFAULT 0
+      `)
+
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "Commission"
+        ALTER COLUMN "rate" SET DEFAULT 50
       `)
     })()
   }
@@ -138,7 +156,8 @@ export async function getReferralMaps() {
 export async function createCommissionForOrder(params: {
   orderId: string
   referredUserId: string
-  totalTHB: number
+  itemCount: number
+  rateUsed: number
 }) {
   await ensureReferralTables()
 
@@ -152,17 +171,21 @@ export async function createCommissionForOrder(params: {
   const referral = referralRows[0]
   if (!referral) return null
 
-  const amountTHB = Number(((params.totalTHB * REFERRAL_COMMISSION_RATE) / 100).toFixed(2))
+  const totalProfitTHB = Number((MARGIN_USD * params.itemCount * params.rateUsed).toFixed(2))
+  const amountTHB = Number((totalProfitTHB * 0.5).toFixed(2))
+  const platformShareTHB = Number((totalProfitTHB - amountTHB).toFixed(2))
 
   await prisma.$executeRaw`
-    INSERT INTO "Commission" ("id", "orderId", "referrerUserId", "referredUserId", "amountTHB", "rate", "status")
-    VALUES (${crypto.randomUUID()}, ${params.orderId}, ${referral.referrerUserId}, ${params.referredUserId}, ${amountTHB}, ${REFERRAL_COMMISSION_RATE}, ${"PENDING"})
+    INSERT INTO "Commission" ("id", "orderId", "referrerUserId", "referredUserId", "amountTHB", "rate", "profitTHB", "platformShareTHB", "status")
+    VALUES (${crypto.randomUUID()}, ${params.orderId}, ${referral.referrerUserId}, ${params.referredUserId}, ${amountTHB}, ${REFERRAL_PROFIT_SHARE_RATE}, ${totalProfitTHB}, ${platformShareTHB}, ${"PENDING"})
     ON CONFLICT ("orderId") DO NOTHING
   `
 
   return {
     referrerUserId: referral.referrerUserId,
     amountTHB,
+    profitTHB: totalProfitTHB,
+    platformShareTHB,
   }
 }
 
