@@ -24,7 +24,7 @@ export async function sendMessage(
   parseMode: "Markdown" | "HTML" | "MarkdownV2" = "Markdown",
   messageThreadId?: number
 ) {
-  await fetch(`${BASE}/sendMessage`, {
+  const res = await fetch(`${BASE}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -34,6 +34,15 @@ export async function sendMessage(
       ...(messageThreadId ? { message_thread_id: messageThreadId } : {}),
     }),
   })
+
+  const data = await res.json().catch(() => null) as
+    | { ok?: boolean; description?: string }
+    | null
+
+  if (!res.ok || !data?.ok) {
+    const detail = data?.description || `HTTP ${res.status}`
+    throw new Error(`Telegram sendMessage failed for chat ${chatId}: ${detail}`)
+  }
 }
 
 // ---- File ----------------------------------------------------------------

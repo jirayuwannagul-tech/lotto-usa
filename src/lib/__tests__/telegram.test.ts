@@ -32,7 +32,10 @@ describe("sendMessage & sendAdminMessage (fetch mocked)", () => {
   beforeEach(() => {
     vi.resetModules()
     vi.stubGlobal("fetch", mockFetch)
-    mockFetch.mockResolvedValue({ ok: true })
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ ok: true }),
+    })
     process.env.TELEGRAM_BOT_TOKEN = "test-token-123"
     process.env.TELEGRAM_ADMIN_CHAT_IDS = "111,222"
     process.env.TELEGRAM_REALTIME_CHAT_IDS = "333"
@@ -117,5 +120,17 @@ describe("sendMessage & sendAdminMessage (fetch mocked)", () => {
     const body = JSON.parse(options.body)
     expect(body.chat_id).toBe("555")
     expect(body.message_thread_id).toBe(40)
+  })
+
+  it("throws when Telegram API reports failure", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: vi.fn().mockResolvedValue({ ok: false, description: "Bad Request: chat not found" }),
+    })
+    const { sendMessage } = await import("../telegram")
+    await expect(sendMessage("999", "Test message")).rejects.toThrow(
+      "Telegram sendMessage failed for chat 999: Bad Request: chat not found"
+    )
   })
 })
