@@ -11,9 +11,12 @@ interface CheckoutSet {
 }
 
 interface CheckoutState {
+  orderId?: string
   title: string
   drawType: string
   sets: CheckoutSet[]
+  totalTHB?: string | number
+  totalUSD?: string | number
 }
 
 function formatBaht(amount: number) {
@@ -31,14 +34,57 @@ export default function PaymentPage() {
       return null
     }
   })
+  const [slip, setSlip] = useState<File | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null)
 
   const ticketCount = checkout?.sets?.length ?? 0
   const rule = checkout ? LOTTERY_RULES[checkout.drawType as keyof typeof LOTTERY_RULES] : null
-  const estimatedTotalThb = rule ? Math.round((rule.priceUSD + MARGIN_USD) * ticketCount * 35) : 0
+  const estimatedTotalThb =
+    typeof checkout?.totalTHB === "number"
+      ? checkout.totalTHB
+      : typeof checkout?.totalTHB === "string"
+        ? Number(checkout.totalTHB)
+        : rule
+          ? Math.round((rule.priceUSD + MARGIN_USD) * ticketCount * 35)
+          : 0
   const referenceId =
     checkout && ticketCount > 0
       ? `${checkout.drawType.slice(0, 3)}-${String(ticketCount).padStart(2, "0")}-${checkout.sets[0]?.specialNumber ?? "00"}`
       : "-"
+
+  async function handleUploadSlip(e: React.FormEvent) {
+    e.preventDefault()
+    if (!checkout?.orderId || !slip) {
+      setUploadMessage("กรุณาเลือกสลิปก่อนส่ง")
+      return
+    }
+
+    setSubmitting(true)
+    setUploadMessage(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("orderId", checkout.orderId)
+      formData.append("slip", slip)
+
+      const response = await fetch("/api/payments", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        setUploadMessage(data?.error ?? "อัปโหลดสลิปไม่สำเร็จ")
+        return
+      }
+
+      setUploadMessage("อัปโหลดสลิปสำเร็จ รอแอดมินตรวจสอบออเดอร์")
+      setSlip(null)
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 sm:px-6 sm:py-14">
@@ -124,6 +170,27 @@ export default function PaymentPage() {
                 หลังจากโอนเงินแล้ว ให้เก็บสลิปไว้สำหรับแนบในขั้นตอนถัดไป
               </p>
             </div>
+
+            <form onSubmit={handleUploadSlip} className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">อัปโหลดสลิป</label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => setSlip(e.target.files?.[0] ?? null)}
+                className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium"
+              />
+              <button
+                type="submit"
+                disabled={submitting || !checkout?.orderId}
+                className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-40"
+              >
+                {submitting ? "กำลังส่งสลิป..." : "ส่งสลิปให้แอดมินตรวจสอบ"}
+              </button>
+              {!checkout?.orderId && (
+                <p className="mt-3 text-xs text-rose-600">ยังไม่พบออเดอร์ที่ผูกกับรายการนี้ กรุณากลับไปสั่งซื้อใหม่</p>
+              )}
+              {uploadMessage && <p className="mt-3 text-sm text-slate-600">{uploadMessage}</p>}
+            </form>
           </aside>
         </div>
       </div>

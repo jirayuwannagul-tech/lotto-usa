@@ -3,12 +3,26 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { LotteryPurchasePanel } from "@/components/lottery/LotteryPurchasePanel"
 import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { syncUpcomingDraws } from "@/lib/draw-schedule"
 
 export const dynamic = "force-dynamic"
 
 export default async function PowerBallPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect("/login")
+
+  const drawCount = await prisma.draw.count({ where: { isOpen: true } })
+  if (drawCount === 0) {
+    await syncUpcomingDraws(prisma)
+  }
+
+  const draw = await prisma.draw.findFirst({
+    where: { isOpen: true, type: "POWERBALL" },
+    orderBy: { drawDate: "asc" },
+  })
+
+  if (!draw) redirect("/")
 
   return (
     <div className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 sm:px-6 sm:py-14">
@@ -20,7 +34,12 @@ export default async function PowerBallPage() {
           </Link>
         </div>
 
-        <LotteryPurchasePanel title="Power Ball" drawType="POWERBALL" accentClass="text-rose-600" />
+        <LotteryPurchasePanel
+          title="Power Ball"
+          drawType="POWERBALL"
+          drawId={draw.id}
+          accentClass="text-rose-600"
+        />
       </div>
     </div>
   )

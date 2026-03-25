@@ -1,5 +1,6 @@
+import Link from "next/link"
 import { prisma } from "@/lib/prisma"
-import { ApproveOrderButton } from "@/components/admin/ApproveOrderButton"
+import { AdminApproveButton } from "@/components/admin/AdminApproveButton"
 
 export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({
@@ -41,6 +42,22 @@ export default async function AdminOrdersPage() {
                   <p>ยอดรวม: {Number(order.totalTHB).toLocaleString("th-TH")} บาท</p>
                   <p>ชำระเงิน: {order.payment?.status ?? "ยังไม่มีสลิป"}</p>
                 </div>
+                {order.payment && (
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      href={`/api/payments/${order.payment.id}/slip`}
+                      target="_blank"
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      ดูสลิป
+                    </Link>
+                    {order.payment.rejectNote && (
+                      <span className="rounded-xl bg-rose-50 px-4 py-2 text-sm text-rose-700">
+                        เหตุผลที่ปฏิเสธ: {order.payment.rejectNote}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="rounded-2xl bg-slate-50 p-4">
                   <p className="text-sm font-semibold text-slate-700">เลขที่ลูกค้าซื้อ</p>
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -58,7 +75,7 @@ export default async function AdminOrdersPage() {
 
               <div className="flex shrink-0 items-center gap-3">
                 {order.payment?.status === "PENDING" ? (
-                  <ApproveOrderButton paymentId={order.payment.id} />
+                  <AdminApproveButton paymentId={order.payment.id} orderId={order.id} />
                 ) : (
                   <span className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-500">
                     {order.payment?.status === "APPROVED" ? "ยืนยันแล้ว" : "รอสลิป"}
