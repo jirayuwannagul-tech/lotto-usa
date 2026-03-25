@@ -13,6 +13,9 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-10">
+          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+            ยินดีต้อนรับ กรุณาเข้าสู่ระบบเพื่อซื้อหวยและติดตามสถานะออเดอร์ของคุณ
+          </div>
           <LoginForm redirectTo="/" />
         </div>
       </div>

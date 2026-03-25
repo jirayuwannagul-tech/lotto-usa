@@ -103,11 +103,6 @@ export default async function Home() {
           <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
             <div>
               <p className="text-xs font-semibold tracking-[0.22em] text-emerald-600">บริการหวยอเมริกา</p>
-              {isCustomer && session?.user?.name ? (
-                <div className="mt-4 inline-flex items-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                  ยินดีต้อนรับ, {session.user.name}
-                </div>
-              ) : null}
               <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
                 เว็บนี้ใช้สำหรับซื้อหวยอเมริกา
               </h1>
