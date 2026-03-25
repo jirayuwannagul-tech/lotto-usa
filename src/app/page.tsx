@@ -34,7 +34,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
-      <main className="mx-auto max-w-5xl px-5 py-8 sm:px-6 sm:py-12">
+      <main className="mx-auto max-w-[32rem] px-5 py-8 sm:px-6 sm:py-12">
         <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center">
