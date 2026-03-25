@@ -1,7 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
 import { getServerSession } from "next-auth"
-import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { syncUpcomingDraws } from "@/lib/draw-schedule"
 import { HomeDrawCountdown } from "@/components/home/HomeDrawCountdown"
@@ -48,9 +47,7 @@ export default async function Home() {
   const powerballDraw = pickDraw(draws, "POWERBALL")
   const megaBallDraw = pickDraw(draws, "MEGA_MILLIONS")
   const isCustomer = session?.user?.role === "CUSTOMER"
-  if (session?.user?.role === "ADMIN") {
-    redirect("/admin")
-  }
+  const isAdmin = session?.user?.role === "ADMIN"
   const lotteryHref = isCustomer ? "/power-ball" : "/login"
   const megaHref = isCustomer ? "/mega-ball" : "/login"
   const salesDay = getSalesDayContext()
@@ -85,6 +82,11 @@ export default async function Home() {
                     className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-950"
                   />
                 </>
+              ) : isAdmin ? (
+                <LogoutButton
+                  redirectTo="/"
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-950"
+                />
               ) : (
                 <>
                   <Link href="/login" className="text-slate-500 transition hover:text-slate-950">
