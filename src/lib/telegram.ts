@@ -9,17 +9,30 @@ function getChatIds(envKey: string) {
   return raw.split(",").map((s) => s.trim()).filter(Boolean)
 }
 
+function getThreadId(envKey: string) {
+  const raw = process.env[envKey]
+  if (!raw) return undefined
+  const value = Number(raw)
+  return Number.isFinite(value) ? value : undefined
+}
+
 // ---- Send ----------------------------------------------------------------
 
 export async function sendMessage(
   chatId: number | string,
   text: string,
-  parseMode: "Markdown" | "HTML" | "MarkdownV2" = "Markdown"
+  parseMode: "Markdown" | "HTML" | "MarkdownV2" = "Markdown",
+  messageThreadId?: number
 ) {
   await fetch(`${BASE}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: parseMode }),
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: parseMode,
+      ...(messageThreadId ? { message_thread_id: messageThreadId } : {}),
+    }),
   })
 }
 
@@ -52,26 +65,30 @@ export function isAllowedChat(chatId: number): boolean {
 
 export async function sendAdminMessage(text: string) {
   const ids = getChatIds("TELEGRAM_ADMIN_CHAT_IDS")
+  const threadId = getThreadId("TELEGRAM_ADMIN_THREAD_ID")
   if (ids.length === 0 || !BOT_TOKEN) return
-  await Promise.all(ids.map((id) => sendMessage(id, text)))
+  await Promise.all(ids.map((id) => sendMessage(id, text, "Markdown", threadId)))
 }
 
 export async function sendRealtimeMessage(text: string) {
   const ids = getChatIds("TELEGRAM_REALTIME_CHAT_IDS")
+  const threadId = getThreadId("TELEGRAM_REALTIME_THREAD_ID")
   if (ids.length === 0 || !BOT_TOKEN) return
-  await Promise.all(ids.map((id) => sendMessage(id, text)))
+  await Promise.all(ids.map((id) => sendMessage(id, text, "Markdown", threadId)))
 }
 
 export async function sendDailySummaryMessage(text: string) {
   const ids = getChatIds("TELEGRAM_DAILY_SUMMARY_CHAT_IDS")
+  const threadId = getThreadId("TELEGRAM_DAILY_SUMMARY_THREAD_ID")
   if (ids.length === 0 || !BOT_TOKEN) return
-  await Promise.all(ids.map((id) => sendMessage(id, text)))
+  await Promise.all(ids.map((id) => sendMessage(id, text, "Markdown", threadId)))
 }
 
 export async function sendApprovalMessage(text: string) {
   const ids = getChatIds("TELEGRAM_APPROVAL_CHAT_IDS")
+  const threadId = getThreadId("TELEGRAM_APPROVAL_THREAD_ID")
   if (ids.length === 0 || !BOT_TOKEN) return
-  await Promise.all(ids.map((id) => sendMessage(id, text)))
+  await Promise.all(ids.map((id) => sendMessage(id, text, "Markdown", threadId)))
 }
 
 // ---- Types ---------------------------------------------------------------

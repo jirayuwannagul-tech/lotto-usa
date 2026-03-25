@@ -38,6 +38,10 @@ describe("sendMessage & sendAdminMessage (fetch mocked)", () => {
     process.env.TELEGRAM_REALTIME_CHAT_IDS = "333"
     process.env.TELEGRAM_DAILY_SUMMARY_CHAT_IDS = "444"
     process.env.TELEGRAM_APPROVAL_CHAT_IDS = "555"
+    process.env.TELEGRAM_ADMIN_THREAD_ID = "10"
+    process.env.TELEGRAM_REALTIME_THREAD_ID = "20"
+    process.env.TELEGRAM_DAILY_SUMMARY_THREAD_ID = "30"
+    process.env.TELEGRAM_APPROVAL_THREAD_ID = "40"
   })
 
   afterEach(() => {
@@ -48,6 +52,10 @@ describe("sendMessage & sendAdminMessage (fetch mocked)", () => {
     delete process.env.TELEGRAM_REALTIME_CHAT_IDS
     delete process.env.TELEGRAM_DAILY_SUMMARY_CHAT_IDS
     delete process.env.TELEGRAM_APPROVAL_CHAT_IDS
+    delete process.env.TELEGRAM_ADMIN_THREAD_ID
+    delete process.env.TELEGRAM_REALTIME_THREAD_ID
+    delete process.env.TELEGRAM_DAILY_SUMMARY_THREAD_ID
+    delete process.env.TELEGRAM_APPROVAL_THREAD_ID
   })
 
   it("sendMessage calls Telegram API", async () => {
@@ -72,6 +80,9 @@ describe("sendMessage & sendAdminMessage (fetch mocked)", () => {
     const { sendAdminMessage } = await import("../telegram")
     await sendAdminMessage("Broadcast")
     expect(mockFetch).toHaveBeenCalledTimes(2)
+    const [, options] = mockFetch.mock.calls[0]
+    const body = JSON.parse(options.body)
+    expect(body.message_thread_id).toBe(10)
   })
 
   it("sendAdminMessage does nothing without BOT_TOKEN", async () => {
@@ -87,6 +98,7 @@ describe("sendMessage & sendAdminMessage (fetch mocked)", () => {
     const [, options] = mockFetch.mock.calls[0]
     const body = JSON.parse(options.body)
     expect(body.chat_id).toBe("333")
+    expect(body.message_thread_id).toBe(20)
   })
 
   it("sendDailySummaryMessage uses daily summary chat IDs", async () => {
@@ -95,6 +107,7 @@ describe("sendMessage & sendAdminMessage (fetch mocked)", () => {
     const [, options] = mockFetch.mock.calls[0]
     const body = JSON.parse(options.body)
     expect(body.chat_id).toBe("444")
+    expect(body.message_thread_id).toBe(30)
   })
 
   it("sendApprovalMessage uses approval chat IDs", async () => {
@@ -103,5 +116,6 @@ describe("sendMessage & sendAdminMessage (fetch mocked)", () => {
     const [, options] = mockFetch.mock.calls[0]
     const body = JSON.parse(options.body)
     expect(body.chat_id).toBe("555")
+    expect(body.message_thread_id).toBe(40)
   })
 })
