@@ -1,4 +1,5 @@
 import Link from "next/link"
+import LoginForm from "@/components/shared/LoginForm"
 
 export default function LoginPage() {
   return (
@@ -11,29 +12,8 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div className="mt-10 space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700">อีเมล</label>
-            <input
-              type="email"
-              className="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
-              placeholder="you@example.com"
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700">รหัสผ่าน</label>
-            <input
-              type="password"
-              className="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
-              placeholder="••••••••"
-            />
-          </div>
-          <button
-            type="button"
-            className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            Login
-          </button>
+        <div className="mt-10">
+          <LoginForm redirectTo="/" />
         </div>
       </div>
     </div>
