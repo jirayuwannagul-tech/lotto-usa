@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { DeleteMemberButton } from "@/components/admin/DeleteMemberButton"
 
 export default async function AdminMembersPage() {
   const members = await prisma.user.findMany({
@@ -27,6 +28,7 @@ export default async function AdminMembersPage() {
                 <th className="pb-3 pr-4 font-medium">เบอร์โทร</th>
                 <th className="pb-3 pr-4 font-medium">Line ID</th>
                 <th className="pb-3 pr-4 font-medium">จำนวนออเดอร์</th>
+                <th className="pb-3 pr-4 font-medium">จัดการ</th>
               </tr>
             </thead>
             <tbody className="text-slate-700">
@@ -37,6 +39,9 @@ export default async function AdminMembersPage() {
                   <td className="py-3 pr-4">{member.phone ?? "-"}</td>
                   <td className="py-3 pr-4">{member.lineId ?? "-"}</td>
                   <td className="py-3 pr-4">{member._count.orders}</td>
+                  <td className="py-3 pr-4">
+                    <DeleteMemberButton userId={member.id} userLabel={member.email} />
+                  </td>
                 </tr>
               ))}
             </tbody>
