@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { LOTTERY_RULES, MARGIN_USD } from "@/lib/lottery-rules"
 
 interface CheckoutSet {
@@ -19,12 +19,20 @@ interface CheckoutState {
   totalUSD?: string | number
 }
 
+interface OrderResponse {
+  id: string
+  draw: { type: string }
+  items: { mainNumbers: string; specialNumber: string }[]
+  totalTHB: string | number
+}
+
 function formatBaht(amount: number) {
   return amount.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
 export default function PaymentPage() {
-  const [checkout] = useState<CheckoutState | null>(() => {
+  const [orderIdFromQuery, setOrderIdFromQuery] = useState<string | null>(null)
+  const [checkout, setCheckout] = useState<CheckoutState | null>(() => {
     if (typeof window === "undefined") return null
     const raw = window.sessionStorage.getItem("lottery_checkout")
     if (!raw) return null
@@ -37,6 +45,43 @@ export default function PaymentPage() {
   const [slip, setSlip] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [uploadMessage, setUploadMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const query = new URLSearchParams(window.location.search)
+    setOrderIdFromQuery(query.get("orderId"))
+  }, [])
+
+  useEffect(() => {
+    if (!orderIdFromQuery) return
+    if (checkout?.orderId === orderIdFromQuery) return
+
+    let active = true
+
+    async function loadOrder() {
+      const response = await fetch(`/api/orders/${orderIdFromQuery}`)
+      const data = await response.json().catch(() => null)
+      if (!response.ok || !data || !active) return
+
+      const order = data as OrderResponse
+      setCheckout({
+        orderId: order.id,
+        title: order.draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball",
+        drawType: order.draw.type,
+        sets: order.items.map((item) => ({
+          mainNumbers: item.mainNumbers.split(","),
+          specialNumber: item.specialNumber,
+        })),
+        totalTHB: order.totalTHB,
+      })
+    }
+
+    void loadOrder()
+
+    return () => {
+      active = false
+    }
+  }, [checkout?.orderId, orderIdFromQuery])
 
   const ticketCount = checkout?.sets?.length ?? 0
   const rule = checkout ? LOTTERY_RULES[checkout.drawType as keyof typeof LOTTERY_RULES] : null

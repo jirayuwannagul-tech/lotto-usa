@@ -201,6 +201,21 @@ export default async function DashboardPage() {
                         <p className="mt-3 text-base font-semibold">{resultSummary.title}</p>
                         <p className="mt-2 whitespace-pre-line text-sm leading-7">{resultSummary.detail}</p>
                       </div>
+
+                      {order.status === "PENDING_PAYMENT" && (
+                        <div className="rounded-2xl bg-white p-4">
+                          <p className="text-sm font-semibold text-slate-700">การชำระเงิน</p>
+                          <p className="mt-2 text-sm leading-7 text-slate-600">
+                            ออเดอร์นี้ยังรอการชำระเงิน คุณสามารถไปหน้า QR และแนบสลิปได้จากปุ่มด้านล่าง
+                          </p>
+                          <Link
+                            href={`/payment?orderId=${order.id}`}
+                            className="mt-4 inline-flex rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                          >
+                            ไปชำระเงิน / แนบสลิป
+                          </Link>
+                        </div>
+                      )}
                     </div>
 
                     <div className="shrink-0">
