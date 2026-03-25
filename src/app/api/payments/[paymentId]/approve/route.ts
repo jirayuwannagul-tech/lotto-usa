@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendAdminMessage } from "@/lib/telegram"
+import { sendAdminMessage, sendApprovalMessage, sendRealtimeMessage } from "@/lib/telegram"
 import { approveCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
 
 export async function PATCH(_: NextRequest, { params }: { params: Promise<{ paymentId: string }> }) {
@@ -58,7 +58,11 @@ ${itemLines}
 💰 $${order.totalUSD} = ${order.totalTHB} บาท
 อัตรา: $1 = ${order.rateUsed} บาท`
 
-  await sendAdminMessage(message)
+  await Promise.all([
+    sendAdminMessage(message),
+    sendApprovalMessage(message),
+    sendRealtimeMessage(message),
+  ])
 
   return NextResponse.json({ success: true })
 }
