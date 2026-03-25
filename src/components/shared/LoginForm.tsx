@@ -22,7 +22,10 @@ export default function LoginForm({
   theme = "light",
 }: LoginFormProps) {
   const router = useRouter()
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(() => {
+    if (typeof window === "undefined") return ""
+    return window.localStorage.getItem("lotto_last_login_email") ?? ""
+  })
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -47,6 +50,7 @@ export default function LoginForm({
       }
 
       const nextPath = role === "ADMIN" ? "/admin" : redirectTo
+      window.localStorage.setItem("lotto_last_login_email", email)
       router.push(nextPath)
       router.refresh()
     }
@@ -63,6 +67,7 @@ export default function LoginForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="example@email.com"
+          autoComplete="email"
           className={cn(
             isDark
               ? "border-white/20 bg-white/10 text-white placeholder:text-white/40"
@@ -80,6 +85,7 @@ export default function LoginForm({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
+          autoComplete="current-password"
           className={cn(
             isDark
               ? "border-white/20 bg-white/10 text-white placeholder:text-white/40"
