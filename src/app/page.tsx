@@ -58,7 +58,9 @@ export default async function Home() {
             <div className="flex items-center gap-3 text-sm font-semibold">
               {isCustomer ? (
                 <>
-                  <span className="text-slate-700">{session.user.name}</span>
+                  <Link href="/dashboard" className="text-slate-700 transition hover:text-slate-950">
+                    {session.user.name}
+                  </Link>
                   <LogoutButton
                     redirectTo="/"
                     className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-950"
