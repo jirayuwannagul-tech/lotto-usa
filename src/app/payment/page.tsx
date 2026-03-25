@@ -91,9 +91,14 @@ export default function PaymentPage() {
       <div className="mx-auto max-w-4xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="flex items-center justify-between">
           <p className="text-lg font-semibold tracking-tight text-slate-950">ชำระเงิน</p>
-          <Link href="/" className="text-sm font-semibold text-slate-500 transition hover:text-slate-950">
-            กลับหน้าแรก
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard" className="text-sm font-semibold text-slate-500 transition hover:text-slate-950">
+              ไปหน้าแดชบอร์ด
+            </Link>
+            <Link href="/" className="text-sm font-semibold text-slate-500 transition hover:text-slate-950">
+              กลับหน้าแรก
+            </Link>
+          </div>
         </div>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
