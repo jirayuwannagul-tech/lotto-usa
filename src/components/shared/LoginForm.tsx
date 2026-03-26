@@ -22,9 +22,11 @@ export default function LoginForm({
   theme = "light",
 }: LoginFormProps) {
   const router = useRouter()
+  const storageKey = portal === "admin" ? "lotto_last_admin_email" : "lotto_last_customer_email"
+  const defaultEmail = portal === "admin" ? "admin@lottousa.com" : ""
   const [email, setEmail] = useState(() => {
     if (typeof window === "undefined") return ""
-    return window.localStorage.getItem("lotto_last_login_email") ?? ""
+    return window.localStorage.getItem(storageKey) ?? defaultEmail
   })
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -56,24 +58,26 @@ export default function LoginForm({
       }
 
       const nextPath = role === "ADMIN" ? "/admin" : redirectTo
-      window.localStorage.setItem("lotto_last_login_email", email)
+      window.localStorage.setItem(storageKey, email)
       router.push(nextPath)
       router.refresh()
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
       <div>
         <label className={cn("mb-1 block text-sm", isDark ? "text-white/70" : "text-slate-700")}>
           อีเมล
         </label>
         <Input
+          id={`${portal}-email`}
+          name="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="example@email.com"
-          autoComplete="email"
+          autoComplete="username"
           className={cn(
             isDark
               ? "border-white/20 bg-white/10 text-white placeholder:text-white/40"
@@ -87,6 +91,8 @@ export default function LoginForm({
           รหัสผ่าน
         </label>
         <Input
+          id={`${portal}-password`}
+          name="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

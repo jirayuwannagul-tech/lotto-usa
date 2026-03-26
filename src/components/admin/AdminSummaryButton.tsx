@@ -11,14 +11,16 @@ export function AdminSummaryButton() {
     setResult(null)
     try {
       const res = await fetch("/api/admin/daily-summary", { method: "POST" })
-      const data = await res.json()
+      const text = await res.text()
+      const data = text ? JSON.parse(text) as { error?: string } : {}
       if (res.ok) {
         setResult("✅ ส่งสรุปเข้า Telegram แล้ว")
       } else {
         setResult(`❌ ${data.error ?? "เกิดข้อผิดพลาด"}`)
       }
-    } catch {
-      setResult("❌ เชื่อมต่อไม่ได้")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "เชื่อมต่อไม่ได้"
+      setResult(`❌ ${message}`)
     } finally {
       setLoading(false)
       setTimeout(() => setResult(null), 5000)
