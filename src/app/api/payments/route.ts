@@ -5,6 +5,10 @@ import { prisma } from "@/lib/prisma"
 import { saveUploadedFile } from "@/lib/upload"
 import { sendApprovalMessage, sendRealtimeMessage } from "@/lib/telegram"
 
+function logTelegramError(scope: string, error: unknown) {
+  console.error(`[telegram:${scope}]`, error)
+}
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -53,10 +57,14 @@ export async function POST(req: NextRequest) {
       const approvalText =
         `📎 *มีออเดอร์รอกดอนุมัติ*\n\n👤 ${fullOrder.user.name}\n🎱 ${drawLabel}\n🎫 ${fullOrder.items.length} ชุด\n💰 ${Number(fullOrder.totalTHB).toFixed(0)} ฿\n\n🔗 ${adminOrdersUrl}`
 
-      await Promise.all([
-        sendRealtimeMessage(approvalText),
-        sendApprovalMessage(approvalText),
-      ])
+      try {
+        await Promise.all([
+          sendRealtimeMessage(approvalText),
+          sendApprovalMessage(approvalText),
+        ])
+      } catch (error) {
+        logTelegramError("payment-uploaded", error)
+      }
     }
 
     return NextResponse.json(payment, { status: 201 })

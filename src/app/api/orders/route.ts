@@ -9,6 +9,10 @@ import { sendRealtimeMessage } from "@/lib/telegram"
 import { getPurchasableDraw, syncUpcomingDraws } from "@/lib/draw-schedule"
 import { z } from "zod"
 
+function logTelegramError(scope: string, error: unknown) {
+  console.error(`[telegram:${scope}]`, error)
+}
+
 const itemSchema = z.object({
   mainNumbers: z.array(z.string().regex(/^\d{1,2}$/)).min(1).max(10),
   specialNumber: z.string().regex(/^\d{1,2}$/),
@@ -144,9 +148,13 @@ export async function POST(req: NextRequest) {
   })
 
   const drawLabel = draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"
-  await sendRealtimeMessage(
-    `🆕 *มีออเดอร์ใหม่*\n\n👤 ${session.user.name}\n🎯 ${drawLabel}\n🎫 ${order.items.length} ชุด\n💰 ${Number(order.totalTHB).toLocaleString("th-TH", { maximumFractionDigits: 0 })} บาท\n\nยังรอการชำระเงิน/แนบสลิป`
-  )
+  try {
+    await sendRealtimeMessage(
+      `🆕 *มีออเดอร์ใหม่*\n\n👤 ${session.user.name}\n🎯 ${drawLabel}\n🎫 ${order.items.length} ชุด\n💰 ${Number(order.totalTHB).toLocaleString("th-TH", { maximumFractionDigits: 0 })} บาท\n\nยังรอการชำระเงิน/แนบสลิป`
+    )
+  } catch (error) {
+    logTelegramError("order-created", error)
+  }
 
   return NextResponse.json(order, { status: 201 })
 }

@@ -5,6 +5,10 @@ import { prisma } from "@/lib/prisma"
 import { sendAdminMessage, sendApprovalMessage, sendRealtimeMessage } from "@/lib/telegram"
 import { approveCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
 
+function logTelegramError(scope: string, error: unknown) {
+  console.error(`[telegram:${scope}]`, error)
+}
+
 export async function PATCH(_: NextRequest, { params }: { params: Promise<{ paymentId: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session || session.user.role !== "ADMIN") {
@@ -58,11 +62,15 @@ ${itemLines}
 💰 $${order.totalUSD} = ${order.totalTHB} บาท
 อัตรา: $1 = ${order.rateUsed} บาท`
 
-  await Promise.all([
-    sendAdminMessage(message),
-    sendApprovalMessage(message),
-    sendRealtimeMessage(message),
-  ])
+  try {
+    await Promise.all([
+      sendAdminMessage(message),
+      sendApprovalMessage(message),
+      sendRealtimeMessage(message),
+    ])
+  } catch (error) {
+    logTelegramError("payment-approved", error)
+  }
 
   return NextResponse.json({ success: true })
 }
