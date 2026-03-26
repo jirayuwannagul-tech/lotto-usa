@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
+import { syncUpcomingDraws } from "@/lib/draw-schedule"
 
 function getStatusLabel(status: string, paymentStatus: string | null) {
   if (status === "PENDING_PAYMENT") return "รอชำระเงิน"
@@ -73,6 +74,9 @@ export default async function DashboardPage() {
   if (!session) redirect("/login")
   if (session.user.role === "ADMIN") redirect("/login")
 
+  await syncUpcomingDraws(prisma)
+  const now = new Date()
+
   const orders = await prisma.order.findMany({
     where: { userId: session.user.id },
     include: {
@@ -90,8 +94,8 @@ export default async function DashboardPage() {
   const pendingOrders = orders.filter((order) =>
     ["PENDING_PAYMENT", "PENDING_APPROVAL"].includes(order.status)
   ).length
-  const activeOrders = orders.filter((order) => order.draw.isOpen)
-  const historicalOrders = orders.filter((order) => !order.draw.isOpen)
+  const activeOrders = orders.filter((order) => order.draw.isOpen && order.draw.drawDate >= now)
+  const historicalOrders = orders.filter((order) => !order.draw.isOpen || order.draw.drawDate < now)
 
   return (
     <div className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 sm:px-6 sm:py-14">
@@ -180,6 +184,7 @@ function OrderCard({
     draw: {
       isOpen: boolean
       type: string
+      drawDate: Date
       winningMain: string | null
       winningSpecial: string | null
     }
