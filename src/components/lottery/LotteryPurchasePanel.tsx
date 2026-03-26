@@ -13,14 +13,14 @@ interface NumberSet {
 interface LotteryPurchasePanelProps {
   title: string
   drawType: DrawType
-  drawId: string
+  drawDateLabel: string
   accentClass: string
 }
 
 export function LotteryPurchasePanel({
   title,
   drawType,
-  drawId,
+  drawDateLabel,
   accentClass,
 }: LotteryPurchasePanelProps) {
   const router = useRouter()
@@ -36,7 +36,7 @@ export function LotteryPurchasePanel({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          drawId,
+          drawType,
           items: sets.map((set) => ({
             mainNumbers: set.mainNumbers,
             specialNumber: set.specialNumber,
@@ -73,6 +73,9 @@ export function LotteryPurchasePanel({
       <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">{title}</h1>
       <p className="mt-4 text-base leading-8 text-slate-600">
         เลือกตัวเลขเองได้ หรือกดสุ่มเลขอัตโนมัติ แล้วกดปุ่มคำสั่งซื้อที่บรรทัดล่างสุด
+      </p>
+      <p className="mt-3 text-sm font-medium text-slate-500">
+        ถ้าสั่งซื้อตอนนี้ ออเดอร์จะเข้ารอบงวด {drawDateLabel}
       </p>
 
       <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6">

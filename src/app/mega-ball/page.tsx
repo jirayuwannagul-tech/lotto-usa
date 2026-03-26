@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { LotteryPurchasePanel } from "@/components/lottery/LotteryPurchasePanel"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { syncUpcomingDraws } from "@/lib/draw-schedule"
+import { getPurchasableDraw, syncUpcomingDraws } from "@/lib/draw-schedule"
 
 export const dynamic = "force-dynamic"
 
@@ -13,15 +13,9 @@ export default async function MegaBallPage() {
   if (!session) redirect("/login")
   if (session.user.role === "ADMIN") redirect("/admin")
 
-  const drawCount = await prisma.draw.count({ where: { isOpen: true } })
-  if (drawCount === 0) {
-    await syncUpcomingDraws(prisma)
-  }
+  await syncUpcomingDraws(prisma)
 
-  const draw = await prisma.draw.findFirst({
-    where: { isOpen: true, type: "MEGA_MILLIONS" },
-    orderBy: { drawDate: "asc" },
-  })
+  const draw = await getPurchasableDraw(prisma, "MEGA_MILLIONS")
 
   if (!draw) redirect("/")
 
@@ -38,7 +32,14 @@ export default async function MegaBallPage() {
         <LotteryPurchasePanel
           title="Mega Ball"
           drawType="MEGA_MILLIONS"
-          drawId={draw.id}
+          drawDateLabel={new Date(draw.drawDate).toLocaleString("th-TH", {
+            timeZone: "Asia/Bangkok",
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            hour: "2-digit",
+            minute: "2-digit",
+          }) + " น."}
           accentClass="text-sky-600"
         />
       </div>

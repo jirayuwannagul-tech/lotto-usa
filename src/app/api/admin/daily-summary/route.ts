@@ -6,33 +6,43 @@ import { getSalesDayContext } from "@/lib/sales-day"
 import { sendDailySummaryMessage } from "@/lib/telegram"
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization")
-  const cronSecret = process.env.CRON_SECRET
-  const isCron = cronSecret && authHeader === `Bearer ${cronSecret}`
+  try {
+    const authHeader = req.headers.get("authorization")
+    const cronSecret = process.env.CRON_SECRET
+    const isCron = cronSecret && authHeader === `Bearer ${cronSecret}`
 
-  if (!isCron) {
+    if (!isCron) {
+      const session = await getServerSession(authOptions)
+      if (!session || session.user.role !== "ADMIN") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+    }
+
+    const summary = await generateSummary()
+    if (isCron) {
+      await sendDailySummaryMessage(summary.message)
+    }
+    return NextResponse.json(summary)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "ไม่สามารถสร้างสรุปได้"
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+export async function POST() {
+  try {
     const session = await getServerSession(authOptions)
     if (!session || session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-  }
 
-  const summary = await generateSummary()
-  if (isCron) {
+    const summary = await generateSummary()
     await sendDailySummaryMessage(summary.message)
+    return NextResponse.json({ ok: true, summary: summary.message })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "ไม่สามารถส่งสรุปได้"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-  return NextResponse.json(summary)
-}
-
-export async function POST() {
-  const session = await getServerSession(authOptions)
-  if (!session || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  const summary = await generateSummary()
-  await sendDailySummaryMessage(summary.message)
-  return NextResponse.json({ ok: true, summary: summary.message })
 }
 
 async function generateSummary() {
@@ -75,17 +85,26 @@ async function generateSummary() {
     },
   })
 
-  const groupedTickets = new Map<string, { drawType: string; numbers: string; count: number }>()
+  const groupedTickets = new Map<string, { drawType: string; drawDateLabel: string; numbers: string; count: number }>()
   for (const order of approvedOrders) {
     for (const item of order.items) {
       const numbers = `${item.mainNumbers} | ${item.specialNumber}`
-      const groupKey = `${order.draw.type}:${numbers}`
+      const drawDateLabel = order.draw.drawDate.toLocaleString("th-TH", {
+        timeZone: "Asia/Bangkok",
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+      const groupKey = `${order.draw.type}|${order.draw.id}|${numbers}`
       const existing = groupedTickets.get(groupKey)
       if (existing) {
         existing.count += 1
       } else {
         groupedTickets.set(groupKey, {
           drawType: order.draw.type,
+          drawDateLabel,
           numbers,
           count: 1,
         })
@@ -93,11 +112,11 @@ async function generateSummary() {
     }
   }
 
-  const groupedByDraw = Array.from(groupedTickets.values()).reduce<Record<string, { numbers: string; count: number }[]>>(
+  const groupedByDraw = Array.from(groupedTickets.values()).reduce<Record<string, { drawDateLabel: string; numbers: string; count: number }[]>>(
     (acc, item) => {
-      const key = item.drawType
+      const key = `${item.drawType}|${item.drawDateLabel}`
       acc[key] ??= []
-      acc[key].push({ numbers: item.numbers, count: item.count })
+      acc[key].push({ drawDateLabel: item.drawDateLabel, numbers: item.numbers, count: item.count })
       return acc
     },
     {}
@@ -107,7 +126,6 @@ async function generateSummary() {
     `📊 *สรุปเลขที่ต้องซื้อประจำวัน*`,
     `🕖 ส่งสรุปเวลา 7:00 AM LAX`,
     `📅 รอบออเดอร์: ${salesDay.salesDateLabel} (LAX)`,
-    `🎯 วันนี้เปิดรับ: ${salesDay.drawLabel}`,
     `🕒 เวลาปัจจุบัน: ${salesDay.currentTimeLabel}`,
     `${"─".repeat(30)}`,
   ]
@@ -116,10 +134,11 @@ async function generateSummary() {
     lines.push("ยังไม่มีออเดอร์ที่อนุมัติแล้วสำหรับรอบนี้")
   }
 
-  for (const [drawType, items] of Object.entries(groupedByDraw)) {
+  for (const [drawKey, items] of Object.entries(groupedByDraw)) {
+    const [drawType, drawDateLabel] = drawKey.split("|")
     const drawLabel = drawType === "POWERBALL" ? "🔴 Power Ball" : "🔵 Mega Ball"
     lines.push("")
-    lines.push(drawLabel)
+    lines.push(`${drawLabel} — ${drawDateLabel}`)
     lines.push(`${"─".repeat(20)}`)
 
     for (const item of items.sort((a, b) => b.count - a.count || a.numbers.localeCompare(b.numbers))) {

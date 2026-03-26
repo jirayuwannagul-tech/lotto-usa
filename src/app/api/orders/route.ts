@@ -4,9 +4,9 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getExchangeRate } from "@/lib/exchange-rate"
 import { LOTTERY_RULES, MARGIN_USD } from "@/lib/lottery-rules"
-import { isCutoffPassed } from "@/lib/cutoff"
 import { createCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
 import { sendRealtimeMessage } from "@/lib/telegram"
+import { getPurchasableDraw, syncUpcomingDraws } from "@/lib/draw-schedule"
 import { z } from "zod"
 
 const itemSchema = z.object({
@@ -24,7 +24,7 @@ const itemSchema = z.object({
 })
 
 const createOrderSchema = z.object({
-  drawId: z.string().min(1),
+  drawType: z.enum(["POWERBALL", "MEGA_MILLIONS"]),
   items: z.array(itemSchema).min(1).max(20),
 })
 
@@ -71,14 +71,12 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { drawId, items } = parsed.data
+  const { drawType, items } = parsed.data
 
-  const draw = await prisma.draw.findUnique({ where: { id: drawId } })
-  if (!draw || !draw.isOpen) {
-    return NextResponse.json({ error: "งวดนี้ปิดแล้ว" }, { status: 400 })
-  }
-  if (isCutoffPassed(draw.cutoffAt)) {
-    return NextResponse.json({ error: "หมดเวลารับออเดอร์แล้ว" }, { status: 400 })
+  await syncUpcomingDraws(prisma)
+  const draw = await getPurchasableDraw(prisma, drawType)
+  if (!draw) {
+    return NextResponse.json({ error: "ยังไม่สามารถกำหนดงวดให้ได้" }, { status: 400 })
   }
 
   const rule = LOTTERY_RULES[draw.type as keyof typeof LOTTERY_RULES]
@@ -120,7 +118,7 @@ export async function POST(req: NextRequest) {
     return tx.order.create({
       data: {
         userId: session.user.id,
-        drawId,
+        drawId: draw.id,
         totalUSD,
         totalTHB,
         rateUsed: rate,

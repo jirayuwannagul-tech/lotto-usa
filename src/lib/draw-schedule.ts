@@ -1,5 +1,6 @@
-import type { DrawType, PrismaClient } from "@prisma/client"
+import type { Draw, DrawType, PrismaClient } from "@prisma/client"
 import { fromZonedTime, toZonedTime } from "date-fns-tz"
+import { SALES_ROLLOVER_HOUR } from "@/lib/sales-day"
 
 const LA_TIME_ZONE = "America/Los_Angeles"
 const DRAW_SYNC_LOCK_ID = 448021
@@ -65,6 +66,67 @@ export function getNextDrawDates(type: DrawType, now = new Date()) {
   return null
 }
 
+export function getPurchasableDrawDates(type: DrawType, now = new Date()) {
+  const schedule = SCHEDULE[type]
+  const nowLA = toZonedTime(now, LA_TIME_ZONE)
+  const salesAnchor = new Date(nowLA)
+
+  if (salesAnchor.getHours() >= SALES_ROLLOVER_HOUR) {
+    salesAnchor.setDate(salesAnchor.getDate() + 1)
+  }
+
+  for (let offset = 0; offset <= 14; offset++) {
+    const candidate = new Date(salesAnchor)
+    candidate.setDate(salesAnchor.getDate() + offset)
+    if (!schedule.days.includes(candidate.getDay())) continue
+
+    const drawDate = buildDateInLosAngeles(
+      candidate.getFullYear(),
+      candidate.getMonth() + 1,
+      candidate.getDate(),
+      schedule.hour,
+      schedule.minute
+    )
+    const cutoffAt = buildDateInLosAngeles(
+      candidate.getFullYear(),
+      candidate.getMonth() + 1,
+      candidate.getDate(),
+      SALES_ROLLOVER_HOUR,
+      0
+    )
+
+    return { drawDate, cutoffAt }
+  }
+
+  return null
+}
+
+async function ensureDrawRecord(
+  prisma: PrismaClient,
+  type: DrawType,
+  dates: { drawDate: Date; cutoffAt: Date }
+): Promise<Draw> {
+  const existing = await prisma.draw.findFirst({
+    where: { type, drawDate: dates.drawDate },
+  })
+
+  if (existing) return existing
+
+  return prisma.draw.create({
+    data: {
+      type,
+      drawDate: dates.drawDate,
+      cutoffAt: dates.cutoffAt,
+    },
+  })
+}
+
+export async function getPurchasableDraw(prisma: PrismaClient, type: DrawType, now = new Date()) {
+  const dates = getPurchasableDrawDates(type, now)
+  if (!dates) return null
+  return ensureDrawRecord(prisma, type, dates)
+}
+
 export function getNextDrawFormValues(type: DrawType, now = new Date()) {
   const dates = getNextDrawDates(type, now)
   if (!dates) return { drawDate: "", cutoffAt: "" }
@@ -82,27 +144,30 @@ export async function syncUpcomingDraws(prisma: PrismaClient, now = new Date()) 
     const created: string[] = []
 
     for (const type of Object.keys(SCHEDULE) as DrawType[]) {
-      const dates = getNextDrawDates(type, now)
-      if (!dates) continue
+      const upcomingDates = [getNextDrawDates(type, now), getPurchasableDrawDates(type, now)].filter(
+        (value): value is { drawDate: Date; cutoffAt: Date } => Boolean(value)
+      )
 
-      const existing = await tx.draw.findFirst({
-        where: { type, drawDate: dates.drawDate },
-      })
-
-      if (!existing) {
-        await tx.draw.create({
-          data: {
-            type,
-            drawDate: dates.drawDate,
-            cutoffAt: dates.cutoffAt,
-          },
+      for (const dates of upcomingDates) {
+        const existing = await tx.draw.findFirst({
+          where: { type, drawDate: dates.drawDate },
         })
-        created.push(`${type} ${dates.drawDate.toISOString()}`)
+
+        if (!existing) {
+          await tx.draw.create({
+            data: {
+              type,
+              drawDate: dates.drawDate,
+              cutoffAt: dates.cutoffAt,
+            },
+          })
+          created.push(`${type} ${dates.drawDate.toISOString()}`)
+        }
       }
     }
 
     await tx.draw.updateMany({
-      where: { isOpen: true, cutoffAt: { lt: now } },
+      where: { isOpen: true, drawDate: { lt: now } },
       data: { isOpen: false },
     })
 

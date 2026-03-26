@@ -2,20 +2,12 @@ import Image from "next/image"
 import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
-import { syncUpcomingDraws } from "@/lib/draw-schedule"
+import { getPurchasableDraw, syncUpcomingDraws } from "@/lib/draw-schedule"
 import { HomeDrawCountdown } from "@/components/home/HomeDrawCountdown"
 import { authOptions } from "@/lib/auth"
 import LogoutButton from "@/components/shared/LogoutButton"
-import { getSalesDayContext } from "@/lib/sales-day"
 
 export const dynamic = "force-dynamic"
-
-function pickDraw(
-  draws: { type: string; jackpot: string | null; drawDate: Date }[],
-  type: string
-) {
-  return draws.find((draw) => draw.type === type) ?? null
-}
 
 function formatJackpotUsd(value: string | null) {
   if (!value) return "USD กำลังอัปเดต"
@@ -32,25 +24,28 @@ function getSalesDayBadge(drawLabel: string) {
   return "inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-slate-700"
 }
 
+function formatThaiDraw(drawDate: Date | null | undefined) {
+  if (!drawDate) return "กำลังอัปเดต"
+  return new Date(drawDate).toLocaleString("th-TH", {
+    timeZone: "Asia/Bangkok",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }) + " น."
+}
+
 export default async function Home() {
   const session = await getServerSession(authOptions)
-  const drawCount = await prisma.draw.count({ where: { isOpen: true } })
-  if (drawCount === 0) {
-    await syncUpcomingDraws(prisma)
-  }
-
-  const draws = await prisma.draw.findMany({
-    where: { isOpen: true },
-    orderBy: { drawDate: "asc" },
-  })
-
-  const powerballDraw = pickDraw(draws, "POWERBALL")
-  const megaBallDraw = pickDraw(draws, "MEGA_MILLIONS")
+  await syncUpcomingDraws(prisma)
+  const [powerballDraw, megaBallDraw] = await Promise.all([
+    getPurchasableDraw(prisma, "POWERBALL"),
+    getPurchasableDraw(prisma, "MEGA_MILLIONS"),
+  ])
   const isCustomer = session?.user?.role === "CUSTOMER"
   const isAdmin = session?.user?.role === "ADMIN"
   const lotteryHref = isCustomer ? "/power-ball" : "/login"
   const megaHref = isCustomer ? "/mega-ball" : "/login"
-  const salesDay = getSalesDayContext()
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
@@ -118,18 +113,24 @@ export default async function Home() {
 
               <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5">
                 <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">AMERICA / LAX</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <p className="text-lg font-semibold text-slate-950">วันนี้เปิดรับออเดอร์:</p>
-                  <span className={getSalesDayBadge(salesDay.drawLabel)}>{salesDay.drawLabel}</span>
+                <div className="mt-3 space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-lg font-semibold text-slate-950">Power Ball:</p>
+                    <span className={getSalesDayBadge("Power Ball")}>
+                      ออเดอร์ใหม่จะเข้ารอบ {formatThaiDraw(powerballDraw?.drawDate)}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-lg font-semibold text-slate-950">Mega Ball:</p>
+                    <span className={getSalesDayBadge("Mega Ball")}>
+                      ออเดอร์ใหม่จะเข้ารอบ {formatThaiDraw(megaBallDraw?.drawDate)}
+                    </span>
+                  </div>
                 </div>
                 <p className="mt-2 text-sm leading-7 text-slate-600">
-                  รอบออเดอร์ปัจจุบันอ้างอิงเวลาอเมริกาเท่านั้น และจะเปลี่ยนวันอัตโนมัติทุกวันเวลา 7:00 AM
-                  ตามเวลา Los Angeles
+                  ระบบเปิดรับคำสั่งซื้อตลอดเวลา และจะคำนวณให้อัตโนมัติว่าออเดอร์ใหม่เข้ารอบงวดไหนตามเวลา
+                  อเมริกา
                 </p>
-                <p className="mt-2 text-sm leading-7 text-slate-600">
-                  รับออเดอร์เวลาไทย: <span className="font-semibold text-slate-950">{salesDay.thaiWindowLabel}</span>
-                </p>
-                <p className="mt-2 text-xs text-slate-500">รอบนี้: {salesDay.salesDateLabel} (LAX)</p>
               </div>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-2">
@@ -164,12 +165,18 @@ export default async function Home() {
                   <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
                     {formatJackpotUsd(powerballDraw?.jackpot ?? null)}
                   </p>
+                  <p className="mt-3 text-sm text-slate-500">
+                    ออเดอร์ใหม่จะเข้ารอบ: {formatThaiDraw(powerballDraw?.drawDate)}
+                  </p>
                   <HomeDrawCountdown drawDate={powerballDraw?.drawDate.toISOString() ?? null} />
                 </div>
                 <div className="rounded-2xl bg-white p-5 text-center">
                   <p className="text-sm font-semibold text-sky-600">Mega Ball</p>
                   <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
                     {formatJackpotUsd(megaBallDraw?.jackpot ?? null)}
+                  </p>
+                  <p className="mt-3 text-sm text-slate-500">
+                    ออเดอร์ใหม่จะเข้ารอบ: {formatThaiDraw(megaBallDraw?.drawDate)}
                   </p>
                   <HomeDrawCountdown drawDate={megaBallDraw?.drawDate.toISOString() ?? null} />
                 </div>
