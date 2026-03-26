@@ -43,7 +43,6 @@ export default async function Home() {
     getPurchasableDraw(prisma, "MEGA_MILLIONS"),
   ])
   const isCustomer = session?.user?.role === "CUSTOMER"
-  const isAdmin = session?.user?.role === "ADMIN"
   const lotteryHref = isCustomer ? "/power-ball" : "/login"
   const megaHref = isCustomer ? "/mega-ball" : "/login"
 
@@ -82,11 +81,6 @@ export default async function Home() {
                     <p className="mt-2 text-sm font-medium text-slate-500">{session.user.name}</p>
                   ) : null}
                 </div>
-              ) : isAdmin ? (
-                <LogoutButton
-                  redirectTo="/"
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-950"
-                />
               ) : (
                 <div className="flex items-center gap-3">
                   <Link href="/login" className="text-slate-500 transition hover:text-slate-950">

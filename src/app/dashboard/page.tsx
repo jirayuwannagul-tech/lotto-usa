@@ -71,7 +71,7 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
 
   if (!session) redirect("/login")
-  if (session.user.role === "ADMIN") redirect("/admin")
+  if (session.user.role === "ADMIN") redirect("/login")
 
   const orders = await prisma.order.findMany({
     where: { userId: session.user.id },
@@ -90,6 +90,8 @@ export default async function DashboardPage() {
   const pendingOrders = orders.filter((order) =>
     ["PENDING_PAYMENT", "PENDING_APPROVAL"].includes(order.status)
   ).length
+  const activeOrders = orders.filter((order) => order.draw.isOpen)
+  const historicalOrders = orders.filter((order) => !order.draw.isOpen)
 
   return (
     <div className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 sm:px-6 sm:py-14">
@@ -125,113 +127,158 @@ export default async function DashboardPage() {
 
         <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">รายการออเดอร์ของคุณ</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">ออเดอร์ปัจจุบัน</h2>
             <Link href="/" className="text-sm font-semibold text-slate-500 transition hover:text-slate-950">
               กลับหน้าแรก
             </Link>
           </div>
 
-          {orders.length === 0 ? (
+          {activeOrders.length === 0 ? (
             <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-              <p className="text-base text-slate-600">ยังไม่มีออเดอร์ในระบบ เริ่มซื้อหวยจากหน้าแรกได้เลย</p>
+              <p className="text-base text-slate-600">ยังไม่มีออเดอร์ปัจจุบันในระบบ</p>
             </div>
           ) : (
             <div className="mt-6 grid gap-4">
-              {orders.map((order) => (
-                <article key={order.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-                  {(() => {
-                    const resultSummary = getResultSummary(order)
-                    const uploadedTickets = order.items.filter((item) => item.ticketPhotoUrl)
+              {activeOrders.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))}
+            </div>
+          )}
+        </section>
 
-                    return (
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">
-                          ORDER {order.id.slice(-8).toUpperCase()}
-                        </p>
-                        <h3 className="mt-2 text-xl font-semibold text-slate-950">
-                          {order.draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"}
-                        </h3>
-                      </div>
+        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">ประวัติย้อนหลัง</h2>
+            <p className="text-sm font-semibold text-slate-400">งวดที่ออกแล้ว / ปิดงวดแล้ว</p>
+          </div>
 
-                      <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-                        <p>สร้างเมื่อ: {order.createdAt.toLocaleDateString("th-TH")}</p>
-                        <p>ยอดรวม: {Number(order.totalTHB).toLocaleString("th-TH")} บาท</p>
-                        <p>สถานะออเดอร์: {getStatusLabel(order.status, order.payment?.status ?? null)}</p>
-                        <p>สถานะชำระเงิน: {order.payment?.status ?? "ยังไม่มีสลิป"}</p>
-                      </div>
-
-                      <div className="rounded-2xl bg-white p-4">
-                        <p className="text-sm font-semibold text-slate-700">เลขที่ซื้อ</p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {order.items.map((item) => (
-                            <span
-                              key={item.id}
-                              className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700"
-                            >
-                              {item.mainNumbers} | {item.specialNumber}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl bg-white p-4">
-                        <p className="text-sm font-semibold text-slate-700">รูปหวยที่แอดมินอัปโหลด</p>
-                        {uploadedTickets.length > 0 ? (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {uploadedTickets.map((item, index) => (
-                              <Link
-                                key={item.id}
-                                href={`/api/order-items/${item.id}/ticket`}
-                                target="_blank"
-                                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-950"
-                              >
-                                ดูรูปหวยชุดที่ {index + 1}
-                              </Link>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="mt-3 text-sm text-slate-500">ยังไม่มีการอัปโหลดรูปหวยจากแอดมิน</p>
-                        )}
-                      </div>
-
-                      <div className={`rounded-2xl border p-4 ${resultSummary.tone}`}>
-                        <p className="text-sm font-semibold">ช่องแจ้งสถานะ</p>
-                        <p className="mt-3 text-base font-semibold">{resultSummary.title}</p>
-                        <p className="mt-2 whitespace-pre-line text-sm leading-7">{resultSummary.detail}</p>
-                      </div>
-
-                      {order.status === "PENDING_PAYMENT" && (
-                        <div className="rounded-2xl bg-white p-4">
-                          <p className="text-sm font-semibold text-slate-700">การชำระเงิน</p>
-                          <p className="mt-2 text-sm leading-7 text-slate-600">
-                            ออเดอร์นี้ยังรอการชำระเงิน คุณสามารถไปหน้า QR และแนบสลิปได้จากปุ่มด้านล่าง
-                          </p>
-                          <Link
-                            href={`/payment?orderId=${order.id}`}
-                            className="mt-4 inline-flex rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
-                          >
-                            ไปชำระเงิน / แนบสลิป
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="shrink-0">
-                      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-                        {getStatusLabel(order.status, order.payment?.status ?? null)}
-                      </div>
-                    </div>
-                  </div>
-                    )
-                  })()}
-                </article>
+          {historicalOrders.length === 0 ? (
+            <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+              <p className="text-base text-slate-600">ยังไม่มีประวัติย้อนหลัง</p>
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-4">
+              {historicalOrders.map((order) => (
+                <OrderCard key={order.id} order={order} />
               ))}
             </div>
           )}
         </section>
       </div>
     </div>
+  )
+}
+
+function OrderCard({
+  order,
+}: {
+  order: {
+    id: string
+    status: string
+    totalTHB: number | string | { toString(): string }
+    createdAt: Date
+    draw: {
+      isOpen: boolean
+      type: string
+      winningMain: string | null
+      winningSpecial: string | null
+    }
+    items: {
+      id: string
+      mainNumbers: string
+      specialNumber: string
+      ticketPhotoUrl: string | null
+    }[]
+    payment: {
+      status: string
+    } | null
+  }
+}) {
+  const resultSummary = getResultSummary(order)
+  const uploadedTickets = order.items.filter((item) => item.ticketPhotoUrl)
+
+  return (
+    <article className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">
+              ORDER {order.id.slice(-8).toUpperCase()}
+            </p>
+            <h3 className="mt-2 text-xl font-semibold text-slate-950">
+              {order.draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"}
+            </h3>
+          </div>
+
+          <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
+            <p>สร้างเมื่อ: {order.createdAt.toLocaleDateString("th-TH")}</p>
+            <p>ยอดรวม: {Number(order.totalTHB.toString()).toLocaleString("th-TH")} บาท</p>
+            <p>สถานะออเดอร์: {getStatusLabel(order.status, order.payment?.status ?? null)}</p>
+            <p>สถานะชำระเงิน: {order.payment?.status ?? "ยังไม่มีสลิป"}</p>
+          </div>
+
+          <div className="rounded-2xl bg-white p-4">
+            <p className="text-sm font-semibold text-slate-700">เลขที่ซื้อ</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {order.items.map((item) => (
+                <span
+                  key={item.id}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700"
+                >
+                  {item.mainNumbers} | {item.specialNumber}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-white p-4">
+            <p className="text-sm font-semibold text-slate-700">รูปหวยที่แอดมินอัปโหลด</p>
+            {uploadedTickets.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {uploadedTickets.map((item, index) => (
+                  <Link
+                    key={item.id}
+                    href={`/api/order-items/${item.id}/ticket`}
+                    target="_blank"
+                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-950"
+                  >
+                    ดูรูปหวยชุดที่ {index + 1}
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-slate-500">ยังไม่มีการอัปโหลดรูปหวยจากแอดมิน</p>
+            )}
+          </div>
+
+          <div className={`rounded-2xl border p-4 ${resultSummary.tone}`}>
+            <p className="text-sm font-semibold">ช่องแจ้งสถานะ</p>
+            <p className="mt-3 text-base font-semibold">{resultSummary.title}</p>
+            <p className="mt-2 whitespace-pre-line text-sm leading-7">{resultSummary.detail}</p>
+          </div>
+
+          {order.status === "PENDING_PAYMENT" && order.draw.isOpen && (
+            <div className="rounded-2xl bg-white p-4">
+              <p className="text-sm font-semibold text-slate-700">การชำระเงิน</p>
+              <p className="mt-2 text-sm leading-7 text-slate-600">
+                ออเดอร์นี้ยังรอการชำระเงิน คุณสามารถไปหน้า QR และแนบสลิปได้จากปุ่มด้านล่าง
+              </p>
+              <Link
+                href={`/payment?orderId=${order.id}`}
+                className="mt-4 inline-flex rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
+              >
+                ไปชำระเงิน / แนบสลิป
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <div className="shrink-0">
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+            {getStatusLabel(order.status, order.payment?.status ?? null)}
+          </div>
+        </div>
+      </div>
+    </article>
   )
 }

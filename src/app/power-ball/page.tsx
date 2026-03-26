@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic"
 export default async function PowerBallPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect("/login")
-  if (session.user.role === "ADMIN") redirect("/admin")
+  if (session.user.role === "ADMIN") redirect("/login")
 
   await syncUpcomingDraws(prisma)
 
