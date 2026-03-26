@@ -1,6 +1,7 @@
 import type { Draw, DrawType, PrismaClient } from "@prisma/client"
 import { fromZonedTime, toZonedTime } from "date-fns-tz"
 import { SALES_ROLLOVER_HOUR } from "@/lib/sales-day"
+import { fetchMegaMillionsJackpot, fetchPowerballJackpot } from "@/lib/jackpot-source"
 
 const LA_TIME_ZONE = "America/Los_Angeles"
 const DRAW_SYNC_LOCK_ID = 448021
@@ -137,8 +138,51 @@ export function getNextDrawFormValues(type: DrawType, now = new Date()) {
   }
 }
 
+async function syncUpcomingJackpots(prisma: PrismaClient, now: Date) {
+  const [powerballJackpot, megaMillionsJackpot] = await Promise.all([
+    fetchPowerballJackpot().catch((error) => {
+      console.error("Failed to fetch Powerball jackpot", error)
+      return null
+    }),
+    fetchMegaMillionsJackpot().catch((error) => {
+      console.error("Failed to fetch Mega Millions jackpot", error)
+      return null
+    }),
+  ])
+
+  const updates: Promise<unknown>[] = []
+
+  if (powerballJackpot) {
+    updates.push(
+      prisma.draw.updateMany({
+        where: {
+          type: "POWERBALL",
+          isOpen: true,
+          drawDate: { gte: now },
+        },
+        data: { jackpot: powerballJackpot },
+      })
+    )
+  }
+
+  if (megaMillionsJackpot) {
+    updates.push(
+      prisma.draw.updateMany({
+        where: {
+          type: "MEGA_MILLIONS",
+          isOpen: true,
+          drawDate: { gte: now },
+        },
+        data: { jackpot: megaMillionsJackpot },
+      })
+    )
+  }
+
+  await Promise.all(updates)
+}
+
 export async function syncUpcomingDraws(prisma: PrismaClient, now = new Date()) {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(${DRAW_SYNC_LOCK_ID})`)
 
     const created: string[] = []
@@ -173,4 +217,8 @@ export async function syncUpcomingDraws(prisma: PrismaClient, now = new Date()) 
 
     return { created }
   })
+
+  await syncUpcomingJackpots(prisma, now)
+
+  return result
 }
