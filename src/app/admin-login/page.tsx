@@ -1,4 +1,3 @@
-import Link from "next/link"
 import LoginForm from "@/components/shared/LoginForm"
 
 export default function AdminLoginPage() {
@@ -10,9 +9,6 @@ export default function AdminLoginPage() {
             <p className="text-xs font-semibold tracking-[0.24em] text-sky-400">ADMIN ONLY</p>
             <p className="mt-2 text-2xl font-semibold tracking-tight text-white">Admin Login</p>
           </div>
-          <Link href="/" className="text-sm font-semibold text-slate-400 transition hover:text-white">
-            กลับหน้าแรก
-          </Link>
         </div>
 
         <p className="mt-6 text-sm leading-7 text-slate-400">
