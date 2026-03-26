@@ -26,6 +26,7 @@ export default function LoginForm({
   const defaultEmail = portal === "admin" ? "admin@lottousa.com" : ""
   const [email, setEmail] = useState(() => {
     if (typeof window === "undefined") return ""
+    if (portal === "admin") return defaultEmail
     return window.localStorage.getItem(storageKey) ?? defaultEmail
   })
   const [password, setPassword] = useState("")
@@ -58,7 +59,7 @@ export default function LoginForm({
       }
 
       const nextPath = role === "ADMIN" ? "/admin" : redirectTo
-      window.localStorage.setItem(storageKey, email)
+      window.localStorage.setItem(storageKey, portal === "admin" ? defaultEmail : email)
       router.push(nextPath)
       router.refresh()
     }
