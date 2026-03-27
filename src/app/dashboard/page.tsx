@@ -5,6 +5,23 @@ import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
 import { syncUpcomingDraws } from "@/lib/draw-schedule"
 
+function formatThaiDate(date: Date) {
+  return date.toLocaleDateString("th-TH", {
+    timeZone: "Asia/Bangkok",
+  })
+}
+
+function formatThaiDateTime(date: Date) {
+  return date.toLocaleString("th-TH", {
+    timeZone: "Asia/Bangkok",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  }) + " น."
+}
+
 function getStatusLabel(status: string, paymentStatus: string | null) {
   if (status === "PENDING_PAYMENT") return "รอชำระเงิน"
   if (status === "PENDING_APPROVAL" || paymentStatus === "PENDING") return "รอตรวจสอบสลิป"
@@ -216,7 +233,8 @@ function OrderCard({
           </div>
 
           <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-            <p>สร้างเมื่อ: {order.createdAt.toLocaleDateString("th-TH")}</p>
+            <p>วันสั่งซื้อ: {formatThaiDate(order.createdAt)}</p>
+            <p>งวดจะออก: {formatThaiDateTime(order.draw.drawDate)}</p>
             <p>ยอดรวม: {Number(order.totalTHB.toString()).toLocaleString("th-TH")} บาท</p>
             <p>สถานะออเดอร์: {getStatusLabel(order.status, order.payment?.status ?? null)}</p>
             <p>สถานะชำระเงิน: {order.payment?.status ?? "ยังไม่มีสลิป"}</p>
