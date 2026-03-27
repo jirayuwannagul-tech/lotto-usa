@@ -7,8 +7,11 @@ const LA_TIME_ZONE = "America/Los_Angeles"
 const DRAW_SYNC_LOCK_ID = 448021
 
 const SCHEDULE: Record<DrawType, { days: number[]; hour: number; minute: number }> = {
-  POWERBALL: { days: [1, 3, 6], hour: 22, minute: 59 },
-  MEGA_MILLIONS: { days: [2, 5], hour: 23, minute: 0 },
+  // Official draw times are published in Eastern Time. We store their current
+  // Los Angeles equivalents so customer-facing Thai times and draw assignment
+  // stay aligned with the actual drawing schedule.
+  POWERBALL: { days: [1, 3, 6], hour: 19, minute: 59 },
+  MEGA_MILLIONS: { days: [2, 5], hour: 20, minute: 0 },
 }
 
 function pad(value: number) {
