@@ -104,15 +104,15 @@ export default async function DashboardPage() {
     orderBy: { createdAt: "desc" },
   })
 
-  const totalOrders = orders.length
-  const approvedOrders = orders.filter((order) =>
+  const activeOrders = orders.filter((order) => order.draw.isOpen && order.draw.drawDate >= now)
+
+  const totalOrders = activeOrders.length
+  const approvedOrders = activeOrders.filter((order) =>
     ["APPROVED", "TICKET_UPLOADED", "MATCHED"].includes(order.status)
   ).length
-  const pendingOrders = orders.filter((order) =>
+  const pendingOrders = activeOrders.filter((order) =>
     ["PENDING_PAYMENT", "PENDING_APPROVAL"].includes(order.status)
   ).length
-  const activeOrders = orders.filter((order) => order.draw.isOpen && order.draw.drawDate >= now)
-  const historicalOrders = orders.filter((order) => !order.draw.isOpen || order.draw.drawDate < now)
 
   return (
     <div className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 sm:px-6 sm:py-14">
@@ -167,24 +167,16 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="flex items-center justify-between">
+        <Link
+          href="/dashboard/history"
+          className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-8 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+        >
+          <div>
             <h2 className="text-2xl font-semibold tracking-tight text-slate-950">ประวัติย้อนหลัง</h2>
-            <p className="text-sm font-semibold text-slate-400">งวดที่ออกแล้ว / ปิดงวดแล้ว</p>
+            <p className="mt-1 text-sm text-slate-500">งวดที่ออกแล้ว / ปิดงวดแล้ว</p>
           </div>
-
-          {historicalOrders.length === 0 ? (
-            <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-              <p className="text-base text-slate-600">ยังไม่มีประวัติย้อนหลัง</p>
-            </div>
-          ) : (
-            <div className="mt-6 grid gap-4">
-              {historicalOrders.map((order) => (
-                <OrderCard key={order.id} order={order} />
-              ))}
-            </div>
-          )}
-        </section>
+          <span className="text-2xl text-slate-300">→</span>
+        </Link>
       </div>
     </div>
   )
