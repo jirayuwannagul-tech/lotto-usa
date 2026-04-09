@@ -38,9 +38,15 @@ function formatThaiDraw(drawDate: Date | null | undefined) {
 export default async function Home() {
   const session = await getServerSession(authOptions)
   await syncUpcomingDraws(prisma)
-  const [powerballDraw, megaBallDraw] = await Promise.all([
+  const now = new Date()
+  const [powerballDraw, megaBallDraw, recentDraws] = await Promise.all([
     getPurchasableDraw(prisma, "POWERBALL"),
     getPurchasableDraw(prisma, "MEGA_MILLIONS"),
+    prisma.draw.findMany({
+      where: { drawDate: { lt: now } },
+      orderBy: { drawDate: "desc" },
+      take: 6,
+    }),
   ])
   const isCustomer = session?.user?.role === "CUSTOMER"
   const lotteryHref = isCustomer ? "/power-ball" : "/login"
@@ -178,6 +184,61 @@ export default async function Home() {
             </aside>
           </div>
         </section>
+        {recentDraws.length > 0 && (
+          <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
+            <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">ผลรางวัลล่าสุด</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">ผลการออกรางวัล</h2>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {recentDraws.map((draw) => {
+                const isPB = draw.type === "POWERBALL"
+                const drawDateThai = draw.drawDate.toLocaleDateString("th-TH", {
+                  timeZone: "Asia/Bangkok",
+                  weekday: "short",
+                  day: "numeric",
+                  month: "short",
+                  year: "2-digit",
+                })
+                const drawTimeThai = draw.drawDate.toLocaleTimeString("th-TH", {
+                  timeZone: "Asia/Bangkok",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+                const hasResult = draw.winningMain && draw.winningSpecial
+                return (
+                  <div key={draw.id} className={`rounded-2xl border p-5 ${isPB ? "border-rose-100 bg-rose-50" : "border-sky-100 bg-sky-50"}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className={`text-sm font-semibold ${isPB ? "text-rose-600" : "text-sky-600"}`}>
+                        {isPB ? "Power Ball" : "Mega Ball"}
+                      </p>
+                      <p className="text-xs text-slate-400">{drawDateThai} {drawTimeThai} น.</p>
+                    </div>
+                    {hasResult ? (
+                      <>
+                        <p className="text-xs font-semibold tracking-widest text-slate-400 mb-2">เลขที่ออก</p>
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {draw.winningMain!.split(",").map((n, i) => (
+                            <span key={i} className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${isPB ? "bg-rose-500" : "bg-sky-500"}`}>
+                              {n.trim()}
+                            </span>
+                          ))}
+                          <span className="mx-1 text-slate-300">+</span>
+                          <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${isPB ? "bg-amber-500" : "bg-amber-500"}`}>
+                            {draw.winningSpecial!.trim()}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2 text-slate-500">
+                        <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                        <p className="text-sm">รอประกาศผลรางวัล</p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   )
