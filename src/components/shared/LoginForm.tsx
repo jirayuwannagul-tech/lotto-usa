@@ -122,6 +122,16 @@ export default function LoginForm({
       >
         {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
       </Button>
+      {portal === "customer" && (
+        <p className={cn("text-center text-sm", isDark ? "text-white/50" : "text-slate-500")}>
+          <Link
+            href="/forgot-password"
+            className={cn(isDark ? "text-white/70 hover:underline" : "text-slate-400 hover:text-slate-700")}
+          >
+            ลืมรหัสผ่าน?
+          </Link>
+        </p>
+      )}
       {showRegisterLink && (
         <p className={cn("text-center text-sm", isDark ? "text-white/50" : "text-slate-500")}>
           ยังไม่มีบัญชี?{" "}

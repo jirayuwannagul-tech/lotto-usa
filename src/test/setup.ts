@@ -72,6 +72,20 @@ vi.mock("@/lib/exchange-rate", () => ({
 
 // Mock upload
 vi.mock("@/lib/upload", () => ({
-  saveUploadedFile: vi.fn(() => Promise.resolve("/uploads/test.jpg")),
-  saveBuffer: vi.fn(() => Promise.resolve("/uploads/test.jpg")),
+  saveUploadedFile: vi.fn(() => Promise.resolve({ assetPath: "/uploads/test.jpg" })),
+  saveBuffer: vi.fn(() => Promise.resolve({ assetPath: "/uploads/test.jpg" })),
+}))
+
+// Mock email
+vi.mock("@/lib/email", () => ({
+  sendOrderConfirmationEmail: vi.fn(() => Promise.resolve()),
+  sendPaymentApprovedEmail: vi.fn(() => Promise.resolve()),
+  sendPaymentRejectedEmail: vi.fn(() => Promise.resolve()),
+  sendWinnerEmail: vi.fn(() => Promise.resolve()),
+  sendPasswordResetEmail: vi.fn(() => Promise.resolve()),
+}))
+
+// Mock audit log
+vi.mock("@/lib/audit", () => ({
+  writeAuditLog: vi.fn(() => Promise.resolve()),
 }))

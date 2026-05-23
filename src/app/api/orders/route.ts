@@ -6,6 +6,7 @@ import { getExchangeRate } from "@/lib/exchange-rate"
 import { LOTTERY_RULES, MARGIN_USD } from "@/lib/lottery-rules"
 import { createCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
 import { sendRealtimeMessage } from "@/lib/telegram"
+import { sendOrderConfirmationEmail } from "@/lib/email"
 import { getPurchasableDraw, syncUpcomingDraws } from "@/lib/draw-schedule"
 import { z } from "zod"
 
@@ -154,6 +155,20 @@ export async function POST(req: NextRequest) {
     )
   } catch (error) {
     logTelegramError("order-created", error)
+  }
+
+  // Send confirmation email (non-blocking)
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } })
+  if (user) {
+    sendOrderConfirmationEmail({
+      to: user.email,
+      name: user.name,
+      orderId: order.id,
+      drawType: draw.type,
+      items: order.items.map((i) => ({ mainNumbers: i.mainNumbers, specialNumber: i.specialNumber })),
+      totalTHB: Number(order.totalTHB),
+      totalUSD: Number(order.totalUSD),
+    }).catch((err) => console.error("[email] order confirmation failed", err))
   }
 
   return NextResponse.json(order, { status: 201 })

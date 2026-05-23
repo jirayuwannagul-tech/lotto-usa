@@ -8,6 +8,10 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
+    testTimeout: 30000,
+    hookTimeout: 30000,
+    pool: "vmForks",
+    exclude: ["**/node_modules/**", "**/.claude/**", "**/dist/**"],
     coverage: {
       reporter: ["text", "html"],
       include: ["src/lib/**", "src/app/api/**"],

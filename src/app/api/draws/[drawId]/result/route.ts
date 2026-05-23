@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendAdminMessage } from "@/lib/telegram"
 import { LOTTERY_RULES } from "@/lib/lottery-rules"
+import { sendWinnerEmail } from "@/lib/email"
+import { writeAuditLog } from "@/lib/audit"
 
 function parseWinningNumbers(rawMain: string, rawSpecial: string, type: keyof typeof LOTTERY_RULES) {
   const rule = LOTTERY_RULES[type]
@@ -119,6 +121,35 @@ export async function POST(
   await sendAdminMessage(
     `🎉 *ประกาศผล ${drawLabel}*\nงวด ${drawDateThai}\n\n🔢 เลขออก: \`${winMainDisplay}\`\n⭐ ${draw.type === "POWERBALL" ? "Powerball" : "Mega Ball"}: \`${winSpecial}\`\n\n${winnerCount > 0 ? winnerMessages.join("\n") : "ไม่มีผู้ถูกรางวัล"}`
   )
+
+  await writeAuditLog({
+    adminId: session.user.id,
+    action: "RESULT_POSTED",
+    targetId: drawId,
+    targetType: "Draw",
+    note: `${winMainDisplay} | ${winSpecial}`,
+  })
+
+  // Send winner emails
+  for (const order of draw.orders) {
+    for (const item of order.items) {
+      const itemMain = item.mainNumbers.split(",").map((n) => n.trim().padStart(2, "0")).sort()
+      const itemSpecial = item.specialNumber.trim().padStart(2, "0")
+      const matchMain = itemMain.filter((n) => winMain.includes(n)).length
+      const matchSpecial = itemSpecial === winSpecial
+      const prize = getPrizeLabel(draw.type, matchMain, matchSpecial)
+      if (prize) {
+        sendWinnerEmail({
+          to: order.user.email,
+          name: order.user.name,
+          drawType: draw.type,
+          drawDate: draw.drawDate,
+          prizeLabel: prize.replace(/[🥇🥈🏆]/g, "").trim(),
+          matchedNumbers: `${item.mainNumbers} • ${item.specialNumber}`,
+        }).catch((err) => console.error("[email] winner email failed", err))
+      }
+    }
+  }
 
   return NextResponse.json({ winnerCount, winnerMessages })
 }

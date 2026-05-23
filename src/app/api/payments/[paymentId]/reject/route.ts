@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { cancelCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
+import { sendPaymentRejectedEmail } from "@/lib/email"
+import { writeAuditLog } from "@/lib/audit"
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ paymentId: string }> }) {
   const session = await getServerSession(authOptions)
@@ -14,31 +16,35 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pa
   const { paymentId } = await params
   const { rejectNote } = await req.json()
 
-  await prisma.payment.update({
+  const payment = await prisma.payment.update({
     where: { id: paymentId },
     data: { status: "REJECTED", rejectedAt: new Date(), rejectNote },
+    include: {
+      order: { include: { user: true } },
+    },
   })
 
-  await prisma.payment.findUnique({
-    where: { id: paymentId },
-    select: { orderId: true },
-  }).then((p) => {
-    if (p) {
-      return prisma.order.update({
-        where: { id: p.orderId },
-        data: { status: "REJECTED" },
-      })
-    }
+  await prisma.order.update({
+    where: { id: payment.orderId },
+    data: { status: "REJECTED" },
   })
 
-  const payment = await prisma.payment.findUnique({
-    where: { id: paymentId },
-    select: { orderId: true },
+  await cancelCommissionForOrder(payment.orderId)
+
+  await writeAuditLog({
+    adminId: session.user.id,
+    action: "PAYMENT_REJECTED",
+    targetId: payment.orderId,
+    targetType: "Order",
+    note: rejectNote,
   })
 
-  if (payment) {
-    await cancelCommissionForOrder(payment.orderId)
-  }
+  sendPaymentRejectedEmail({
+    to: payment.order.user.email,
+    name: payment.order.user.name,
+    orderId: payment.orderId,
+    rejectNote,
+  }).catch((err) => console.error("[email] payment rejected failed", err))
 
   return NextResponse.json({ success: true })
 }

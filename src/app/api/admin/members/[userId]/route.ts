@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ensureReferralTables } from "@/lib/referrals"
+import { writeAuditLog } from "@/lib/audit"
 
 type Params = {
   params: Promise<{
@@ -64,6 +65,14 @@ export async function DELETE(_req: Request, { params }: Params) {
       orders: ordersDeleted.count,
       user: user.email,
     }
+  })
+
+  await writeAuditLog({
+    adminId: session.user.id,
+    action: "MEMBER_DELETED",
+    targetId: userId,
+    targetType: "User",
+    note: `Deleted ${user.email}, ${deleted.orders} orders`,
   })
 
   return NextResponse.json({

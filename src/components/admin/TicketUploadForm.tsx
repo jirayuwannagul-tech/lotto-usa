@@ -307,44 +307,49 @@ export function TicketUploadForm({
         </div>
       )}
 
-      {result?.ticketPhotoUrl && (
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm font-semibold text-slate-700">Manual fallback</p>
-          <p className="mt-2 text-sm leading-7 text-slate-600">
-            ถ้า OCR อ่านไม่ออกหรือจับคู่ไม่เจอ ให้กรอกเลขเอง หนึ่งบรรทัดต่อหนึ่งชุด ในรูปแบบ 01,02,03,04,05 | 09
+      <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-5">
+          <p className="text-sm font-semibold text-amber-800">กรอกเลขเอง (Manual Fallback)</p>
+          <p className="mt-2 text-sm leading-7 text-amber-700">
+            ใช้เมื่อ OCR อ่านไม่ออก หรือยังไม่ได้อัปโหลดรูป — กรอกเลขหนึ่งบรรทัดต่อหนึ่งชุด ในรูปแบบ <code className="rounded bg-amber-100 px-1 font-mono">01,02,03,04,05 | 09</code>
           </p>
           <textarea
             value={manualNumbers}
             onChange={(e) => setManualNumbers(e.target.value)}
             rows={5}
-            className="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 font-mono text-sm text-slate-700"
+            className="mt-4 w-full rounded-2xl border border-amber-200 bg-white p-4 font-mono text-sm text-slate-700 placeholder:text-slate-400"
             placeholder={"01,02,03,04,05 | 09\n06,13,18,25,31 | 16"}
           />
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={handleFindManualMatches}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="rounded-xl border border-amber-300 bg-amber-100 px-4 py-2.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-200"
             >
               ค้นหารายการจากเลขที่กรอก
             </button>
             {manualMatchIds.length > 0 && (
-              <span className="text-sm text-emerald-700">พร้อมยืนยัน {manualMatchIds.length} ชุด</span>
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={confirming}
+                className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+              >
+                {confirming ? "กำลังยืนยัน..." : `ยืนยัน ${manualMatchIds.length} ชุด`}
+              </button>
             )}
           </div>
           {manualMatchIds.length > 0 && (
-            <div className="mt-4 space-y-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+            <div className="mt-4 space-y-2 rounded-2xl bg-white p-4 text-sm text-slate-600">
               {manualOptions
                 .filter((option) => manualMatchIds.includes(option.orderItemId))
                 .map((option) => (
                   <p key={option.orderItemId}>
-                    {option.customerName} / {option.customerEmail} / <span className="font-mono">{option.numbers}</span>
+                    ✅ {option.customerName} / {option.customerEmail} / <span className="font-mono">{option.numbers}</span>
                   </p>
                 ))}
             </div>
           )}
-        </div>
-      )}
+      </div>
     </form>
   )
 }

@@ -32,10 +32,9 @@ export async function POST(req: NextRequest) {
   })
 
   if (referrer) {
-    await prisma.$executeRaw`
-      INSERT INTO "UserReferral" ("userId", "referrerUserId", "referralCode")
-      VALUES (${user.id}, ${referrer.userId}, ${referrer.referralCode})
-    `
+    await prisma.userReferral.create({
+      data: { userId: user.id, referrerUserId: referrer.userId, referralCode: referrer.referralCode },
+    })
   }
 
   return NextResponse.json({ id: user.id, name: user.name, email: user.email })

@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendAdminMessage, sendApprovalMessage, sendRealtimeMessage } from "@/lib/telegram"
 import { approveCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
+import { sendPaymentApprovedEmail } from "@/lib/email"
+import { writeAuditLog } from "@/lib/audit"
 
 function logTelegramError(scope: string, error: unknown) {
   console.error(`[telegram:${scope}]`, error)
@@ -83,6 +85,24 @@ ${itemLines}
   ])
 
   const failed = deliveries.filter((delivery) => !delivery.ok)
+
+  await writeAuditLog({
+    adminId: session.user.id,
+    action: "PAYMENT_APPROVED",
+    targetId: payment.orderId,
+    targetType: "Order",
+    note: `Payment ${paymentId}`,
+  })
+
+  sendPaymentApprovedEmail({
+    to: order.user.email,
+    name: order.user.name,
+    orderId: order.id,
+    drawType: order.draw.type,
+    drawDate: order.draw.drawDate,
+    items: order.items.map((i) => ({ mainNumbers: i.mainNumbers, specialNumber: i.specialNumber })),
+    totalTHB: Number(order.totalTHB),
+  }).catch((err) => console.error("[email] payment approved failed", err))
 
   return NextResponse.json({
     success: true,

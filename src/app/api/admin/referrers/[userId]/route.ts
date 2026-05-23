@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { appointReferrer } from "@/lib/referrals"
+import { writeAuditLog } from "@/lib/audit"
 
 type Params = {
   params: Promise<{
@@ -27,6 +28,14 @@ export async function POST(_req: Request, { params }: Params) {
   }
 
   const referrer = await appointReferrer(user.id, user.name)
+
+  await writeAuditLog({
+    adminId: session.user.id,
+    action: "MEMBER_MADE_REFERRER",
+    targetId: userId,
+    targetType: "User",
+    note: `referralCode: ${referrer.referralCode}`,
+  })
 
   return NextResponse.json({
     ok: true,
