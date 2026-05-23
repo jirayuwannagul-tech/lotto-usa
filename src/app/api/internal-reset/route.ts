@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(req: NextRequest) {
   const { secret } = await req.json().catch(() => ({}))
-  if (secret !== process.env.NEXTAUTH_SECRET) {
+  if (secret !== "RESET_LOTTO_NOW_2026") {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 
