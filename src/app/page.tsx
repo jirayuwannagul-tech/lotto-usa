@@ -43,7 +43,13 @@ export default async function Home() {
     getPurchasableDraw(prisma, "POWERBALL"),
     getPurchasableDraw(prisma, "MEGA_MILLIONS"),
     prisma.draw.findMany({
-      where: { drawDate: { lt: now } },
+      where: {
+        drawDate: {
+          lt: now,
+          gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+        },
+        winningMain: { not: null },
+      },
       orderBy: { drawDate: "desc" },
       take: 6,
     }),
