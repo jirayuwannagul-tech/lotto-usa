@@ -7,6 +7,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [resetUrl, setResetUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -28,6 +29,7 @@ export default function ForgotPasswordPage() {
       return
     }
 
+    if (data?.resetUrl) setResetUrl(data.resetUrl)
     setSent(true)
   }
 
@@ -39,11 +41,18 @@ export default function ForgotPasswordPage() {
         {sent ? (
           <div className="mt-6">
             <div className="rounded-2xl bg-emerald-50 p-5 text-center">
-              <p className="text-4xl">📬</p>
-              <p className="mt-3 font-semibold text-emerald-800">ส่งลิงก์แล้ว!</p>
-              <p className="mt-2 text-sm text-emerald-700">
-                เช็คอีเมล <strong>{email}</strong> แล้วกดลิงก์รีเซ็ตรหัสผ่าน (หมดอายุใน 1 ชั่วโมง)
-              </p>
+              <p className="text-4xl">🔑</p>
+              <p className="mt-3 font-semibold text-emerald-800">สร้างลิงก์แล้ว!</p>
+              {resetUrl ? (
+                <a
+                  href={resetUrl}
+                  className="mt-3 block break-all text-sm font-semibold text-emerald-700 underline"
+                >
+                  กดที่นี่เพื่อตั้งรหัสผ่านใหม่ →
+                </a>
+              ) : (
+                <p className="mt-2 text-sm text-emerald-700">ลิงก์ถูกส่งให้แอดมินแล้ว (หมดอายุใน 1 ชั่วโมง)</p>
+              )}
             </div>
             <Link
               href="/login"
