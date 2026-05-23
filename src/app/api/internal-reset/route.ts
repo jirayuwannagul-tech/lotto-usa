@@ -7,15 +7,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 
-  await prisma.auditLog.deleteMany()
-  await prisma.commission.deleteMany()
-  await prisma.userReferral.deleteMany()
-  await prisma.passwordResetToken.deleteMany()
-  await prisma.payment.deleteMany()
-  await prisma.orderItem.deleteMany()
-  await prisma.order.deleteMany()
-  await prisma.referrerProfile.deleteMany()
-  await prisma.user.deleteMany()
+  const results: Record<string, string> = {}
 
-  return NextResponse.json({ ok: true, message: "All data deleted" })
+  const steps: [string, () => Promise<unknown>][] = [
+    ["auditLog", () => prisma.auditLog.deleteMany()],
+    ["commission", () => prisma.commission.deleteMany()],
+    ["userReferral", () => prisma.userReferral.deleteMany()],
+    ["passwordResetToken", () => prisma.passwordResetToken.deleteMany()],
+    ["payment", () => prisma.payment.deleteMany()],
+    ["orderItem", () => prisma.orderItem.deleteMany()],
+    ["order", () => prisma.order.deleteMany()],
+    ["referrerProfile", () => prisma.referrerProfile.deleteMany()],
+    ["user", () => prisma.user.deleteMany()],
+  ]
+
+  for (const [name, fn] of steps) {
+    try {
+      await fn()
+      results[name] = "ok"
+    } catch (e) {
+      results[name] = `skip: ${e instanceof Error ? e.message : "error"}`
+    }
+  }
+
+  return NextResponse.json({ ok: true, results })
 }

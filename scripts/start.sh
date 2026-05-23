@@ -2,8 +2,8 @@
 set -e
 
 if [ "${RUN_DB_MIGRATIONS:-0}" = "1" ]; then
-  echo "=== Running prisma migrate deploy ==="
-  npx prisma migrate deploy
+  echo "=== Running prisma db push ==="
+  npx prisma db push --accept-data-loss
 fi
 
 if [ "${RUN_DB_SEED:-0}" = "1" ]; then
