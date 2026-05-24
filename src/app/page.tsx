@@ -190,6 +190,58 @@ export default async function Home() {
             </aside>
           </div>
         </section>
+        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
+          <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">วิธีถูกรางวัล</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">รางวัลมีกี่ระดับ?</h2>
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            {/* Powerball */}
+            <div className="rounded-2xl border border-rose-100 bg-rose-50 p-5">
+              <p className="text-sm font-semibold text-rose-600 mb-4">Power Ball — เลือก 5 + 1</p>
+              <div className="space-y-2 text-sm">
+                {[
+                  { match: "5 + PB", prize: "Jackpot", highlight: true },
+                  { match: "5", prize: "$1,000,000" },
+                  { match: "4 + PB", prize: "$50,000" },
+                  { match: "4", prize: "$100" },
+                  { match: "3 + PB", prize: "$100" },
+                  { match: "3", prize: "$7" },
+                  { match: "2 + PB", prize: "$7" },
+                  { match: "1 + PB", prize: "$4" },
+                  { match: "PB เท่านั้น", prize: "$4" },
+                ].map((row) => (
+                  <div key={row.match} className={`flex justify-between rounded-xl px-3 py-2 ${row.highlight ? "bg-rose-500 text-white font-bold" : "bg-white text-slate-700"}`}>
+                    <span>ถูก {row.match}</span>
+                    <span className={row.highlight ? "text-white" : "font-semibold text-rose-600"}>{row.prize}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Mega Millions */}
+            <div className="rounded-2xl border border-sky-100 bg-sky-50 p-5">
+              <p className="text-sm font-semibold text-sky-600 mb-4">Mega Millions — เลือก 5 + 1</p>
+              <div className="space-y-2 text-sm">
+                {[
+                  { match: "5 + MB", prize: "Jackpot", highlight: true },
+                  { match: "5", prize: "$1,000,000" },
+                  { match: "4 + MB", prize: "$10,000" },
+                  { match: "4", prize: "$500" },
+                  { match: "3 + MB", prize: "$200" },
+                  { match: "3", prize: "$10" },
+                  { match: "2 + MB", prize: "$10" },
+                  { match: "1 + MB", prize: "$4" },
+                  { match: "MB เท่านั้น", prize: "$2" },
+                ].map((row) => (
+                  <div key={row.match} className={`flex justify-between rounded-xl px-3 py-2 ${row.highlight ? "bg-sky-500 text-white font-bold" : "bg-white text-slate-700"}`}>
+                    <span>ถูก {row.match}</span>
+                    <span className={row.highlight ? "text-white" : "font-semibold text-sky-600"}>{row.prize}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <p className="mt-4 text-xs text-slate-400 text-center">PB = Powerball · MB = Mega Ball · รางวัลเป็นอัตราก่อนหักภาษี</p>
+        </section>
+
         {recentDraws.length > 0 && (
           <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
             <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">ผลรางวัลล่าสุด</p>
