@@ -59,147 +59,80 @@ export default async function Home() {
   const megaHref = isCustomer ? "/mega-ball" : "/login"
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
-      <main className="mx-auto max-w-5xl px-5 py-8 sm:px-6 sm:py-12">
-        <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center">
-              <Image
-                src="/lotto-usa-logo.png"
-                alt="LottoUSA"
-                width={1240}
-                height={404}
-                className="h-auto w-[28rem] sm:w-[34rem] lg:w-[52rem]"
-                priority
-                unoptimized
-              />
-            </Link>
-            <div className="text-sm font-semibold">
-              {isCustomer ? (
-                <div className="text-right">
-                  <div className="flex items-center gap-3">
-                    <Link
-                      href="/dashboard"
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
-                    >
-                      Dashboard
-                    </Link>
-                    <LogoutButton
-                      redirectTo="/"
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-950"
-                    />
-                  </div>
-                  {session?.user?.name ? (
-                    <p className="mt-2 text-sm font-medium text-slate-500">{session.user.name}</p>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <Link href="/login" className="text-slate-500 transition hover:text-slate-950">
-                    Login
-                  </Link>
-                  <Link href="/register" className="text-slate-500 transition hover:text-slate-950">
-                    Register
-                  </Link>
-                </div>
-              )}
-            </div>
+    <div className="min-h-screen bg-[#09090b] text-white">
+      {/* Nav */}
+      <nav className="border-b border-[#c9a84c]/20 bg-[#09090b]/90 backdrop-blur-md sticky top-0 z-50">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
+          <Link href="/">
+            <Image src="/lotto-usa-logo.png" alt="LottoUSA" width={1240} height={404} className="h-auto w-36 sm:w-44" priority unoptimized />
+          </Link>
+          <div className="flex items-center gap-3 text-sm font-medium">
+            {isCustomer ? (
+              <>
+                {session?.user?.name && <span className="hidden text-[#c9a84c]/70 sm:block">{session.user.name}</span>}
+                <Link href="/dashboard" className="rounded-xl border border-[#c9a84c]/30 px-4 py-2 text-[#c9a84c] transition hover:border-[#c9a84c] hover:bg-[#c9a84c]/10">
+                  Dashboard
+                </Link>
+                <LogoutButton redirectTo="/" className="rounded-xl border border-white/10 px-4 py-2 text-white/50 transition hover:border-white/20 hover:text-white" />
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="px-4 py-2 text-white/60 transition hover:text-white">เข้าสู่ระบบ</Link>
+                <Link href="/register" className="rounded-xl bg-[#c9a84c] px-5 py-2 font-semibold text-black transition hover:bg-[#d4b860]">สมัครสมาชิก</Link>
+              </>
+            )}
           </div>
+        </div>
+      </nav>
 
-          <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.22em] text-emerald-600">บริการหวยอเมริกา</p>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                เว็บนี้ใช้สำหรับซื้อหวยอเมริกา
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600">
-                ตอนนี้รองรับการซื้อ Power Ball และ Mega Ball โดยจะแยก flow การใช้งานออกเป็นขั้นตอนถัดไป
-                ตามที่กำหนดภายหลัง
-              </p>
+      <main className="mx-auto max-w-6xl px-5 pb-20 pt-12 sm:px-6">
 
-              <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">AMERICA / LAX</p>
-                <div className="mt-3 space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-lg font-semibold text-slate-950">Power Ball:</p>
-                    <span className={getSalesDayBadge("Power Ball")}>
-                      ออเดอร์ใหม่จะเข้ารอบ {formatThaiDraw(powerballDraw?.drawDate)}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-lg font-semibold text-slate-950">Mega Ball:</p>
-                    <span className={getSalesDayBadge("Mega Ball")}>
-                      ออเดอร์ใหม่จะเข้ารอบ {formatThaiDraw(megaBallDraw?.drawDate)}
-                    </span>
-                  </div>
-                </div>
-                <p className="mt-2 text-sm leading-7 text-slate-600">
-                  ระบบเปิดรับคำสั่งซื้อตลอดเวลา และจะคำนวณให้อัตโนมัติว่าออเดอร์ใหม่เข้ารอบงวดไหนตามเวลา
-                  อเมริกา
-                </p>
-              </div>
+        {/* Hero — Jackpot */}
+        <section className="relative overflow-hidden rounded-3xl border border-[#c9a84c]/20 bg-gradient-to-br from-[#111108] via-[#1a1800] to-[#0d0d0d] p-8 sm:p-12">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_#c9a84c18,_transparent_60%)]" />
+          <p className="text-xs font-semibold tracking-[0.3em] text-[#c9a84c]">LOTTO USA — บริการซื้อหวยอเมริกา</p>
+          <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-6xl">
+            ลุ้นรางวัล<br />
+            <span className="text-[#c9a84c]">หวยอเมริกา</span>
+          </h1>
+          <p className="mt-4 max-w-xl text-base leading-7 text-white/50">
+            ซื้อ Powerball และ Mega Millions ง่ายๆ จากไทย เราดูแลทุกขั้นตอนให้คุณ
+          </p>
 
-              <div className="mt-10 grid gap-4 sm:grid-cols-2">
-                <Link
-                  href={lotteryHref}
-                  className="rounded-3xl border border-rose-200 bg-rose-50 px-6 py-8 text-center transition hover:border-rose-300 hover:bg-white"
-                >
-                  <p className="text-sm font-semibold text-rose-600">Power Ball</p>
-                  <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-                    ไปหน้าซื้อหวย
-                  </p>
-                </Link>
-                <Link
-                  href={megaHref}
-                  className="rounded-3xl border border-sky-200 bg-sky-50 px-6 py-8 text-center transition hover:border-sky-300 hover:bg-white"
-                >
-                  <p className="text-sm font-semibold text-sky-600">Mega Ball</p>
-                  <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-                    ไปหน้าซื้อหวย
-                  </p>
-                </Link>
-              </div>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* PB jackpot */}
+            <div className="col-span-1 rounded-2xl border border-[#c9a84c]/20 bg-black/40 p-5 lg:col-span-2">
+              <p className="text-xs font-semibold tracking-widest text-red-400">POWERBALL</p>
+              <p className="mt-2 text-3xl font-bold text-white">{formatJackpotUsd(powerballDraw?.jackpot ?? null)}</p>
+              <p className="mt-1 text-xs text-white/40">งวดถัดไป {formatThaiDraw(powerballDraw?.drawDate)}</p>
+              <HomeDrawCountdown drawDate={powerballDraw?.drawDate.toISOString() ?? null} />
+              <Link href={lotteryHref} className="mt-4 block rounded-xl bg-[#c9a84c] py-3 text-center text-sm font-bold text-black transition hover:bg-[#d4b860]">
+                ซื้อ Powerball →
+              </Link>
             </div>
-
-            <aside className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-              <p className="text-center text-xs font-semibold tracking-[0.22em] text-slate-400">
-                สรุปรางวัลใหญ่
-              </p>
-              <div className="mt-6 space-y-4">
-                <div className="rounded-2xl bg-white p-5 text-center">
-                  <p className="text-sm font-semibold text-rose-600">Power Ball</p>
-                  <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                    {formatJackpotUsd(powerballDraw?.jackpot ?? null)}
-                  </p>
-                  <p className="mt-3 text-sm text-slate-500">
-                    ออเดอร์ใหม่จะเข้ารอบ: {formatThaiDraw(powerballDraw?.drawDate)}
-                  </p>
-                  <HomeDrawCountdown drawDate={powerballDraw?.drawDate.toISOString() ?? null} />
-                </div>
-                <div className="rounded-2xl bg-white p-5 text-center">
-                  <p className="text-sm font-semibold text-sky-600">Mega Ball</p>
-                  <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                    {formatJackpotUsd(megaBallDraw?.jackpot ?? null)}
-                  </p>
-                  <p className="mt-3 text-sm text-slate-500">
-                    ออเดอร์ใหม่จะเข้ารอบ: {formatThaiDraw(megaBallDraw?.drawDate)}
-                  </p>
-                  <HomeDrawCountdown drawDate={megaBallDraw?.drawDate.toISOString() ?? null} />
-                </div>
-              </div>
-            </aside>
+            {/* MM jackpot */}
+            <div className="col-span-1 rounded-2xl border border-[#c9a84c]/20 bg-black/40 p-5 lg:col-span-2">
+              <p className="text-xs font-semibold tracking-widest text-blue-400">MEGA MILLIONS</p>
+              <p className="mt-2 text-3xl font-bold text-white">{formatJackpotUsd(megaBallDraw?.jackpot ?? null)}</p>
+              <p className="mt-1 text-xs text-white/40">งวดถัดไป {formatThaiDraw(megaBallDraw?.drawDate)}</p>
+              <HomeDrawCountdown drawDate={megaBallDraw?.drawDate.toISOString() ?? null} />
+              <Link href={megaHref} className="mt-4 block rounded-xl border border-[#c9a84c] py-3 text-center text-sm font-bold text-[#c9a84c] transition hover:bg-[#c9a84c]/10">
+                ซื้อ Mega Millions →
+              </Link>
+            </div>
           </div>
         </section>
-        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
-          <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">วิธีถูกรางวัล</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">รางวัลมีกี่ระดับ?</h2>
+
+        {/* Prize tiers */}
+        <section className="mt-6 rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-7 sm:p-10">
+          <p className="text-xs font-semibold tracking-[0.3em] text-[#c9a84c]">PRIZE STRUCTURE</p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight">ระดับรางวัลทั้งหมด</h2>
           <div className="mt-6 grid gap-6 sm:grid-cols-2">
-            {/* Powerball */}
-            <div className="rounded-2xl border border-rose-100 bg-rose-50 p-5">
-              <p className="text-sm font-semibold text-rose-600 mb-4">Power Ball — เลือก 5 + 1</p>
-              <div className="space-y-2 text-sm">
-                {[
-                  { match: "5 + PB", prize: "Jackpot", highlight: true },
+            {[
+              {
+                label: "Powerball", sub: "เลือก 5 เลข + 1 Powerball", color: "text-red-400", border: "border-red-900/40",
+                rows: [
+                  { match: "5 + PB", prize: "Jackpot", gold: true },
                   { match: "5", prize: "$1,000,000" },
                   { match: "4 + PB", prize: "$50,000" },
                   { match: "4", prize: "$100" },
@@ -208,20 +141,12 @@ export default async function Home() {
                   { match: "2 + PB", prize: "$7" },
                   { match: "1 + PB", prize: "$4" },
                   { match: "PB เท่านั้น", prize: "$4" },
-                ].map((row) => (
-                  <div key={row.match} className={`flex justify-between rounded-xl px-3 py-2 ${row.highlight ? "bg-rose-500 text-white font-bold" : "bg-white text-slate-700"}`}>
-                    <span>ถูก {row.match}</span>
-                    <span className={row.highlight ? "text-white" : "font-semibold text-rose-600"}>{row.prize}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Mega Millions */}
-            <div className="rounded-2xl border border-sky-100 bg-sky-50 p-5">
-              <p className="text-sm font-semibold text-sky-600 mb-4">Mega Millions — เลือก 5 + 1</p>
-              <div className="space-y-2 text-sm">
-                {[
-                  { match: "5 + MB", prize: "Jackpot", highlight: true },
+                ],
+              },
+              {
+                label: "Mega Millions", sub: "เลือก 5 เลข + 1 Mega Ball", color: "text-blue-400", border: "border-blue-900/40",
+                rows: [
+                  { match: "5 + MB", prize: "Jackpot", gold: true },
                   { match: "5", prize: "$1,000,000" },
                   { match: "4 + MB", prize: "$10,000" },
                   { match: "4", prize: "$500" },
@@ -230,67 +155,52 @@ export default async function Home() {
                   { match: "2 + MB", prize: "$10" },
                   { match: "1 + MB", prize: "$4" },
                   { match: "MB เท่านั้น", prize: "$2" },
-                ].map((row) => (
-                  <div key={row.match} className={`flex justify-between rounded-xl px-3 py-2 ${row.highlight ? "bg-sky-500 text-white font-bold" : "bg-white text-slate-700"}`}>
-                    <span>ถูก {row.match}</span>
-                    <span className={row.highlight ? "text-white" : "font-semibold text-sky-600"}>{row.prize}</span>
-                  </div>
-                ))}
+                ],
+              },
+            ].map((game) => (
+              <div key={game.label} className={`rounded-2xl border ${game.border} bg-[#111] p-5`}>
+                <p className={`text-sm font-bold ${game.color}`}>{game.label}</p>
+                <p className="mb-4 text-xs text-white/40">{game.sub}</p>
+                <div className="space-y-1.5">
+                  {game.rows.map((row) => (
+                    <div key={row.match} className={`flex justify-between rounded-xl px-3 py-2 text-sm ${row.gold ? "bg-[#c9a84c] font-bold text-black" : "bg-white/5 text-white/70"}`}>
+                      <span>ถูก {row.match}</span>
+                      <span className={row.gold ? "text-black" : "font-semibold text-[#c9a84c]"}>{row.prize}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-          <p className="mt-4 text-xs text-slate-400 text-center">PB = Powerball · MB = Mega Ball · รางวัลเป็นอัตราก่อนหักภาษี</p>
+          <p className="mt-4 text-center text-xs text-white/30">รางวัลเป็นอัตราก่อนหักภาษีสหรัฐฯ · PB = Powerball · MB = Mega Ball</p>
         </section>
 
+        {/* Draw results */}
         {recentDraws.length > 0 && (
-          <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
-            <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">ผลรางวัลล่าสุด</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">ผลการออกรางวัล</h2>
+          <section className="mt-6 rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-7 sm:p-10">
+            <p className="text-xs font-semibold tracking-[0.3em] text-[#c9a84c]">LATEST RESULTS</p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight">ผลรางวัลล่าสุด</h2>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {recentDraws.map((draw) => {
                 const isPB = draw.type === "POWERBALL"
-                const drawDateThai = draw.drawDate.toLocaleDateString("th-TH", {
-                  timeZone: "Asia/Bangkok",
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                  year: "2-digit",
-                })
-                const drawTimeThai = draw.drawDate.toLocaleTimeString("th-TH", {
-                  timeZone: "Asia/Bangkok",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-                const hasResult = draw.winningMain && draw.winningSpecial
+                const drawDateThai = draw.drawDate.toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", weekday: "short", day: "numeric", month: "short", year: "2-digit" })
                 return (
-                  <div key={draw.id} className={`rounded-2xl border p-5 ${isPB ? "border-rose-100 bg-rose-50" : "border-sky-100 bg-sky-50"}`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <p className={`text-sm font-semibold ${isPB ? "text-rose-600" : "text-sky-600"}`}>
-                        {isPB ? "Power Ball" : "Mega Ball"}
-                      </p>
-                      <p className="text-xs text-slate-400">{drawDateThai} {drawTimeThai} น.</p>
+                  <div key={draw.id} className="rounded-2xl border border-white/10 bg-[#111] p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className={`text-xs font-bold tracking-widest ${isPB ? "text-red-400" : "text-blue-400"}`}>{isPB ? "POWERBALL" : "MEGA MILLIONS"}</span>
+                      <span className="text-xs text-white/30">{drawDateThai}</span>
                     </div>
-                    {hasResult ? (
-                      <>
-                        <p className="text-xs font-semibold tracking-widest text-slate-400 mb-2">เลขที่ออก</p>
-                        <div className="flex flex-wrap gap-2 items-center">
-                          {draw.winningMain!.split(",").map((n, i) => (
-                            <span key={i} className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${isPB ? "bg-rose-500" : "bg-sky-500"}`}>
-                              {n.trim()}
-                            </span>
-                          ))}
-                          <span className="mx-1 text-slate-300">+</span>
-                          <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${isPB ? "bg-amber-500" : "bg-amber-500"}`}>
-                            {draw.winningSpecial!.trim()}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex items-center gap-2 text-slate-500">
-                        <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                        <p className="text-sm">รอประกาศผลรางวัล</p>
-                      </div>
-                    )}
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {draw.winningMain!.split(",").map((n, i) => (
+                        <span key={i} className="w-9 h-9 rounded-full border border-[#c9a84c]/40 bg-[#c9a84c]/10 flex items-center justify-center text-sm font-bold text-[#c9a84c]">
+                          {n.trim()}
+                        </span>
+                      ))}
+                      <span className="text-white/20">+</span>
+                      <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${isPB ? "bg-red-600" : "bg-blue-600"}`}>
+                        {draw.winningSpecial!.trim()}
+                      </span>
+                    </div>
                   </div>
                 )
               })}
