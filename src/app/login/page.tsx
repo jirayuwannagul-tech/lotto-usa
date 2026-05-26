@@ -1,22 +1,32 @@
 import Link from "next/link"
+import Image from "next/image"
 import LoginForm from "@/components/shared/LoginForm"
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 sm:px-6 sm:py-14">
-      <div className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="flex items-center justify-between">
-          <p className="text-lg font-semibold tracking-tight text-slate-950">Login</p>
-          <Link href="/" className="text-sm font-semibold text-slate-500 transition hover:text-slate-950">
-            กลับหน้าแรก
+    <div className="min-h-screen bg-[#09090b] px-5 py-10 text-white sm:px-6 sm:py-14">
+      <div className="mx-auto max-w-md">
+        <div className="mb-8 flex items-center justify-between">
+          <Link href="/">
+            <Image src="/lotto-usa-logo.png" alt="LottoUSA" width={1240} height={404} className="h-auto w-32" unoptimized />
+          </Link>
+          <Link href="/" className="text-sm text-white/40 transition hover:text-white">
+            ← กลับหน้าแรก
           </Link>
         </div>
 
-        <div className="mt-10">
-          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-            ยินดีต้อนรับ กรุณาเข้าสู่ระบบเพื่อซื้อหวยและติดตามสถานะออเดอร์ของคุณ
+        <div className="rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-8">
+          <h1 className="text-2xl font-bold tracking-tight">เข้าสู่ระบบ</h1>
+          <p className="mt-1 text-sm text-white/40">ยินดีต้อนรับกลับมา</p>
+          <div className="mt-8">
+            <LoginForm redirectTo="/" theme="dark" />
           </div>
-          <LoginForm redirectTo="/" />
+          <p className="mt-6 text-center text-sm text-white/40">
+            ยังไม่มีบัญชี?{" "}
+            <Link href="/register" className="font-semibold text-[#c9a84c] hover:underline">
+              สมัครสมาชิก
+            </Link>
+          </p>
         </div>
       </div>
     </div>

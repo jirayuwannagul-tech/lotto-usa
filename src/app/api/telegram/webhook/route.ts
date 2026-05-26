@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { sendMessage, downloadFileBuffer, isAllowedChat, type TgUpdate } from "@/lib/telegram"
+import { sendMessage, downloadFileBuffer, isAllowedChat, answerCallbackQuery, editMessageText, type TgUpdate } from "@/lib/telegram"
 import { readLotteryTicketFromBuffer, numbersMatch } from "@/lib/ocr"
 import { saveBuffer } from "@/lib/upload"
 
@@ -12,6 +12,26 @@ export async function POST(req: NextRequest) {
   }
 
   const update: TgUpdate = await req.json().catch(() => ({}))
+
+  // ---- Callback Query (inline button press) ----
+  if (update.callback_query) {
+    const cq = update.callback_query
+    const chatId = cq.message?.chat.id
+    const messageId = cq.message?.message_id
+    const data = cq.data ?? ""
+
+    if (data.startsWith("bought:") && chatId && messageId) {
+      const orderId = data.replace("bought:", "")
+      await handleBoughtCallback(cq.id, chatId, messageId, orderId)
+    } else if (data.startsWith("cancel:") && chatId && messageId) {
+      const orderId = data.replace("cancel:", "")
+      await handleCancelCallback(cq.id, chatId, messageId, orderId)
+    } else {
+      await answerCallbackQuery(cq.id)
+    }
+    return NextResponse.json({ ok: true })
+  }
+
   const msg = update.message
   if (!msg) return NextResponse.json({ ok: true })
 
@@ -53,6 +73,62 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true })
+}
+
+// ---- Callback Handlers ---------------------------------------------------
+
+async function handleBoughtCallback(callbackId: string, chatId: number, messageId: number, orderId: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true, user: { select: { name: true } } },
+  })
+
+  if (!order) {
+    await answerCallbackQuery(callbackId, "❌ ไม่พบออเดอร์นี้")
+    return
+  }
+
+  if (order.status === "MATCHED") {
+    await answerCallbackQuery(callbackId, "✅ ยืนยันแล้วก่อนหน้านี้")
+    return
+  }
+
+  await prisma.orderItem.updateMany({
+    where: { orderId, matchedAt: null },
+    data: { matchedAt: new Date() },
+  })
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { status: "MATCHED" },
+  })
+
+  await answerCallbackQuery(callbackId, "✅ บันทึกแล้ว!")
+  await editMessageText(chatId, messageId,
+    `✅ *ซื้อแล้ว — ยืนยันโดยแอดมิน*\n\n👤 ${order.user.name}\n🆔 #${orderId.slice(-8).toUpperCase()}\n\n_อัปเดตสถานะในระบบแล้ว_`
+  )
+}
+
+async function handleCancelCallback(callbackId: string, chatId: number, messageId: number, orderId: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { user: { select: { name: true } } },
+  })
+
+  if (!order) {
+    await answerCallbackQuery(callbackId, "❌ ไม่พบออเดอร์นี้")
+    return
+  }
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { status: "REJECTED" },
+  })
+
+  await answerCallbackQuery(callbackId, "❌ ยกเลิกแล้ว")
+  await editMessageText(chatId, messageId,
+    `❌ *ยกเลิกออเดอร์*\n\n👤 ${order.user.name}\n🆔 #${orderId.slice(-8).toUpperCase()}\n\n_อัปเดตสถานะในระบบแล้ว_`
+  )
 }
 
 // ---- Handlers ------------------------------------------------------------

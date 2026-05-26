@@ -116,28 +116,28 @@ export default function LoginForm({
         className={cn(
           "w-full font-semibold",
           isDark
-            ? "bg-blue-600 text-white hover:bg-blue-700"
+            ? "bg-[#c9a84c] text-black hover:bg-[#d4b860]"
             : "h-11 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500"
         )}
       >
         {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
       </Button>
       {portal === "customer" && (
-        <p className={cn("text-center text-sm", isDark ? "text-white/50" : "text-slate-500")}>
+        <p className={cn("text-center text-sm", isDark ? "text-white/40" : "text-slate-500")}>
           <Link
             href="/forgot-password"
-            className={cn(isDark ? "text-white/70 hover:underline" : "text-slate-400 hover:text-slate-700")}
+            className={cn(isDark ? "text-[#c9a84c]/70 hover:text-[#c9a84c]" : "text-slate-400 hover:text-slate-700")}
           >
             ลืมรหัสผ่าน?
           </Link>
         </p>
       )}
       {showRegisterLink && (
-        <p className={cn("text-center text-sm", isDark ? "text-white/50" : "text-slate-500")}>
+        <p className={cn("text-center text-sm", isDark ? "text-white/40" : "text-slate-500")}>
           ยังไม่มีบัญชี?{" "}
           <Link
             href="/register"
-            className={cn(isDark ? "text-blue-400 hover:underline" : "font-medium text-emerald-600 hover:underline")}
+            className={cn(isDark ? "font-semibold text-[#c9a84c] hover:underline" : "font-medium text-emerald-600 hover:underline")}
           >
             สมัครสมาชิก
           </Link>
