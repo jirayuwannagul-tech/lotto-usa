@@ -45,6 +45,62 @@ export async function sendMessage(
   }
 }
 
+export async function sendMessageWithButtons(
+  chatId: number | string,
+  text: string,
+  buttons: { text: string; callback_data: string }[][],
+  parseMode: "Markdown" | "HTML" | "MarkdownV2" = "Markdown",
+  messageThreadId?: number
+) {
+  const res = await fetch(`${BASE}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: parseMode,
+      reply_markup: { inline_keyboard: buttons },
+      ...(messageThreadId ? { message_thread_id: messageThreadId } : {}),
+    }),
+  })
+  const data = await res.json().catch(() => null) as { ok?: boolean; description?: string } | null
+  if (!res.ok || !data?.ok) {
+    throw new Error(`Telegram sendMessageWithButtons failed for chat ${chatId}: ${data?.description || `HTTP ${res.status}`}`)
+  }
+}
+
+export async function answerCallbackQuery(callbackQueryId: string, text?: string) {
+  await fetch(`${BASE}/answerCallbackQuery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ callback_query_id: callbackQueryId, text }),
+  })
+}
+
+export async function editMessageText(
+  chatId: number | string,
+  messageId: number,
+  text: string,
+  parseMode: "Markdown" | "HTML" | "MarkdownV2" = "Markdown"
+) {
+  await fetch(`${BASE}/editMessageText`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, message_id: messageId, text, parse_mode: parseMode }),
+  })
+}
+
+export async function sendApprovalRequest(orderId: string, text: string) {
+  const ids = getChatIds("TELEGRAM_APPROVAL_CHAT_IDS")
+  const threadId = getThreadId("TELEGRAM_APPROVAL_THREAD_ID")
+  if (ids.length === 0 || !BOT_TOKEN) return
+  const buttons = [[
+    { text: "✅ ซื้อแล้ว", callback_data: `bought:${orderId}` },
+    { text: "❌ ยกเลิก", callback_data: `cancel:${orderId}` },
+  ]]
+  await Promise.all(ids.map((id) => sendMessageWithButtons(id, text, buttons, "Markdown", threadId)))
+}
+
 // ---- File ----------------------------------------------------------------
 
 export async function getFilePath(fileId: string): Promise<string | null> {
@@ -105,6 +161,14 @@ export async function sendApprovalMessage(text: string) {
 export interface TgUpdate {
   update_id: number
   message?: TgMessage
+  callback_query?: TgCallbackQuery
+}
+
+export interface TgCallbackQuery {
+  id: string
+  from: { id: number; first_name: string; username?: string }
+  message?: TgMessage
+  data?: string
 }
 
 export interface TgMessage {

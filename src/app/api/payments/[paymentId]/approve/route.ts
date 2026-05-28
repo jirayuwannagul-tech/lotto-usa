@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendAdminMessage, sendApprovalMessage, sendRealtimeMessage } from "@/lib/telegram"
+import { sendAdminMessage, sendRealtimeMessage, sendApprovalRequest } from "@/lib/telegram"
 import { approveCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
 import { sendPaymentApprovedEmail } from "@/lib/email"
 import { writeAuditLog } from "@/lib/audit"
@@ -80,8 +80,8 @@ ${itemLines}
 
   const deliveries = await Promise.all([
     tryDelivery("admin", () => sendAdminMessage(message)),
-    tryDelivery("approval", () => sendApprovalMessage(message)),
     tryDelivery("realtime", () => sendRealtimeMessage(message)),
+    tryDelivery("approval", () => sendApprovalRequest(order.id, message)),
   ])
 
   const failed = deliveries.filter((delivery) => !delivery.ok)
