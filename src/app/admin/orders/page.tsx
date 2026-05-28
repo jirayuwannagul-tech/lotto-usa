@@ -65,7 +65,7 @@ export default async function AdminOrdersPage() {
                 return (
                   <tr key={order.id} className="border-b border-slate-100 align-top">
                     <td className="py-4 pr-4">{formatOrderDate(order.createdAt)}</td>
-                    <td className="py-4 pr-4 font-semibold text-slate-950">{order.id.slice(-8).toUpperCase()}</td>
+                    <td className="py-4 pr-4 font-semibold text-slate-950">{String(order.orderNumber).padStart(4, "0")}</td>
                     <td className="py-4 pr-4 font-medium text-slate-950">{order.user.name}</td>
                     <td className="py-4 pr-4">{order.user.email}</td>
                     <td className="py-4 pr-4">{order.draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"}</td>

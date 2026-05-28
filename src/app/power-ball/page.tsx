@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { LotteryPurchasePanel } from "@/components/lottery/LotteryPurchasePanel"
+import { CutoffBadge } from "@/components/home/CutoffBadge"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getPurchasableDraw, syncUpcomingDraws } from "@/lib/draw-schedule"
@@ -28,6 +29,12 @@ export default async function PowerBallPage() {
             ← กลับหน้าแรก
           </Link>
         </div>
+
+        <CutoffBadge
+          cutoffAt={draw.cutoffAt.toISOString()}
+          drawDate={draw.drawDate.toISOString()}
+          drawLabel="Powerball"
+        />
 
         <LotteryPurchasePanel
           title="Power Ball"

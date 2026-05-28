@@ -188,6 +188,7 @@ function OrderCard({
 }: {
   order: {
     id: string
+    orderNumber: number
     status: string
     totalTHB: number | string | { toString(): string }
     createdAt: Date
@@ -219,7 +220,7 @@ function OrderCard({
         <div className="space-y-3 w-full">
           <div className="flex items-center gap-3">
             <p className="text-xs font-semibold tracking-[0.22em] text-white/30">
-              ORDER {order.id.slice(-8).toUpperCase()}
+              ORDER #{String(order.orderNumber).padStart(4, "0")}
             </p>
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isPB ? "bg-rose-500/20 text-rose-400" : "bg-sky-500/20 text-sky-400"}`}>
               {isPB ? "🔴 Power Ball" : "🔵 Mega Ball"}

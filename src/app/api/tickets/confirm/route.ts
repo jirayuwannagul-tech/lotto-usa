@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sendAdminMessage, sendRealtimeMessage } from "@/lib/telegram"
 
 type ConfirmBody = {
   orderItemId?: string
@@ -36,7 +37,14 @@ export async function POST(req: NextRequest) {
 
   const items = await prisma.orderItem.findMany({
     where: { id: { in: orderItemIds } },
-    include: { order: true },
+    include: {
+      order: {
+        include: {
+          user: { select: { name: true, email: true } },
+          draw: true,
+        },
+      },
+    },
   })
 
   if (items.length !== orderItemIds.length) {
@@ -57,16 +65,35 @@ export async function POST(req: NextRequest) {
   const affectedOrderIds = Array.from(new Set(items.map((item) => item.orderId)))
 
   for (const orderId of affectedOrderIds) {
-    const allItems = await prisma.orderItem.findMany({
-      where: { orderId },
-    })
-
+    const allItems = await prisma.orderItem.findMany({ where: { orderId } })
     const allMatched = allItems.every((orderItem) => orderItem.matchedAt !== null)
 
     await prisma.order.update({
       where: { id: orderId },
       data: { status: allMatched ? "MATCHED" : "TICKET_UPLOADED" },
     })
+
+    // Notify via Telegram when ticket upload is complete for this order
+    const orderInfo = items.find((i) => i.orderId === orderId)
+    if (orderInfo && allMatched) {
+      const drawLabel = orderInfo.order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
+      const drawDateThai = orderInfo.order.draw.drawDate.toLocaleDateString("th-TH", {
+        timeZone: "Asia/Bangkok",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+      const uploadedItems = allItems
+        .map((it, i) => `  ${i + 1}. ${it.mainNumbers} | ${it.specialNumber}`)
+        .join("\n")
+
+      const msg = `📸 *อัปรูปตั๋วเรียบร้อย*\n\n👤 ${orderInfo.order.user.name}\n🎱 ${drawLabel} — ${drawDateThai}\n\nเลขที่ซื้อ:\n${uploadedItems}\n\n✅ ลูกค้าสามารถดูรูปตั๋วในแดชบอร์ดได้แล้ว`
+
+      await Promise.allSettled([
+        sendAdminMessage(msg),
+        sendRealtimeMessage(msg),
+      ])
+    }
   }
 
   return NextResponse.json({

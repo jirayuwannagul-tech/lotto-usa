@@ -3,7 +3,7 @@ import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { getPurchasableDraw, syncUpcomingDraws } from "@/lib/draw-schedule"
-import { HomeDrawCountdown } from "@/components/home/HomeDrawCountdown"
+import { CutoffBadge } from "@/components/home/CutoffBadge"
 import { authOptions } from "@/lib/auth"
 import LogoutButton from "@/components/shared/LogoutButton"
 
@@ -125,8 +125,14 @@ export default async function Home() {
             <div className="col-span-1 rounded-2xl border border-[#c9a84c]/20 bg-black/40 p-5 lg:col-span-2">
               <p className="text-xs font-semibold tracking-widest text-red-400">POWERBALL</p>
               <p className="mt-2 text-3xl font-bold text-white">{formatJackpotUsd(powerballDraw?.jackpot ?? null)}</p>
-              <p className="mt-1 text-xs text-white/40">งวดถัดไป {formatThaiDraw(powerballDraw?.drawDate)}</p>
-              <HomeDrawCountdown drawDate={powerballDraw?.drawDate.toISOString() ?? null} />
+              <p className="mt-1 text-xs text-white/40">ออกรางวัล {formatThaiDraw(powerballDraw?.drawDate)}</p>
+              {powerballDraw && (
+                <CutoffBadge
+                  cutoffAt={powerballDraw.cutoffAt.toISOString()}
+                  drawDate={powerballDraw.drawDate.toISOString()}
+                  drawLabel="Powerball"
+                />
+              )}
               <Link href={lotteryHref} className="mt-4 block rounded-xl bg-[#c9a84c] py-3 text-center text-sm font-bold text-black transition hover:bg-[#d4b860]">
                 ซื้อ Powerball →
               </Link>
@@ -135,8 +141,14 @@ export default async function Home() {
             <div className="col-span-1 rounded-2xl border border-[#c9a84c]/20 bg-black/40 p-5 lg:col-span-2">
               <p className="text-xs font-semibold tracking-widest text-blue-400">MEGA MILLIONS</p>
               <p className="mt-2 text-3xl font-bold text-white">{formatJackpotUsd(megaBallDraw?.jackpot ?? null)}</p>
-              <p className="mt-1 text-xs text-white/40">งวดถัดไป {formatThaiDraw(megaBallDraw?.drawDate)}</p>
-              <HomeDrawCountdown drawDate={megaBallDraw?.drawDate.toISOString() ?? null} />
+              <p className="mt-1 text-xs text-white/40">ออกรางวัล {formatThaiDraw(megaBallDraw?.drawDate)}</p>
+              {megaBallDraw && (
+                <CutoffBadge
+                  cutoffAt={megaBallDraw.cutoffAt.toISOString()}
+                  drawDate={megaBallDraw.drawDate.toISOString()}
+                  drawLabel="Mega Millions"
+                />
+              )}
               <Link href={megaHref} className="mt-4 block rounded-xl border border-[#c9a84c] py-3 text-center text-sm font-bold text-[#c9a84c] transition hover:bg-[#c9a84c]/10">
                 ซื้อ Mega Millions →
               </Link>

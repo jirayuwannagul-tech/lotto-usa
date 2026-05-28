@@ -44,3 +44,4 @@ next-env.d.ts
 
 # uploads (user files — เก็บใน server ไม่ push ขึ้น git)
 /public/uploads/
+.claude/

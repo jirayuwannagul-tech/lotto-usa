@@ -65,12 +65,13 @@ model Draw {
 }
 
 model Order {
-  id        String      @id @default(cuid())
-  userId    String
-  drawId    String
-  status    OrderStatus @default(PENDING_PAYMENT)
-  totalUSD  Decimal     @db.Decimal(10, 2)
-  totalTHB  Decimal     @db.Decimal(12, 2)
+  id          String      @id @default(cuid())
+  orderNumber Int         @default(autoincrement())
+  userId      String
+  drawId      String
+  status      OrderStatus @default(PENDING_PAYMENT)
+  totalUSD    Decimal     @db.Decimal(10, 2)
+  totalTHB    Decimal     @db.Decimal(12, 2)
   rateUsed  Decimal     @db.Decimal(10, 4)
   note      String?
   createdAt DateTime    @default(now())
