@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { sendAdminMessage, sendRealtimeMessage } from "@/lib/telegram"
 
 async function fetchPowerballResults() {
   const res = await fetch("https://data.ny.gov/resource/d6yy-54nr.json?$limit=10&$order=draw_date+DESC", {
-    next: { revalidate: 0 },
+    cache: "no-store",
   })
   if (!res.ok) return []
   const data = await res.json() as { draw_date: string; winning_numbers: string }[]
@@ -21,7 +22,7 @@ async function fetchPowerballResults() {
 
 async function fetchMegaResults() {
   const res = await fetch("https://data.ny.gov/resource/5xaw-6ayf.json?$limit=10&$order=draw_date+DESC", {
-    next: { revalidate: 0 },
+    cache: "no-store",
   })
   if (!res.ok) return []
   const data = await res.json() as { draw_date: string; winning_numbers: string; mega_ball: string }[]
@@ -31,6 +32,26 @@ async function fetchMegaResults() {
     mainNumbers: row.winning_numbers.trim().split(" ").map((n) => n.padStart(2, "0")).join(","),
     specialNumber: row.mega_ball.padStart(2, "0"),
   }))
+}
+
+async function announceResult(draw: { id: string; type: string; drawDate: Date; winningMain: string; winningSpecial: string }) {
+  const typeLabel = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
+  const dateThai = draw.drawDate.toLocaleDateString("th-TH", {
+    timeZone: "Asia/Bangkok",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+  const balls = draw.winningMain.split(",").map((n) => n.trim())
+  const ballLine = balls.map((n) => `[${n}]`).join(" ") + ` + *${draw.winningSpecial.trim()}*`
+
+  const msg = `🎱 *ผลหวย ${typeLabel}*\n📅 งวด ${dateThai}\n\n${ballLine}\n\n_ตรวจสอบเลขในแดชบอร์ดของคุณได้เลย_`
+
+  await Promise.allSettled([
+    sendAdminMessage(msg),
+    sendRealtimeMessage(msg),
+  ])
 }
 
 export async function POST(req: Request) {
@@ -43,6 +64,8 @@ export async function POST(req: Request) {
   const all = [...pbResults, ...mmResults]
 
   let updated = 0
+  let announced = 0
+
   for (const result of all) {
     const draw = await prisma.draw.findFirst({
       where: {
@@ -53,16 +76,44 @@ export async function POST(req: Request) {
         },
       },
     })
+
     if (draw && !draw.winningMain) {
-      await prisma.draw.update({
+      const updated_draw = await prisma.draw.update({
         where: { id: draw.id },
-        data: { winningMain: result.mainNumbers, winningSpecial: result.specialNumber },
+        data: {
+          winningMain: result.mainNumbers,
+          winningSpecial: result.specialNumber,
+          resultAnnouncedAt: new Date(),
+        },
       })
       updated++
+
+      await announceResult({
+        id: updated_draw.id,
+        type: updated_draw.type,
+        drawDate: updated_draw.drawDate,
+        winningMain: result.mainNumbers,
+        winningSpecial: result.specialNumber,
+      }).catch(() => {})
+      announced++
+    } else if (draw?.winningMain && !draw.resultAnnouncedAt) {
+      // Results exist but never announced (e.g. from manual entry)
+      await prisma.draw.update({
+        where: { id: draw.id },
+        data: { resultAnnouncedAt: new Date() },
+      })
+      await announceResult({
+        id: draw.id,
+        type: draw.type,
+        drawDate: draw.drawDate,
+        winningMain: draw.winningMain,
+        winningSpecial: draw.winningSpecial!,
+      }).catch(() => {})
+      announced++
     }
   }
 
-  return NextResponse.json({ ok: true, fetched: all.length, updated })
+  return NextResponse.json({ ok: true, fetched: all.length, updated, announced })
 }
 
 export async function GET() {

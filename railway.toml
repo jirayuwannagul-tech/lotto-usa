@@ -9,3 +9,8 @@ startCommand = "sh /app/scripts/start.sh"
 name = "sync-draws"
 schedule = "*/15 * * * *"
 command = "curl -sf \"$NEXTAUTH_URL/api/cron/sync-draws?secret=$CRON_SECRET\" || true"
+
+[[crons]]
+name = "sync-results"
+schedule = "0 * * * *"
+command = "curl -sf -X POST \"$NEXTAUTH_URL/api/draws/sync-results\" -H \"Content-Type: application/json\" -d '{\"secret\":\"SYNC_RESULTS_2026\"}' || true"

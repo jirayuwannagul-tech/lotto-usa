@@ -56,9 +56,10 @@ model Draw {
   cutoffAt  DateTime
   isOpen    Boolean  @default(true)
   jackpot        String?
-  winningMain    String?
-  winningSpecial String?
-  createdAt      DateTime @default(now())
+  winningMain       String?
+  winningSpecial    String?
+  resultAnnouncedAt DateTime?
+  createdAt         DateTime @default(now())
 
   orders Order[]
 }
