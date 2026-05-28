@@ -2,6 +2,7 @@ import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { AdminSummaryButton } from "@/components/admin/AdminSummaryButton"
+import { ReannounceResultsButton } from "@/components/admin/ReannounceResultsButton"
 import { AdminNavLink } from "@/components/admin/AdminNavLink"
 import LogoutButton from "@/components/shared/LogoutButton"
 import { authOptions } from "@/lib/auth"
@@ -64,6 +65,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 </h1>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                <ReannounceResultsButton />
                 <AdminSummaryButton />
                 <LogoutButton
                   redirectTo="/admin-login"
