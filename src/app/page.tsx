@@ -127,59 +127,74 @@ export default async function Home() {
         <section className="mt-6 rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-7 sm:p-10">
           <p className="text-xs font-semibold tracking-[0.3em] text-[#c9a84c]">PRIZE STRUCTURE</p>
           <h2 className="mt-2 text-2xl font-bold tracking-tight">ระดับรางวัลทั้งหมด</h2>
+          <p className="mt-1 text-sm text-white/40">ตัวอย่าง: ซื้อเลข 7 · 14 · 21 · 35 · 52 + PB 10</p>
+
+          {/* Example balls */}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {["7","14","21","35","52"].map((n) => (
+              <span key={n} className="w-10 h-10 rounded-full border border-[#c9a84c]/40 bg-[#c9a84c]/10 flex items-center justify-center text-sm font-bold text-[#c9a84c]">{n}</span>
+            ))}
+            <span className="text-white/30 text-lg">+</span>
+            <span className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-sm font-bold text-white">10</span>
+            <span className="ml-2 text-xs text-white/30">← ตัวแดง = Powerball</span>
+          </div>
+
           <div className="mt-6 grid gap-6 sm:grid-cols-2">
             {[
               {
-                label: "Powerball", sub: "เลือก 5 เลข + 1 Powerball", color: "text-red-400", border: "border-red-900/40",
+                label: "Powerball", color: "text-red-400", border: "border-red-900/40", ballColor: "bg-red-600", ballLabel: "PB",
                 rows: [
-                  { match: "5 + PB", prize: "Jackpot", gold: true },
-                  { match: "5", prize: "$1,000,000" },
-                  { match: "4 + PB", prize: "$50,000" },
-                  { match: "4", prize: "$100" },
-                  { match: "3 + PB", prize: "$100" },
-                  { match: "3", prize: "$7" },
-                  { match: "2 + PB", prize: "$7" },
-                  { match: "1 + PB", prize: "$4" },
-                  { match: "PB เท่านั้น", prize: "$4" },
+                  { desc: "ถูกทั้ง 5 เลข + Powerball", prize: "Jackpot", gold: true },
+                  { desc: "ถูกทั้ง 5 เลข (ไม่มี PB)", prize: "$1,000,000" },
+                  { desc: "ถูก 4 เลข + Powerball", prize: "$50,000" },
+                  { desc: "ถูก 4 เลข (ไม่มี PB)", prize: "$100" },
+                  { desc: "ถูก 3 เลข + Powerball", prize: "$100" },
+                  { desc: "ถูก 3 เลข (ไม่มี PB)", prize: "$7" },
+                  { desc: "ถูก 2 เลข + Powerball", prize: "$7" },
+                  { desc: "ถูก 1 เลข + Powerball", prize: "$4" },
+                  { desc: "ถูกแค่ Powerball อย่างเดียว", prize: "$4" },
                 ],
               },
               {
-                label: "Mega Millions", sub: "เลือก 5 เลข + 1 Mega Ball", color: "text-blue-400", border: "border-blue-900/40",
+                label: "Mega Millions", color: "text-blue-400", border: "border-blue-900/40", ballColor: "bg-blue-600", ballLabel: "MB",
                 rows: [
-                  { match: "5 + MB", prize: "Jackpot", gold: true },
-                  { match: "5", prize: "$1,000,000" },
-                  { match: "4 + MB", prize: "$10,000" },
-                  { match: "4", prize: "$500" },
-                  { match: "3 + MB", prize: "$200" },
-                  { match: "3", prize: "$10" },
-                  { match: "2 + MB", prize: "$10" },
-                  { match: "1 + MB", prize: "$4" },
-                  { match: "MB เท่านั้น", prize: "$2" },
+                  { desc: "ถูกทั้ง 5 เลข + Mega Ball", prize: "Jackpot", gold: true },
+                  { desc: "ถูกทั้ง 5 เลข (ไม่มี MB)", prize: "$1,000,000" },
+                  { desc: "ถูก 4 เลข + Mega Ball", prize: "$10,000" },
+                  { desc: "ถูก 4 เลข (ไม่มี MB)", prize: "$500" },
+                  { desc: "ถูก 3 เลข + Mega Ball", prize: "$200" },
+                  { desc: "ถูก 3 เลข (ไม่มี MB)", prize: "$10" },
+                  { desc: "ถูก 2 เลข + Mega Ball", prize: "$10" },
+                  { desc: "ถูก 1 เลข + Mega Ball", prize: "$4" },
+                  { desc: "ถูกแค่ Mega Ball อย่างเดียว", prize: "$2" },
                 ],
               },
             ].map((game) => (
               <div key={game.label} className={`rounded-2xl border ${game.border} bg-[#111] p-5`}>
-                <p className={`text-sm font-bold ${game.color}`}>{game.label}</p>
-                <p className="mb-4 text-xs text-white/40">{game.sub}</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`w-6 h-6 rounded-full ${game.ballColor} flex items-center justify-center text-[10px] font-bold text-white`}>{game.ballLabel}</span>
+                  <p className={`text-sm font-bold ${game.color}`}>{game.label}</p>
+                </div>
+                <p className="mb-4 text-xs text-white/30">เลือก 5 เลขหลัก (1–69) + 1 {game.ballLabel} (1–26)</p>
                 <div className="space-y-1.5">
                   {game.rows.map((row) => (
-                    <div key={row.match} className={`flex justify-between rounded-xl px-3 py-2 text-sm ${row.gold ? "bg-[#c9a84c] font-bold text-black" : "bg-white/5 text-white/70"}`}>
-                      <span>ถูก {row.match}</span>
-                      <span className={row.gold ? "text-black" : "font-semibold text-[#c9a84c]"}>{row.prize}</span>
+                    <div key={row.desc} className={`flex justify-between gap-3 rounded-xl px-3 py-2 text-sm ${row.gold ? "bg-[#c9a84c] font-bold text-black" : "bg-white/5 text-white/70"}`}>
+                      <span>{row.desc}</span>
+                      <span className={`shrink-0 ${row.gold ? "text-black" : "font-semibold text-[#c9a84c]"}`}>{row.prize}</span>
                     </div>
                   ))}
                 </div>
               </div>
             ))}
           </div>
-          <p className="mt-4 text-center text-xs text-white/30">รางวัลเป็นอัตราก่อนหักภาษีสหรัฐฯ · PB = Powerball · MB = Mega Ball</p>
+          <p className="mt-4 text-center text-xs text-white/30">รางวัลเป็นอัตราก่อนหักภาษีสหรัฐฯ</p>
         </section>
 
-        {/* Draw results */}
-        {recentDraws.length > 0 && (
-          <section className="mt-6 rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-7 sm:p-10">
-            <p className="text-xs font-semibold tracking-[0.3em] text-[#c9a84c]">LATEST RESULTS</p>
-            <h2 className="mt-2 text-2xl font-bold tracking-tight">ผลรางวัลล่าสุด</h2>
+        {/* Draw results — always shown */}
+        <section className="mt-6 rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-7 sm:p-10">
+          <p className="text-xs font-semibold tracking-[0.3em] text-[#c9a84c]">LATEST RESULTS</p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight">ประกาศผลรางวัล</h2>
+          {recentDraws.length > 0 ? (
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {recentDraws.map((draw) => {
                 const isPB = draw.type === "POWERBALL"
@@ -205,8 +220,31 @@ export default async function Home() {
                 )
               })}
             </div>
-          </section>
-        )}
+          ) : (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              {[
+                { label: "POWERBALL", color: "text-red-400", border: "border-red-900/30", draw: powerballDraw },
+                { label: "MEGA MILLIONS", color: "text-blue-400", border: "border-blue-900/30", draw: megaBallDraw },
+              ].map((item) => {
+                const lastDraw = item.draw
+                const dateStr = lastDraw?.drawDate
+                  ? lastDraw.drawDate.toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", weekday: "long", day: "numeric", month: "long", year: "numeric" })
+                  : "-"
+                return (
+                  <div key={item.label} className={`rounded-2xl border ${item.border} bg-[#111] p-6`}>
+                    <p className={`text-xs font-bold tracking-widest ${item.color}`}>{item.label}</p>
+                    <p className="mt-3 text-sm text-white/40">งวดล่าสุด</p>
+                    <p className="text-base font-semibold text-white">{dateStr}</p>
+                    <div className="mt-4 flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                      <p className="text-sm text-white/50">รอประกาศผล</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </section>
       </main>
     </div>
   )
