@@ -94,16 +94,20 @@ export default async function DashboardPage() {
   await syncUpcomingDraws(prisma)
   const now = new Date()
 
-  const orders = await prisma.order.findMany({
-    where: { userId: session.user.id },
-    include: {
-      draw: true,
-      items: true,
-      payment: true,
-    },
-    orderBy: { createdAt: "desc" },
-  })
+  const [userWithWallet, orders] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { walletBalance: true } }),
+    prisma.order.findMany({
+      where: { userId: session.user.id },
+      include: {
+        draw: true,
+        items: true,
+        payment: true,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ])
 
+  const walletBalance = Number(userWithWallet?.walletBalance ?? 0)
   const activeOrders = orders.filter((order) => order.draw.isOpen && order.draw.drawDate >= now)
 
   const totalOrders = activeOrders.length
@@ -129,7 +133,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-4">
           <div className="rounded-3xl border border-white/10 bg-[#0d0d0d] p-6">
             <p className="text-sm font-medium text-white/50">ออเดอร์ปัจจุบัน</p>
             <p className="mt-3 text-4xl font-semibold tracking-tight text-white">{totalOrders}</p>
@@ -141,6 +145,13 @@ export default async function DashboardPage() {
           <div className="rounded-3xl border border-white/10 bg-[#0d0d0d] p-6">
             <p className="text-sm font-medium text-white/50">อนุมัติแล้ว</p>
             <p className="mt-3 text-4xl font-semibold tracking-tight text-emerald-400">{approvedOrders}</p>
+          </div>
+          <div className="rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-6">
+            <p className="text-sm font-medium text-white/50">Wallet</p>
+            <p className="mt-3 text-4xl font-semibold tracking-tight text-[#c9a84c]">
+              {walletBalance.toLocaleString("th-TH")}
+            </p>
+            <p className="mt-1 text-xs text-white/30">บาท</p>
           </div>
         </section>
 

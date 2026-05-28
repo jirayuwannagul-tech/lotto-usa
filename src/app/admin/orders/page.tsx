@@ -104,6 +104,16 @@ export default async function AdminOrdersPage() {
                           >
                             ดูสลิป
                           </Link>
+                          {order.payment.slipSenderName && (
+                            <p className="text-xs text-slate-600">
+                              ผู้โอน: <span className="font-medium">{order.payment.slipSenderName}</span>
+                            </p>
+                          )}
+                          {order.payment.slipAmount !== null && order.payment.slipAmount !== undefined && (
+                            <p className={`text-xs font-semibold ${order.payment.slipAmountMatches ? "text-emerald-600" : "text-rose-600"}`}>
+                              {order.payment.slipAmountMatches ? "✅" : "⚠️"} {Number(order.payment.slipAmount).toLocaleString("th-TH")} ฿
+                            </p>
+                          )}
                           {order.payment.rejectNote && (
                             <p className="max-w-[180px] text-xs text-rose-600">{order.payment.rejectNote}</p>
                           )}

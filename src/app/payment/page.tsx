@@ -24,6 +24,7 @@ interface OrderResponse {
   draw: { type: string }
   items: { mainNumbers: string; specialNumber: string }[]
   totalTHB: string | number
+  user?: { walletBalance?: string | number }
 }
 
 function formatBaht(amount: number) {
@@ -42,6 +43,7 @@ export default function PaymentPage() {
       return null
     }
   })
+  const [walletBalance, setWalletBalance] = useState<number>(0)
   const [slip, setSlip] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [uploadMessage, setUploadMessage] = useState<string | null>(null)
@@ -75,6 +77,9 @@ export default function PaymentPage() {
         })),
         totalTHB: order.totalTHB,
       })
+      if (order.user?.walletBalance !== undefined) {
+        setWalletBalance(Number(order.user.walletBalance))
+      }
     }
 
     void loadOrder()
@@ -98,6 +103,29 @@ export default function PaymentPage() {
     checkout && ticketCount > 0
       ? `${checkout.drawType.slice(0, 3)}-${String(ticketCount).padStart(2, "0")}-${checkout.sets[0]?.specialNumber ?? "00"}`
       : "-"
+
+  async function handleWalletPay() {
+    if (!checkout?.orderId) return
+    setSubmitting(true)
+    setUploadMessage(null)
+    setUploadSuccess(false)
+    try {
+      const response = await fetch("/api/payments/wallet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: checkout.orderId }),
+      })
+      const data = await response.json().catch(() => null)
+      if (!response.ok) {
+        setUploadMessage(data?.error ?? "ชำระเงินไม่สำเร็จ")
+        return
+      }
+      setUploadSuccess(true)
+      setUploadMessage("ชำระเงินด้วย Wallet สำเร็จ! แอดมินได้รับออเดอร์แล้ว")
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   async function handleUploadSlip(e: React.FormEvent) {
     e.preventDefault()
@@ -223,6 +251,28 @@ export default function PaymentPage() {
                 หลังจากโอนเงินแล้ว ให้เก็บสลิปไว้สำหรับแนบในขั้นตอนถัดไป
               </p>
             </div>
+
+            {walletBalance >= estimatedTotalThb && estimatedTotalThb > 0 && !uploadSuccess && (
+              <div className="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+                <p className="text-sm font-semibold text-emerald-400">ชำระด้วย Wallet</p>
+                <p className="mt-2 text-sm text-white/60">
+                  ยอดใน Wallet: <span className="font-semibold text-emerald-400">{walletBalance.toLocaleString("th-TH")} ฿</span>
+                </p>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={handleWalletPay}
+                  className="mt-4 w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:opacity-40"
+                >
+                  {submitting ? "กำลังชำระ..." : `ชำระ ${formatBaht(estimatedTotalThb)} ฿ ด้วย Wallet`}
+                </button>
+                {uploadMessage && (
+                  <p className={`mt-3 text-sm ${uploadSuccess ? "text-emerald-400" : "text-rose-400"}`}>
+                    {uploadMessage}
+                  </p>
+                )}
+              </div>
+            )}
 
             <form onSubmit={handleUploadSlip} className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
               <label className="mb-2 block text-sm font-semibold text-white/70">อัปโหลดสลิป</label>

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { saveUploadedFile } from "@/lib/upload"
 import { sendApprovalMessage, sendRealtimeMessage } from "@/lib/telegram"
+import { readSlipFromBuffer } from "@/lib/ocr"
 
 function logTelegramError(scope: string, error: unknown) {
   console.error(`[telegram:${scope}]`, error)
@@ -38,8 +39,26 @@ export async function POST(req: NextRequest) {
 
     const { assetPath: slipUrl } = await saveUploadedFile(file, "slips")
 
+    // OCR the slip to extract sender name and amount
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const ocrResult = await readSlipFromBuffer(buffer, file.type || "image/jpeg")
+
+    const orderTotal = Number(order.totalTHB)
+    let slipAmountMatches: boolean | null = null
+    if (ocrResult.amount !== null) {
+      // Allow ±2 baht tolerance for rounding
+      slipAmountMatches = Math.abs(ocrResult.amount - orderTotal) <= 2
+    }
+
     const payment = await prisma.payment.create({
-      data: { orderId, slipUrl },
+      data: {
+        orderId,
+        slipUrl,
+        slipSenderName: ocrResult.senderName,
+        slipAmount: ocrResult.amount !== null ? ocrResult.amount : undefined,
+        slipAmountMatches,
+        slipOcrNote: ocrResult.raw ? ocrResult.raw.slice(0, 500) : undefined,
+      },
     })
 
     await prisma.order.update({
@@ -54,8 +73,25 @@ export async function POST(req: NextRequest) {
     if (fullOrder) {
       const drawLabel = fullOrder.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
       const adminOrdersUrl = new URL("/admin/orders", req.url).toString()
+
+      const verifyLine =
+        ocrResult.amount !== null
+          ? slipAmountMatches
+            ? `✅ ยอดสลิป ${ocrResult.amount.toLocaleString("th-TH")} ฿ — *ตรงกับออเดอร์*`
+            : `⚠️ ยอดสลิป ${ocrResult.amount.toLocaleString("th-TH")} ฿ — *ไม่ตรง* (ออเดอร์ ${orderTotal.toLocaleString("th-TH")} ฿)`
+          : `❓ OCR ไม่พบยอดเงิน`
+
+      const senderLine = ocrResult.senderName ? `👤 ผู้โอน: ${ocrResult.senderName}` : ""
+
       const approvalText =
-        `📎 *มีออเดอร์รอกดอนุมัติ*\n\n👤 ${fullOrder.user.name}\n🎱 ${drawLabel}\n🎫 ${fullOrder.items.length} ชุด\n💰 ${Number(fullOrder.totalTHB).toFixed(0)} ฿\n\n🔗 ${adminOrdersUrl}`
+        `📎 *มีออเดอร์รอกดอนุมัติ*\n\n` +
+        `👤 ${fullOrder.user.name}\n` +
+        `🎱 ${drawLabel}\n` +
+        `🎫 ${fullOrder.items.length} ชุด\n` +
+        `💰 ${orderTotal.toLocaleString("th-TH")} ฿\n` +
+        (senderLine ? senderLine + "\n" : "") +
+        verifyLine + "\n" +
+        `\n🔗 ${adminOrdersUrl}`
 
       try {
         await Promise.all([

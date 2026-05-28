@@ -220,7 +220,12 @@ export default async function Home() {
               </div>
             ))}
           </div>
-          <p className="mt-4 text-center text-xs text-white/30">รางวัลเป็นอัตราก่อนหักภาษีสหรัฐฯ</p>
+          <p className="mt-4 text-center text-xs text-white/30">
+            รางวัลเป็นอัตราก่อนหักภาษีสหรัฐฯ —{" "}
+            <Link href="/prize-policy" className="underline underline-offset-2 hover:text-white/60 transition">
+              อ่านนโยบายการรับรางวัล
+            </Link>
+          </p>
         </section>
 
         {/* Draw results — always shown, live from NY Open Data */}

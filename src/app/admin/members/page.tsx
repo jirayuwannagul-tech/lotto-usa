@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { DeleteMemberButton } from "@/components/admin/DeleteMemberButton"
 import { MakeReferrerButton } from "@/components/admin/MakeReferrerButton"
+import { WalletTopupButton } from "@/components/admin/WalletTopupButton"
 import { ensureReferralTables, getReferralMaps } from "@/lib/referrals"
 
 type MonthlyCommissionSummary = {
@@ -36,6 +37,7 @@ export default async function AdminMembersPage() {
     where: { role: "CUSTOMER" },
     include: { _count: { select: { orders: true } } },
     orderBy: { createdAt: "desc" },
+    // walletBalance is a scalar field, included by default
   })
   const { profiles, referrals } = await getReferralMaps()
   const monthlySummaryRows = await prisma.$queryRaw<MonthlyCommissionSummary[]>`
@@ -153,6 +155,7 @@ export default async function AdminMembersPage() {
                 <th className="pb-3 pr-4 font-medium">Line ID</th>
                 <th className="pb-3 pr-4 font-medium">ผู้แนะนำ</th>
                 <th className="pb-3 pr-4 font-medium">รหัสผู้แนะนำ</th>
+                <th className="pb-3 pr-4 font-medium">Wallet</th>
                 <th className="pb-3 pr-4 font-medium">จำนวนออเดอร์</th>
                 <th className="pb-3 pr-4 font-medium">จัดการ</th>
               </tr>
@@ -172,6 +175,18 @@ export default async function AdminMembersPage() {
                     <td className="py-3 pr-4">{referrerName}</td>
                     <td className="py-3 pr-4">
                       {ownCode ? <span className="font-mono text-xs text-emerald-700">{ownCode}</span> : "-"}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <div className="flex flex-col gap-1">
+                        <span className={`text-xs font-semibold ${Number(member.walletBalance) > 0 ? "text-emerald-700" : "text-slate-400"}`}>
+                          {Number(member.walletBalance).toLocaleString("th-TH")} ฿
+                        </span>
+                        <WalletTopupButton
+                          userId={member.id}
+                          userName={member.name}
+                          currentBalance={Number(member.walletBalance)}
+                        />
+                      </div>
                     </td>
                     <td className="py-3 pr-4">{member._count.orders}</td>
                     <td className="py-3 pr-4">

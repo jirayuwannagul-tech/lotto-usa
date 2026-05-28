@@ -41,8 +41,11 @@ model User {
   role         Role     @default(CUSTOMER)
   createdAt    DateTime @default(now())
 
+  walletBalance       Decimal  @default(0) @db.Decimal(12, 2)
+
   orders              Order[]
   passwordResetTokens PasswordResetToken[]
+  walletTransactions  WalletTransaction[]
   referrerProfile     ReferrerProfile?
   referralAsReferred  UserReferral?        @relation("ReferredUser")
   referralsGiven      UserReferral[]       @relation("ReferrerUser")
@@ -101,12 +104,18 @@ model Payment {
   id         String        @id @default(cuid())
   orderId    String        @unique
   slipUrl    String
+  method     String        @default("SLIP")
   status     PaymentStatus @default(PENDING)
   approvedAt DateTime?
   approvedBy String?
   rejectedAt DateTime?
   rejectNote String?
   createdAt  DateTime      @default(now())
+
+  slipSenderName    String?
+  slipAmount        Decimal?  @db.Decimal(12, 2)
+  slipAmountMatches Boolean?
+  slipOcrNote       String?
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
@@ -186,6 +195,19 @@ enum AuditAction {
   RESULT_POSTED
   COMMISSION_PAID
   ORDERS_RESET
+}
+
+model WalletTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  amount    Decimal  @db.Decimal(12, 2)
+  balanceAfter Decimal @db.Decimal(12, 2)
+  note      String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AuditLog {

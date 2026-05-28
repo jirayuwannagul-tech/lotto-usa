@@ -78,6 +78,64 @@ Rules:
   }
 }
 
+export interface SlipOcrResult {
+  senderName: string | null
+  amount: number | null
+  transferDate: string | null
+  raw: string
+}
+
+export async function readSlipFromBuffer(
+  buffer: Buffer,
+  contentType = "image/jpeg"
+): Promise<SlipOcrResult> {
+  const base64 = buffer.toString("base64")
+  const dataUrl = `data:${contentType};base64,${base64}`
+
+  try {
+    const response = await getOpenAI().chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image_url",
+              image_url: { url: dataUrl, detail: "high" },
+            },
+            {
+              type: "text",
+              text: `This is a Thai bank transfer slip. Extract the following fields and return ONLY valid JSON:
+{"senderName":"ชื่อผู้โอน","amount":1234.50,"transferDate":"2024-01-15"}
+
+Rules:
+- senderName: full name of the sender (Thai or English), null if not found
+- amount: numeric value of transferred amount (no currency symbol), null if not found
+- transferDate: ISO date string YYYY-MM-DD, null if not found
+- Return ONLY the JSON, no other text`,
+            },
+          ],
+        },
+      ],
+      max_tokens: 150,
+    })
+
+    const raw = response.choices[0].message.content ?? ""
+    const jsonMatch = raw.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) return { senderName: null, amount: null, transferDate: null, raw }
+
+    const parsed = JSON.parse(jsonMatch[0])
+    return {
+      senderName: typeof parsed.senderName === "string" ? parsed.senderName : null,
+      amount: typeof parsed.amount === "number" ? parsed.amount : null,
+      transferDate: typeof parsed.transferDate === "string" ? parsed.transferDate : null,
+      raw,
+    }
+  } catch {
+    return { senderName: null, amount: null, transferDate: null, raw: "" }
+  }
+}
+
 export function normalizeNumbers(main: string[], special: string): string {
   const sorted = [...main].map((n) => n.padStart(2, "0")).sort()
   return sorted.join(",") + "|" + special.padStart(2, "0")
