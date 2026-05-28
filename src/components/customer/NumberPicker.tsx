@@ -53,8 +53,8 @@ function NumberGrid({
               ${isSelected
                 ? selectedClass
                 : isFull
-                  ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                  ? "cursor-not-allowed border-white/5 bg-white/5 text-white/20"
+                  : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10"
               }`}
           >
             {n}
@@ -137,10 +137,10 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
               onClick={() => setActiveSet(i)}
               className={`rounded-full border px-3 py-1.5 text-sm font-medium transition
                 ${activeSet === i
-                  ? "border-slate-950 bg-slate-950 text-white"
+                  ? "border-[#c9a84c] bg-[#c9a84c] text-black"
                   : valid
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-slate-200 bg-white text-slate-500"
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                    : "border-white/15 bg-white/5 text-white/50"
                 }`}
             >
               ชุด {i + 1} {valid ? "✓" : ""}
@@ -150,7 +150,7 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
         <button
           type="button"
           onClick={addSet}
-          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+          className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white/50 transition hover:border-white/30 hover:text-white"
         >
           + เพิ่มชุด
         </button>
@@ -159,24 +159,24 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
       {/* Main numbers */}
       <div>
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm text-slate-700">
+          <span className="text-sm text-white/60">
             เลือก {rule.mainCount} เลข (1-{rule.mainMax})
-            <span className="ml-2 font-mono text-emerald-600">
+            <span className="ml-2 font-mono text-[#c9a84c]">
               {current.mainNumbers.length}/{rule.mainCount}
             </span>
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={() => quickPick(activeSet)}
-              className="text-xs font-medium text-emerald-600 hover:text-emerald-500"
+              className="text-xs font-medium text-[#c9a84c] hover:text-[#d4b860]"
             >
               สุ่มเลข
             </button>
             <button
               type="button"
               onClick={() => clearSet(activeSet)}
-              className="text-xs text-slate-500 hover:text-slate-700"
+              className="text-xs text-white/40 hover:text-white/70"
             >
               ล้าง
             </button>
@@ -184,7 +184,7 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
               <button
                 type="button"
                 onClick={() => removeSet(activeSet)}
-                className="text-xs text-rose-600 hover:text-rose-500"
+                className="text-xs text-rose-400 hover:text-rose-300"
               >
                 ลบชุดนี้
               </button>
@@ -196,15 +196,15 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
           selected={current.mainNumbers}
           onToggle={(n) => updateMain(activeSet, n)}
           limit={rule.mainCount}
-          selectedClass="border-emerald-500 bg-emerald-500 text-white"
+          selectedClass="border-[#c9a84c] bg-[#c9a84c] text-black"
         />
       </div>
 
       {/* Special number */}
       <div>
-        <div className="mb-2 text-sm text-slate-700">
+        <div className="mb-2 text-sm text-white/60">
           {specialLabel} (1-{rule.specialMax})
-          <span className="ml-2 font-medium text-slate-950">{current.specialNumber || "ยังไม่เลือก"}</span>
+          <span className="ml-2 font-medium text-white">{current.specialNumber || "ยังไม่เลือก"}</span>
         </div>
         <NumberGrid
           max={rule.specialMax}
@@ -217,10 +217,10 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
 
       {/* Selected display */}
       {current.mainNumbers.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center font-mono text-slate-900">
+        <div className="rounded-2xl border border-[#c9a84c]/20 bg-[#c9a84c]/5 p-3 text-center font-mono text-white">
           {current.mainNumbers.join(" - ")}
           {current.specialNumber && (
-            <span className={`ml-3 font-semibold ${drawType === "POWERBALL" ? "text-rose-600" : "text-sky-600"}`}>
+            <span className={`ml-3 font-semibold ${drawType === "POWERBALL" ? "text-rose-400" : "text-sky-400"}`}>
               ● {current.specialNumber}
             </span>
           )}
@@ -228,15 +228,15 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
       )}
 
       {/* Summary + Confirm */}
-      <div className="border-t border-slate-200 pt-4">
-        <div className="mb-3 flex justify-between text-sm text-slate-600">
+      <div className="border-t border-white/10 pt-4">
+        <div className="mb-3 flex justify-between text-sm text-white/50">
           <span>{sets.length} ใบ × ${pricePerTicket.toFixed(2)}</span>
-          <span className="font-semibold text-slate-950">${(sets.length * pricePerTicket).toFixed(2)}</span>
+          <span className="font-semibold text-[#c9a84c]">${(sets.length * pricePerTicket).toFixed(2)}</span>
         </div>
         <Button
           onClick={() => allValid && onConfirm(sets)}
           disabled={!allValid}
-          className="h-11 w-full rounded-xl bg-emerald-600 font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
+          className="h-11 w-full rounded-xl bg-[#c9a84c] font-semibold text-black hover:bg-[#d4b860] disabled:opacity-40"
         >
           {allValid
             ? confirmLabel
