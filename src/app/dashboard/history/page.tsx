@@ -60,24 +60,24 @@ export default async function HistoryPage() {
   })
 
   return (
-    <div className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 sm:px-6 sm:py-14">
+    <div className="min-h-screen bg-[#09090b] px-5 py-10 text-white sm:px-6 sm:py-14">
       <div className="mx-auto max-w-6xl space-y-6">
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <section className="rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-8">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold tracking-[0.24em] text-slate-400">MEMBER DASHBOARD</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">ประวัติย้อนหลัง</h1>
-              <p className="mt-2 text-sm text-slate-500">งวดที่ออกแล้ว / ปิดงวดแล้ว ทั้งหมด {orders.length} รายการ</p>
+              <p className="text-xs font-semibold tracking-[0.24em] text-[#c9a84c]">MEMBER DASHBOARD</p>
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">ประวัติย้อนหลัง</h1>
+              <p className="mt-2 text-sm text-white/40">งวดที่ออกแล้ว / ปิดงวดแล้ว ทั้งหมด {orders.length} รายการ</p>
             </div>
-            <Link href="/dashboard" className="text-sm font-semibold text-slate-500 transition hover:text-slate-950">
+            <Link href="/dashboard" className="text-sm font-semibold text-white/40 transition hover:text-white">
               ← กลับ Dashboard
             </Link>
           </div>
         </section>
 
         {orders.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center">
-            <p className="text-base text-slate-500">ยังไม่มีประวัติย้อนหลัง</p>
+          <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center">
+            <p className="text-base text-white/40">ยังไม่มีประวัติย้อนหลัง</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -98,40 +98,56 @@ export default async function HistoryPage() {
               const won = winItems.some((w) => w.prize)
 
               return (
-                <article key={order.id} className={`rounded-3xl border p-6 bg-white ${won ? "border-emerald-200" : "border-slate-200"}`}>
+                <article
+                  key={order.id}
+                  className={`rounded-3xl border p-6 bg-[#0d0d0d] ${won ? "border-[#c9a84c]/30" : "border-white/10"}`}
+                >
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="space-y-3 w-full">
                       <div className="flex items-center gap-3">
-                        <p className="text-xs font-semibold tracking-[0.22em] text-slate-400">
+                        <p className="text-xs font-semibold tracking-[0.22em] text-white/30">
                           ORDER {order.id.slice(-8).toUpperCase()}
                         </p>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isPB ? "bg-rose-50 text-rose-600" : "bg-sky-50 text-sky-600"}`}>
-                          {isPB ? "Power Ball" : "Mega Ball"}
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isPB ? "bg-rose-500/20 text-rose-400" : "bg-sky-500/20 text-sky-400"}`}>
+                          {isPB ? "🔴 Power Ball" : "🔵 Mega Ball"}
                         </span>
-                        {won && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">ถูกรางวัล</span>}
+                        {won && (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#c9a84c]/20 text-[#c9a84c]">
+                            ถูกรางวัล 🏆
+                          </span>
+                        )}
                       </div>
 
-                      <div className="grid gap-1 text-sm text-slate-600 sm:grid-cols-2">
+                      <div className="grid gap-1 text-sm text-white/60 sm:grid-cols-2">
                         <p>วันสั่งซื้อ: {formatThaiDate(order.createdAt)}</p>
                         <p>งวดออกรางวัล: {formatThaiDateTime(order.draw.drawDate)}</p>
-                        <p>ยอดรวม: {Number(order.totalTHB.toString()).toLocaleString("th-TH")} บาท</p>
-                        <p>สถานะ: {getStatusLabel(order.status, order.payment?.status ?? null)}</p>
+                        <p>ยอดรวม: <span className="text-[#c9a84c] font-semibold">{Number(order.totalTHB.toString()).toLocaleString("th-TH")} บาท</span></p>
+                        <p>สถานะ: <span className="text-white">{getStatusLabel(order.status, order.payment?.status ?? null)}</span></p>
                       </div>
 
-                      {/* ผลรางวัลงวดนี้ */}
                       {hasResult ? (
-                        <div className="rounded-2xl bg-slate-50 p-4">
-                          <p className="text-xs font-semibold text-slate-400 mb-2">เลขที่ออกงวดนี้</p>
-                          <div className="flex flex-wrap gap-1.5 items-center mb-3">
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                          <p className="text-xs font-semibold text-white/40 mb-3">เลขที่ออกงวดนี้</p>
+                          <div className="flex flex-wrap gap-1.5 items-center mb-4">
                             {winningMain.map((n, i) => (
-                              <span key={i} className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${isPB ? "bg-rose-500" : "bg-sky-500"}`}>{n}</span>
+                              <span
+                                key={i}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${isPB ? "bg-rose-600" : "bg-sky-600"}`}
+                              >
+                                {n}
+                              </span>
                             ))}
-                            <span className="text-slate-300 mx-1">+</span>
-                            <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white bg-amber-500">{winningSpecial}</span>
+                            <span className="text-white/20 mx-1">+</span>
+                            <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-black bg-[#c9a84c]">
+                              {winningSpecial}
+                            </span>
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             {winItems.map(({ item, prize }) => (
-                              <div key={item.id} className={`flex items-center gap-2 text-sm ${prize ? "text-emerald-700 font-semibold" : "text-slate-500"}`}>
+                              <div
+                                key={item.id}
+                                className={`flex items-center gap-2 text-sm rounded-xl px-3 py-2 ${prize ? "bg-[#c9a84c]/10 text-[#c9a84c] font-semibold" : "bg-white/5 text-white/40"}`}
+                              >
                                 <span className="font-mono">{item.mainNumbers} | {item.specialNumber}</span>
                                 <span>{prize ? `→ ${prize}` : "→ ไม่ถูกรางวัล"}</span>
                               </div>
@@ -139,14 +155,17 @@ export default async function HistoryPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+                        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
                           <div className="flex items-center gap-2">
                             <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                            <p className="text-sm text-amber-700">รอประกาศผลรางวัล</p>
+                            <p className="text-sm text-amber-400">รอประกาศผลรางวัล</p>
                           </div>
-                          <div className="mt-2 flex flex-wrap gap-2">
+                          <div className="mt-3 flex flex-wrap gap-2">
                             {order.items.map((item) => (
-                              <span key={item.id} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-mono text-slate-700">
+                              <span
+                                key={item.id}
+                                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-mono text-white/60"
+                              >
                                 {item.mainNumbers} | {item.specialNumber}
                               </span>
                             ))}

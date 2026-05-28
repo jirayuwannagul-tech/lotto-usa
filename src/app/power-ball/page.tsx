@@ -20,12 +20,12 @@ export default async function PowerBallPage() {
   if (!draw) redirect("/")
 
   return (
-    <div className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950 sm:px-6 sm:py-14">
-      <div className="mx-auto max-w-4xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+    <div className="min-h-screen bg-[#09090b] px-5 py-10 text-white sm:px-6 sm:py-14">
+      <div className="mx-auto max-w-4xl rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-8">
         <div className="flex items-center justify-between">
-          <p className="text-lg font-semibold tracking-tight text-slate-950">Power Ball</p>
-          <Link href="/" className="text-sm font-semibold text-slate-500 transition hover:text-slate-950">
-            กลับหน้าแรก
+          <p className="text-lg font-semibold tracking-tight text-white">🔴 Power Ball</p>
+          <Link href="/" className="text-sm font-semibold text-white/40 transition hover:text-white">
+            ← กลับหน้าแรก
           </Link>
         </div>
 
@@ -40,7 +40,7 @@ export default async function PowerBallPage() {
             hour: "2-digit",
             minute: "2-digit",
           }) + " น."}
-          accentClass="text-rose-600"
+          accentClass="text-rose-400"
         />
       </div>
     </div>

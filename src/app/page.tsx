@@ -35,24 +35,45 @@ function formatThaiDraw(drawDate: Date | null | undefined) {
   }) + " น."
 }
 
+interface LiveResult {
+  type: "POWERBALL" | "MEGA_MILLIONS"
+  date: string
+  mainNumbers: string
+  specialNumber: string
+}
+
+async function fetchLiveResults(): Promise<LiveResult[]> {
+  try {
+    const [pbRes, mmRes] = await Promise.all([
+      fetch("https://data.ny.gov/resource/d6yy-54nr.json?$limit=3&$order=draw_date+DESC", { cache: "no-store" }),
+      fetch("https://data.ny.gov/resource/5xaw-6ayf.json?$limit=3&$order=draw_date+DESC", { cache: "no-store" }),
+    ])
+    const pbData = pbRes.ok ? (await pbRes.json() as { draw_date: string; winning_numbers: string }[]) : []
+    const mmData = mmRes.ok ? (await mmRes.json() as { draw_date: string; winning_numbers: string; mega_ball: string }[]) : []
+    const pb = pbData.map((row) => {
+      const nums = row.winning_numbers.trim().split(" ")
+      const pb = nums.pop()!
+      return { type: "POWERBALL" as const, date: row.draw_date, mainNumbers: nums.map((n) => n.padStart(2, "0")).join(","), specialNumber: pb.padStart(2, "0") }
+    })
+    const mm = mmData.map((row) => ({
+      type: "MEGA_MILLIONS" as const,
+      date: row.draw_date,
+      mainNumbers: row.winning_numbers.trim().split(" ").map((n) => n.padStart(2, "0")).join(","),
+      specialNumber: row.mega_ball.padStart(2, "0"),
+    }))
+    return [...pb, ...mm]
+  } catch {
+    return []
+  }
+}
+
 export default async function Home() {
   const session = await getServerSession(authOptions)
   await syncUpcomingDraws(prisma)
-  const now = new Date()
-  const [powerballDraw, megaBallDraw, recentDraws] = await Promise.all([
+  const [powerballDraw, megaBallDraw, liveResults] = await Promise.all([
     getPurchasableDraw(prisma, "POWERBALL"),
     getPurchasableDraw(prisma, "MEGA_MILLIONS"),
-    prisma.draw.findMany({
-      where: {
-        drawDate: {
-          lt: now,
-          gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-        },
-        winningMain: { not: null },
-      },
-      orderBy: { drawDate: "desc" },
-      take: 6,
-    }),
+    fetchLiveResults(),
   ])
   const isCustomer = session?.user?.role === "CUSTOMER"
   const lotteryHref = isCustomer ? "/power-ball" : "/login"
@@ -190,30 +211,38 @@ export default async function Home() {
           <p className="mt-4 text-center text-xs text-white/30">รางวัลเป็นอัตราก่อนหักภาษีสหรัฐฯ</p>
         </section>
 
-        {/* Draw results — always shown */}
+        {/* Draw results — always shown, live from NY Open Data */}
         <section className="mt-6 rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-7 sm:p-10">
           <p className="text-xs font-semibold tracking-[0.3em] text-[#c9a84c]">LATEST RESULTS</p>
           <h2 className="mt-2 text-2xl font-bold tracking-tight">ประกาศผลรางวัล</h2>
-          {recentDraws.length > 0 ? (
+          {liveResults.length > 0 ? (
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {recentDraws.map((draw) => {
-                const isPB = draw.type === "POWERBALL"
-                const drawDateThai = draw.drawDate.toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", weekday: "short", day: "numeric", month: "short", year: "2-digit" })
+              {liveResults.map((result, idx) => {
+                const isPB = result.type === "POWERBALL"
+                const drawDateThai = new Date(result.date).toLocaleDateString("th-TH", {
+                  timeZone: "UTC",
+                  weekday: "short",
+                  day: "numeric",
+                  month: "short",
+                  year: "2-digit",
+                })
                 return (
-                  <div key={draw.id} className="rounded-2xl border border-white/10 bg-[#111] p-5">
+                  <div key={idx} className="rounded-2xl border border-white/10 bg-[#111] p-5">
                     <div className="flex items-center justify-between mb-4">
-                      <span className={`text-xs font-bold tracking-widest ${isPB ? "text-red-400" : "text-blue-400"}`}>{isPB ? "POWERBALL" : "MEGA MILLIONS"}</span>
+                      <span className={`text-xs font-bold tracking-widest ${isPB ? "text-red-400" : "text-blue-400"}`}>
+                        {isPB ? "POWERBALL" : "MEGA MILLIONS"}
+                      </span>
                       <span className="text-xs text-white/30">{drawDateThai}</span>
                     </div>
                     <div className="flex flex-wrap gap-2 items-center">
-                      {draw.winningMain!.split(",").map((n, i) => (
+                      {result.mainNumbers.split(",").map((n, i) => (
                         <span key={i} className="w-9 h-9 rounded-full border border-[#c9a84c]/40 bg-[#c9a84c]/10 flex items-center justify-center text-sm font-bold text-[#c9a84c]">
                           {n.trim()}
                         </span>
                       ))}
                       <span className="text-white/20">+</span>
                       <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${isPB ? "bg-red-600" : "bg-blue-600"}`}>
-                        {draw.winningSpecial!.trim()}
+                        {result.specialNumber.trim()}
                       </span>
                     </div>
                   </div>
@@ -225,23 +254,15 @@ export default async function Home() {
               {[
                 { label: "POWERBALL", color: "text-red-400", border: "border-red-900/30", draw: powerballDraw },
                 { label: "MEGA MILLIONS", color: "text-blue-400", border: "border-blue-900/30", draw: megaBallDraw },
-              ].map((item) => {
-                const lastDraw = item.draw
-                const dateStr = lastDraw?.drawDate
-                  ? lastDraw.drawDate.toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", weekday: "long", day: "numeric", month: "long", year: "numeric" })
-                  : "-"
-                return (
-                  <div key={item.label} className={`rounded-2xl border ${item.border} bg-[#111] p-6`}>
-                    <p className={`text-xs font-bold tracking-widest ${item.color}`}>{item.label}</p>
-                    <p className="mt-3 text-sm text-white/40">งวดล่าสุด</p>
-                    <p className="text-base font-semibold text-white">{dateStr}</p>
-                    <div className="mt-4 flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                      <p className="text-sm text-white/50">รอประกาศผล</p>
-                    </div>
+              ].map((item) => (
+                <div key={item.label} className={`rounded-2xl border ${item.border} bg-[#111] p-6`}>
+                  <p className={`text-xs font-bold tracking-widest ${item.color}`}>{item.label}</p>
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <p className="text-sm text-white/50">กำลังโหลดผลรางวัล...</p>
                   </div>
-                )
-              })}
+                </div>
+              ))}
             </div>
           )}
         </section>
