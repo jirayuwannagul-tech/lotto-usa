@@ -77,7 +77,29 @@ export async function POST(req: Request) {
       },
     })
 
-    if (draw && !draw.winningMain) {
+    if (!draw) {
+      // No draw in DB for this date — create a closed historical record
+      const newDraw = await prisma.draw.create({
+        data: {
+          type: result.type,
+          drawDate: result.date,
+          cutoffAt: result.date,
+          isOpen: false,
+          winningMain: result.mainNumbers,
+          winningSpecial: result.specialNumber,
+          resultAnnouncedAt: new Date(),
+        },
+      })
+      updated++
+      await announceResult({
+        id: newDraw.id,
+        type: newDraw.type,
+        drawDate: newDraw.drawDate,
+        winningMain: result.mainNumbers,
+        winningSpecial: result.specialNumber,
+      }).catch(() => {})
+      announced++
+    } else if (draw && !draw.winningMain) {
       const updated_draw = await prisma.draw.update({
         where: { id: draw.id },
         data: {
@@ -87,7 +109,6 @@ export async function POST(req: Request) {
         },
       })
       updated++
-
       await announceResult({
         id: updated_draw.id,
         type: updated_draw.type,
@@ -97,7 +118,6 @@ export async function POST(req: Request) {
       }).catch(() => {})
       announced++
     } else if (draw?.winningMain && !draw.resultAnnouncedAt) {
-      // Results exist but never announced (e.g. from manual entry)
       await prisma.draw.update({
         where: { id: draw.id },
         data: { resultAnnouncedAt: new Date() },
