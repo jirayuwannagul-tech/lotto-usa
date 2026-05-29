@@ -5,15 +5,11 @@ import path from "path"
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: "jsdom",
+    environment: "node",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     testTimeout: 30000,
     hookTimeout: 30000,
-    pool: "forks",
-    poolOptions: {
-      forks: { singleFork: true },
-    },
     exclude: ["**/node_modules/**", "**/.claude/**", "**/dist/**"],
     coverage: {
       reporter: ["text", "html"],
