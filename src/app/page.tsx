@@ -156,6 +156,62 @@ export default async function Home() {
           </div>
         </section>
 
+        {/* Draw results — always shown, live from NY Open Data */}
+        <section className="mt-6 rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-7 sm:p-10">
+          <p className="text-xs font-semibold tracking-[0.3em] text-[#c9a84c]">LATEST RESULTS</p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight">ประกาศผลรางวัล</h2>
+          {liveResults.length > 0 ? (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {liveResults.map((result, idx) => {
+                const isPB = result.type === "POWERBALL"
+                const drawDateThai = new Date(result.date).toLocaleDateString("th-TH", {
+                  timeZone: "UTC",
+                  weekday: "short",
+                  day: "numeric",
+                  month: "short",
+                  year: "2-digit",
+                })
+                return (
+                  <div key={idx} className="rounded-2xl border border-white/10 bg-[#111] p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className={`text-xs font-bold tracking-widest ${isPB ? "text-red-400" : "text-blue-400"}`}>
+                        {isPB ? "POWERBALL" : "MEGA MILLIONS"}
+                      </span>
+                      <span className="text-xs text-white/30">{drawDateThai}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {result.mainNumbers.split(",").map((n, i) => (
+                        <span key={i} className="w-9 h-9 rounded-full border border-[#c9a84c]/40 bg-[#c9a84c]/10 flex items-center justify-center text-sm font-bold text-[#c9a84c]">
+                          {n.trim()}
+                        </span>
+                      ))}
+                      <span className="text-white/20">+</span>
+                      <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${isPB ? "bg-red-600" : "bg-blue-600"}`}>
+                        {result.specialNumber.trim()}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              {[
+                { label: "POWERBALL", color: "text-red-400", border: "border-red-900/30", draw: powerballDraw },
+                { label: "MEGA MILLIONS", color: "text-blue-400", border: "border-blue-900/30", draw: megaBallDraw },
+              ].map((item) => (
+                <div key={item.label} className={`rounded-2xl border ${item.border} bg-[#111] p-6`}>
+                  <p className={`text-xs font-bold tracking-widest ${item.color}`}>{item.label}</p>
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <p className="text-sm text-white/50">กำลังโหลดผลรางวัล...</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         {/* Prize tiers */}
         <section className="mt-6 rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-7 sm:p-10">
           <p className="text-xs font-semibold tracking-[0.3em] text-[#c9a84c]">PRIZE STRUCTURE</p>
@@ -228,61 +284,6 @@ export default async function Home() {
           </p>
         </section>
 
-        {/* Draw results — always shown, live from NY Open Data */}
-        <section className="mt-6 rounded-3xl border border-[#c9a84c]/20 bg-[#0d0d0d] p-7 sm:p-10">
-          <p className="text-xs font-semibold tracking-[0.3em] text-[#c9a84c]">LATEST RESULTS</p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight">ประกาศผลรางวัล</h2>
-          {liveResults.length > 0 ? (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {liveResults.map((result, idx) => {
-                const isPB = result.type === "POWERBALL"
-                const drawDateThai = new Date(result.date).toLocaleDateString("th-TH", {
-                  timeZone: "UTC",
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                  year: "2-digit",
-                })
-                return (
-                  <div key={idx} className="rounded-2xl border border-white/10 bg-[#111] p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className={`text-xs font-bold tracking-widest ${isPB ? "text-red-400" : "text-blue-400"}`}>
-                        {isPB ? "POWERBALL" : "MEGA MILLIONS"}
-                      </span>
-                      <span className="text-xs text-white/30">{drawDateThai}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2 items-center">
-                      {result.mainNumbers.split(",").map((n, i) => (
-                        <span key={i} className="w-9 h-9 rounded-full border border-[#c9a84c]/40 bg-[#c9a84c]/10 flex items-center justify-center text-sm font-bold text-[#c9a84c]">
-                          {n.trim()}
-                        </span>
-                      ))}
-                      <span className="text-white/20">+</span>
-                      <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${isPB ? "bg-red-600" : "bg-blue-600"}`}>
-                        {result.specialNumber.trim()}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              {[
-                { label: "POWERBALL", color: "text-red-400", border: "border-red-900/30", draw: powerballDraw },
-                { label: "MEGA MILLIONS", color: "text-blue-400", border: "border-blue-900/30", draw: megaBallDraw },
-              ].map((item) => (
-                <div key={item.label} className={`rounded-2xl border ${item.border} bg-[#111] p-6`}>
-                  <p className={`text-xs font-bold tracking-widest ${item.color}`}>{item.label}</p>
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                    <p className="text-sm text-white/50">กำลังโหลดผลรางวัล...</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
       </main>
     </div>
   )
