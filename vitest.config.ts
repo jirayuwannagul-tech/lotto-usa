@@ -10,7 +10,10 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     testTimeout: 30000,
     hookTimeout: 30000,
-    pool: "vmForks",
+    pool: "forks",
+    poolOptions: {
+      forks: { singleFork: true },
+    },
     exclude: ["**/node_modules/**", "**/.claude/**", "**/dist/**"],
     coverage: {
       reporter: ["text", "html"],

@@ -71,8 +71,8 @@ export async function POST(req: Request) {
       where: {
         type: result.type,
         drawDate: {
-          gte: new Date(result.date.getTime() - 12 * 60 * 60 * 1000),
-          lte: new Date(result.date.getTime() + 12 * 60 * 60 * 1000),
+          gte: new Date(result.date.getTime() - 36 * 60 * 60 * 1000),
+          lte: new Date(result.date.getTime() + 36 * 60 * 60 * 1000),
         },
       },
     })
