@@ -19,7 +19,7 @@ async function announceResult(draw: {
     year: "numeric",
   })
   const balls = draw.winningMain.split(",").map((n) => n.trim())
-  const ballLine = balls.map((n) => `[${n}]`).join(" ") + ` + *${draw.winningSpecial.trim()}*`
+  const ballLine = balls.map((n) => `(${n})`).join("  ") + `  ⭐ *${draw.winningSpecial.trim()}*`
   const msg = `🎱 *ผลหวย ${typeLabel}*\n📅 งวด ${dateThai}\n\n${ballLine}\n\n_ตรวจสอบเลขในแดชบอร์ดของคุณได้เลย_`
   await Promise.allSettled([sendAdminMessage(msg), sendRealtimeMessage(msg)])
 }

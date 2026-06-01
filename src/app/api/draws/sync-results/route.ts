@@ -44,14 +44,17 @@ async function announceResult(draw: { id: string; type: string; drawDate: Date; 
     year: "numeric",
   })
   const balls = draw.winningMain.split(",").map((n) => n.trim())
-  const ballLine = balls.map((n) => `[${n}]`).join(" ") + ` + *${draw.winningSpecial.trim()}*`
+  const ballLine = balls.map((n) => `(${n})`).join("  ") + `  ⭐ *${draw.winningSpecial.trim()}*`
 
   const msg = `🎱 *ผลหวย ${typeLabel}*\n📅 งวด ${dateThai}\n\n${ballLine}\n\n_ตรวจสอบเลขในแดชบอร์ดของคุณได้เลย_`
 
-  await Promise.allSettled([
+  const tgResults = await Promise.allSettled([
     sendAdminMessage(msg),
     sendRealtimeMessage(msg),
   ])
+  for (const r of tgResults) {
+    if (r.status === "rejected") console.error("[TG announce error]", r.reason)
+  }
 }
 
 export async function POST(req: Request) {
