@@ -3,12 +3,18 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendAdminMessage, sendRealtimeMessage } from "@/lib/telegram"
+import { cropTicketPlay } from "@/lib/upload"
+
+type MatchEntry = {
+  orderItemId: string
+  topPercent?: number
+  heightPercent?: number
+}
 
 type ConfirmBody = {
-  orderItemId?: string
-  orderItemIds?: string[]
-  ticketPhotoUrl?: string
+  ticketPhotoUrl: string
   ocrRawText?: string
+  matches: MatchEntry[]
 }
 
 export async function POST(req: NextRequest) {
@@ -24,16 +30,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 })
   }
 
-  const orderItemIds = Array.from(
-    new Set(
-      (body.orderItemIds?.length ? body.orderItemIds : body.orderItemId ? [body.orderItemId] : [])
-        .filter(Boolean)
-    )
-  )
+  const matches = Array.from(
+    new Map(body.matches?.map((m) => [m.orderItemId, m]) ?? []).values()
+  ).filter((m) => Boolean(m.orderItemId))
 
-  if (orderItemIds.length === 0 || !body.ticketPhotoUrl) {
+  if (matches.length === 0 || !body.ticketPhotoUrl) {
     return NextResponse.json({ error: "ข้อมูลยืนยันไม่ครบ" }, { status: 400 })
   }
+
+  const orderItemIds = matches.map((m) => m.orderItemId)
 
   const items = await prisma.orderItem.findMany({
     where: { id: { in: orderItemIds } },
@@ -53,14 +58,34 @@ export async function POST(req: NextRequest) {
 
   const matchedAt = new Date()
 
-  await prisma.orderItem.updateMany({
-    where: { id: { in: orderItemIds } },
-    data: {
-      ticketPhotoUrl: body.ticketPhotoUrl,
-      ocrRawText: body.ocrRawText ?? null,
-      matchedAt,
-    },
-  })
+  // Crop and save individual ticket photo per orderItem
+  for (const match of matches) {
+    const item = items.find((i) => i.id === match.orderItemId)
+    if (!item) continue
+
+    let photoUrl = body.ticketPhotoUrl
+
+    if (
+      typeof match.topPercent === "number" &&
+      typeof match.heightPercent === "number" &&
+      match.heightPercent > 0
+    ) {
+      try {
+        photoUrl = await cropTicketPlay(body.ticketPhotoUrl, match.topPercent, match.heightPercent)
+      } catch {
+        // fallback to original image if crop fails
+      }
+    }
+
+    await prisma.orderItem.update({
+      where: { id: match.orderItemId },
+      data: {
+        ticketPhotoUrl: photoUrl,
+        ocrRawText: body.ocrRawText ?? null,
+        matchedAt,
+      },
+    })
+  }
 
   const affectedOrderIds = Array.from(new Set(items.map((item) => item.orderId)))
 
@@ -73,7 +98,6 @@ export async function POST(req: NextRequest) {
       data: { status: allMatched ? "MATCHED" : "TICKET_UPLOADED" },
     })
 
-    // Notify via Telegram when ticket upload is complete for this order
     const orderInfo = items.find((i) => i.orderId === orderId)
     if (orderInfo && allMatched) {
       const drawLabel = orderInfo.order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"

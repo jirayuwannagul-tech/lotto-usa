@@ -68,6 +68,8 @@ export async function POST(req: NextRequest) {
     return {
       playIndex,
       numbers: `${play.mainNumbers.join(",")} | ${play.specialNumber}`,
+      topPercent: play.topPercent,
+      heightPercent: play.heightPercent,
       candidates,
     }
   })

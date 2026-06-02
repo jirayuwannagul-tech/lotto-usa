@@ -1,6 +1,7 @@
-import { writeFile, mkdir } from "fs/promises"
+import { writeFile, mkdir, readFile } from "fs/promises"
 import path from "path"
 import { randomUUID } from "crypto"
+import sharp from "sharp"
 
 const UPLOAD_ROOT = process.env.UPLOAD_DIR ?? path.join(/* turbopackIgnore: true */ process.cwd(), ".data", "uploads")
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
@@ -66,6 +67,28 @@ export function getUploadFilePath(assetPath: string): string {
   }
 
   return resolved
+}
+
+export async function cropTicketPlay(
+  sourceAssetPath: string,
+  topPercent: number,
+  heightPercent: number
+): Promise<string> {
+  const sourcePath = getUploadFilePath(sourceAssetPath)
+  const sourceBuffer = await readFile(sourcePath)
+
+  const image = sharp(sourceBuffer)
+  const { width = 800, height = 1200 } = await image.metadata()
+
+  const top = Math.max(0, Math.round((topPercent / 100) * height))
+  const cropHeight = Math.min(Math.round((heightPercent / 100) * height), height - top)
+
+  const croppedBuffer = await image
+    .extract({ left: 0, top, width, height: Math.max(1, cropHeight) })
+    .jpeg({ quality: 90 })
+    .toBuffer()
+
+  return saveBuffer(croppedBuffer, "jpg", "tickets")
 }
 
 export function getUploadContentType(assetPath: string): string {

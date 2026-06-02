@@ -38,6 +38,8 @@ interface UploadResult {
   matchGroups?: {
     playIndex: number
     numbers: string
+    topPercent?: number
+    heightPercent?: number
     candidates: UploadCandidate[]
   }[]
   message?: string
@@ -108,14 +110,23 @@ export function TicketUploadForm({
   }
 
   async function handleConfirm() {
-    const selectedOrderItemIds = Array.from(
-      new Set([
-        ...Object.values(selectedMatches).filter(Boolean),
-        ...manualMatchIds,
-      ])
+    const ocrMatches = Object.entries(selectedMatches)
+      .filter(([, orderItemId]) => Boolean(orderItemId))
+      .map(([playIndex, orderItemId]) => {
+        const group = result?.matchGroups?.find((g) => g.playIndex === Number(playIndex))
+        return {
+          orderItemId,
+          topPercent: group?.topPercent,
+          heightPercent: group?.heightPercent,
+        }
+      })
+
+    const manualMatches = manualMatchIds.map((id) => ({ orderItemId: id }))
+    const matches = [...ocrMatches, ...manualMatches].filter(
+      (m, i, arr) => arr.findIndex((x) => x.orderItemId === m.orderItemId) === i
     )
 
-    if (selectedOrderItemIds.length === 0 || !result?.ticketPhotoUrl) {
+    if (matches.length === 0 || !result?.ticketPhotoUrl) {
       setMessage("กรุณาเลือกรายการที่ต้องการยืนยัน")
       return
     }
@@ -128,7 +139,7 @@ export function TicketUploadForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderItemIds: selectedOrderItemIds,
+          matches,
           ticketPhotoUrl: result.ticketPhotoUrl,
           ocrRawText: result.ocrRawText,
         }),
@@ -295,7 +306,7 @@ export function TicketUploadForm({
                 <button
                   type="button"
                   onClick={handleConfirm}
-                  disabled={confirming || Object.values(selectedMatches).filter(Boolean).length === 0}
+                  disabled={confirming || Object.values(selectedMatches).filter(Boolean).length === 0 && manualMatchIds.length === 0}
                   className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
                 >
                   {confirming ? "กำลังยืนยัน..." : "ยืนยันรายการนี้"}

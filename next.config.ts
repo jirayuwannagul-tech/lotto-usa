@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.openai.com" },
     ],
   },
-  serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  serverExternalPackages: ["@prisma/client", "bcryptjs", "sharp"],
 }
 
 export default nextConfig

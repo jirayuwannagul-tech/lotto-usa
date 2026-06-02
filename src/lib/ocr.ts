@@ -8,6 +8,8 @@ export interface OcrResult {
   plays: {
     mainNumbers: string[]
     specialNumber: string
+    topPercent?: number
+    heightPercent?: number
   }[]
   raw: string
 }
@@ -37,11 +39,13 @@ export async function readLotteryTicket(imageUrl: string): Promise<OcrResult | n
               type: "text",
               text: `This is a US lottery ticket (Powerball or Mega Millions).
 Extract ALL lottery plays visible in the image. Return ONLY valid JSON in this exact format:
-{"plays":[{"mainNumbers":["03","12","25","41","60"],"specialNumber":"13"}]}
+{"plays":[{"mainNumbers":["03","12","25","41","60"],"specialNumber":"13","topPercent":20,"heightPercent":15}]}
 
 Rules:
 - mainNumbers: exactly 5 numbers, zero-padded to 2 digits, sorted ascending
 - specialNumber: the Powerball or Mega Ball number, zero-padded to 2 digits
+- topPercent: approximate top edge of this play row as % of total image height (0-100)
+- heightPercent: approximate height of this play row as % of total image height (0-100)
 - Return every visible play in order from top to bottom
 - Do not return duplicates
 - Return ONLY the JSON, no other text`,
@@ -49,7 +53,7 @@ Rules:
           ],
         },
       ],
-      max_tokens: 200,
+      max_tokens: 400,
     })
 
     const raw = response.choices[0].message.content ?? ""
@@ -67,9 +71,11 @@ Rules:
     if (!plays || plays.length === 0) return null
 
     return {
-      plays: plays.map((play: { mainNumbers: string[]; specialNumber: string }) => ({
+      plays: plays.map((play: { mainNumbers: string[]; specialNumber: string; topPercent?: number; heightPercent?: number }) => ({
         mainNumbers: play.mainNumbers.map((n: string) => n.padStart(2, "0")).sort(),
         specialNumber: String(play.specialNumber).padStart(2, "0"),
+        topPercent: typeof play.topPercent === "number" ? play.topPercent : undefined,
+        heightPercent: typeof play.heightPercent === "number" ? play.heightPercent : undefined,
       })),
       raw,
     }
