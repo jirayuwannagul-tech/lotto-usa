@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendAdminMessage } from "@/lib/telegram"
+import { sendAdminMessage, sendRealtimeMessage } from "@/lib/telegram"
 import { LOTTERY_RULES } from "@/lib/lottery-rules"
 import { sendWinnerEmail } from "@/lib/email"
 import { writeAuditLog } from "@/lib/audit"
@@ -118,9 +118,15 @@ export async function POST(
 
   // Admin summary
   const winMainDisplay = winMain.join(", ")
-  await sendAdminMessage(
-    `🎉 *ประกาศผล ${drawLabel}*\nงวด ${drawDateThai}\n\n🔢 เลขออก: \`${winMainDisplay}\`\n⭐ ${draw.type === "POWERBALL" ? "Powerball" : "Mega Ball"}: \`${winSpecial}\`\n\n${winnerCount > 0 ? winnerMessages.join("\n") : "ไม่มีผู้ถูกรางวัล"}`
-  )
+  const ballLine = winMain.map((n: string) => `(${n})`).join("  ") + `  ⭐ *${winSpecial}*`
+  const realtimeMsg = `🎱 *ผลหวย ${drawLabel}*\n📅 งวด ${drawDateThai}\n\n${ballLine}\n\n_ตรวจสอบเลขในแดชบอร์ดของคุณได้เลย_`
+
+  await Promise.allSettled([
+    sendAdminMessage(
+      `🎉 *ประกาศผล ${drawLabel}*\nงวด ${drawDateThai}\n\n🔢 เลขออก: \`${winMainDisplay}\`\n⭐ ${draw.type === "POWERBALL" ? "Powerball" : "Mega Ball"}: \`${winSpecial}\`\n\n${winnerCount > 0 ? winnerMessages.join("\n") : "ไม่มีผู้ถูกรางวัล"}`
+    ),
+    sendRealtimeMessage(realtimeMsg),
+  ])
 
   await writeAuditLog({
     adminId: session.user.id,
