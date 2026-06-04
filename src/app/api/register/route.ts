@@ -4,17 +4,26 @@ import { prisma } from "@/lib/prisma"
 import { ensureReferralTables, getReferrerByCode } from "@/lib/referrals"
 
 export async function POST(req: NextRequest) {
-  const { name, email, phone, lineId, referralCode, password } = await req.json()
+  const { phone, referralCode, password } = await req.json()
 
-  if (!name || !email || !password) {
-    return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบ" }, { status: 400 })
+  if (!phone || !password) {
+    return NextResponse.json({ error: "กรุณากรอกเบอร์โทรและรหัสผ่าน" }, { status: 400 })
+  }
+
+  const cleanPhone = String(phone).replace(/[-\s]/g, "")
+  if (!/^0[0-9]{8,9}$/.test(cleanPhone)) {
+    return NextResponse.json({ error: "เบอร์โทรไม่ถูกต้อง" }, { status: 400 })
+  }
+
+  if (String(password).length < 4) {
+    return NextResponse.json({ error: "รหัสผ่านต้องมีอย่างน้อย 4 ตัว" }, { status: 400 })
   }
 
   await ensureReferralTables()
 
-  const existing = await prisma.user.findUnique({ where: { email } })
+  const existing = await prisma.user.findUnique({ where: { phone: cleanPhone } })
   if (existing) {
-    return NextResponse.json({ error: "อีเมลนี้ถูกใช้แล้ว" }, { status: 400 })
+    return NextResponse.json({ error: "เบอร์โทรนี้ถูกใช้แล้ว" }, { status: 400 })
   }
 
   let referrer = null
@@ -28,7 +37,13 @@ export async function POST(req: NextRequest) {
   const passwordHash = await bcrypt.hash(password, 12)
 
   const user = await prisma.user.create({
-    data: { name, email, phone, lineId, passwordHash, role: "CUSTOMER" },
+    data: {
+      name: cleanPhone,
+      phone: cleanPhone,
+      email: `${cleanPhone}@lottousathai.com`,
+      passwordHash,
+      role: "CUSTOMER",
+    },
   })
 
   if (referrer) {
@@ -37,5 +52,5 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  return NextResponse.json({ id: user.id, name: user.name, email: user.email })
+  return NextResponse.json({ id: user.id, phone: user.phone })
 }

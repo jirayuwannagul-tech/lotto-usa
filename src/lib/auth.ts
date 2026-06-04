@@ -13,21 +13,25 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Email or Phone", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        })
+        const input = credentials.email.trim()
+        const isPhone = /^0[0-9]{8,9}$/.test(input.replace(/[-\s]/g, ""))
+
+        const user = isPhone
+          ? await prisma.user.findUnique({ where: { phone: input.replace(/[-\s]/g, "") } })
+          : await prisma.user.findUnique({ where: { email: input } })
+
         if (!user) return null
 
         const valid = await bcrypt.compare(credentials.password, user.passwordHash)
         if (!valid) return null
 
-        return { id: user.id, email: user.email, name: user.name, role: user.role }
+        return { id: user.id, email: user.email ?? user.phone ?? "", name: user.name, role: user.role }
       },
     }),
   ],

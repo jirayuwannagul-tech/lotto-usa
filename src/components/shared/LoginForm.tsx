@@ -22,7 +22,7 @@ export default function LoginForm({
   theme = "light",
 }: LoginFormProps) {
   const router = useRouter()
-  const storageKey = portal === "admin" ? "lotto_last_admin_email" : "lotto_last_customer_email"
+  const storageKey = portal === "admin" ? "lotto_last_admin_email" : "lotto_last_customer_phone"
   const defaultEmail = portal === "admin" ? "admin@lottousa.com" : ""
   const [email, setEmail] = useState(() => {
     if (typeof window === "undefined") return ""
@@ -41,7 +41,7 @@ export default function LoginForm({
     const res = await signIn("credentials", { email, password, redirect: false })
     setLoading(false)
     if (res?.error) {
-      setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง")
+      setError(portal === "customer" ? "เบอร์โทรหรือรหัสผ่านไม่ถูกต้อง" : "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
     } else {
       const session = await getSession()
       const role = session?.user?.role
@@ -69,15 +69,15 @@ export default function LoginForm({
     <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
       <div>
         <label className={cn("mb-1 block text-sm", isDark ? "text-white/70" : "text-slate-700")}>
-          อีเมล
+          {portal === "customer" ? "เบอร์โทร" : "อีเมล"}
         </label>
         <Input
           id={`${portal}-email`}
           name="email"
-          type="email"
+          type={portal === "customer" ? "tel" : "email"}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="example@email.com"
+          placeholder={portal === "customer" ? "0812345678" : "example@email.com"}
           autoComplete="username"
           className={cn(
             isDark
