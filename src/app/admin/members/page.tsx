@@ -192,7 +192,7 @@ export default async function AdminMembersPage() {
                     <td className="py-3 pr-4">
                       <div className="flex flex-wrap items-start gap-3">
                         <MakeReferrerButton userId={member.id} userName={member.name} existingCode={ownCode} />
-                        <DeleteMemberButton userId={member.id} userLabel={member.email} />
+                        <DeleteMemberButton userId={member.id} userLabel={member.email ?? ""} />
                       </div>
                     </td>
                   </tr>

@@ -95,7 +95,7 @@ ${itemLines}
   })
 
   sendPaymentApprovedEmail({
-    to: order.user.email,
+    to: order.user.email ?? "",
     name: order.user.name,
     orderId: order.id,
     drawType: order.draw.type,

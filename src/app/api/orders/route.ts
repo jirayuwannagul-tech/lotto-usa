@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { id: session.user.id } })
   if (user) {
     sendOrderConfirmationEmail({
-      to: user.email,
+      to: user.email ?? "",
       name: user.name,
       orderId: order.id,
       drawType: draw.type,

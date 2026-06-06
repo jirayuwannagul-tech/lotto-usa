@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`
 
   try {
-    await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl })
+    await sendPasswordResetEmail({ to: user.email ?? "", name: user.name, resetUrl })
   } catch (err) {
     console.error("[forgot-password] notify failed", err)
   }

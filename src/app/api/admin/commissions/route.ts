@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       grouped[uid] = {
         referrerId: uid,
         referrerName: c.referrer.user.name,
-        referrerEmail: c.referrer.user.email,
+        referrerEmail: c.referrer.user.email ?? "",
         referrerPhone: c.referrer.user.phone,
         totalAmountTHB: 0,
         commissions: [],

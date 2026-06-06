@@ -208,7 +208,7 @@ export async function POST(
       const prize = getPrizeLabel(draw.type, matchMain, matchSpecial)
       if (prize) {
         sendWinnerEmail({
-          to: order.user.email,
+          to: order.user.email ?? "",
           name: order.user.name,
           drawType: draw.type,
           drawDate: draw.drawDate,

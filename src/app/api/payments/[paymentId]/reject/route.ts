@@ -40,7 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pa
   })
 
   sendPaymentRejectedEmail({
-    to: payment.order.user.email,
+    to: payment.order.user.email ?? "",
     name: payment.order.user.name,
     orderId: payment.orderId,
     rejectNote,

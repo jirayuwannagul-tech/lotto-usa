@@ -27,7 +27,7 @@ export default async function AdminTicketsPage() {
         orderItemId: item.id,
         orderId: order.id,
         customerName: order.user.name,
-        customerEmail: order.user.email,
+        customerEmail: order.user.email ?? "",
         numbers: `${item.mainNumbers} | ${item.specialNumber}`,
       }))
   )
