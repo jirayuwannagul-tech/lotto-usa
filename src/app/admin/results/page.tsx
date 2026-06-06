@@ -14,6 +14,8 @@ interface Draw {
 interface ResultResponse {
   winnerCount: number
   winnerMessages: string[]
+  tgSent?: boolean
+  error?: string
 }
 
 export default function ResultsPage() {
@@ -23,7 +25,9 @@ export default function ResultsPage() {
   const [winSpecial, setWinSpecial] = useState("")
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ResultResponse | null>(null)
+  const [tgSent, setTgSent] = useState<boolean | null>(null)
   const [error, setError] = useState("")
+  const [reportLoading, setReportLoading] = useState(false)
 
   useEffect(() => {
     fetch("/api/draws?all=1")
@@ -34,6 +38,22 @@ export default function ResultsPage() {
         if (firstClosed) setSelectedId(firstClosed.id)
       })
   }, [])
+
+  useEffect(() => {
+    const draw = draws.find((d) => d.id === selectedId)
+    if (!draw?.winningMain) {
+      setResult(null)
+      setTgSent(null)
+      return
+    }
+    setResult(null)
+    setReportLoading(true)
+    fetch(`/api/draws/${selectedId}/result`)
+      .then((r) => r.json())
+      .then((data: ResultResponse) => setResult(data))
+      .catch(() => setResult(null))
+      .finally(() => setReportLoading(false))
+  }, [selectedId, draws])
 
   const selectedDraw = draws.find((d) => d.id === selectedId)
 
@@ -62,12 +82,12 @@ export default function ResultsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ winningMain: nums.join(","), winningSpecial: winSpecial.trim() }),
       })
-      const data = await res.json()
+      const data: ResultResponse = await res.json()
       if (!res.ok) {
         setError(data.error ?? "เกิดข้อผิดพลาด")
       } else {
-        setResult(data)
-        // Refresh draws list
+        if (typeof data.tgSent === "boolean") setTgSent(data.tgSent)
+        // Refresh draws list (triggers useEffect to load winner report via GET)
         const updated = await fetch("/api/draws?all=1").then((r) => r.json())
         setDraws(updated.slice(0, 20))
       }
@@ -160,11 +180,23 @@ export default function ResultsPage() {
         </div>
 
         {/* Result */}
-        {result && (
+        {reportLoading && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-            <h3 className="text-white font-semibold mb-3">
-              ผลการตรวจ — ถูกรางวัล {result.winnerCount} รายการ
-            </h3>
+            <p className="text-white/40 text-sm">กำลังโหลดรายงานผู้ถูกรางวัล...</p>
+          </div>
+        )}
+        {!reportLoading && result && (
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold">
+                รายงานผู้ถูกรางวัล — {result.winnerCount} รายการ
+              </h3>
+              {tgSent !== null && (
+                <span className={`text-xs px-2 py-1 rounded-full ${tgSent ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                  {tgSent ? "✅ ส่ง Telegram แล้ว" : "⚠️ Telegram ส่งไม่ได้ — ดู server log"}
+                </span>
+              )}
+            </div>
             {result.winnerMessages.length > 0 ? (
               <ul className="space-y-2">
                 {result.winnerMessages.map((msg, i) => (
@@ -176,7 +208,6 @@ export default function ResultsPage() {
             ) : (
               <p className="text-white/40 text-sm">ไม่มีผู้ถูกรางวัล</p>
             )}
-            <p className="text-white/30 text-xs mt-3">✅ แจ้ง Telegram admin แล้ว</p>
           </div>
         )}
 

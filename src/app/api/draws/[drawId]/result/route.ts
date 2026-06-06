@@ -35,6 +35,53 @@ function parseWinningNumbers(rawMain: string, rawSpecial: string, type: keyof ty
   }
 }
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ drawId: string }> }
+) {
+  const session = await getServerSession(authOptions)
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { drawId } = await params
+  const draw = await prisma.draw.findUnique({
+    where: { id: drawId },
+    include: {
+      orders: {
+        where: { status: { in: ["APPROVED", "TICKET_UPLOADED", "MATCHED"] } },
+        include: { user: true, items: true },
+      },
+    },
+  })
+  if (!draw) return NextResponse.json({ error: "ไม่พบงวด" }, { status: 404 })
+  if (!draw.winningMain || !draw.winningSpecial) {
+    return NextResponse.json({ error: "งวดนี้ยังไม่ประกาศผล" }, { status: 400 })
+  }
+
+  const winMain = draw.winningMain.split(",").map((n) => n.trim()).sort()
+  const winSpecial = draw.winningSpecial.trim()
+
+  let winnerCount = 0
+  const winnerMessages: string[] = []
+
+  for (const order of draw.orders) {
+    for (const item of order.items) {
+      const itemMain = item.mainNumbers.split(",").map((n) => n.trim().padStart(2, "0")).sort()
+      const itemSpecial = item.specialNumber.trim().padStart(2, "0")
+      const matchMain = itemMain.filter((n) => winMain.includes(n)).length
+      const matchSpecial = itemSpecial === winSpecial
+      const prize = getPrizeLabel(draw.type, matchMain, matchSpecial)
+      if (prize) {
+        winnerCount++
+        winnerMessages.push(`🏆 ${order.user.name}: ${item.mainNumbers} | ${item.specialNumber} → ${prize}`)
+      }
+    }
+  }
+
+  return NextResponse.json({ winnerCount, winnerMessages })
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ drawId: string }> }
@@ -117,16 +164,31 @@ export async function POST(
   }
 
   // Admin summary
+  const escapeMd = (s: string) => s.replace(/[_*`[\]]/g, "\\$&")
   const winMainDisplay = winMain.join(", ")
   const ballLine = winMain.map((n: string) => `(${n})`).join("  ") + `  ⭐ *${winSpecial}*`
   const realtimeMsg = `🎱 *ผลหวย ${drawLabel}*\n📅 งวด ${drawDateThai}\n\n${ballLine}\n\n_ตรวจสอบเลขในแดชบอร์ดของคุณได้เลย_`
+  const tgWinnerLines = winnerCount > 0
+    ? winnerMessages.map((msg) => {
+        // Escape only the name portion; numbers and prize labels are safe
+        const match = msg.match(/^(🏆 )(.+?)(: .+)$/)
+        return match ? `${match[1]}${escapeMd(match[2])}${match[3]}` : escapeMd(msg)
+      }).join("\n")
+    : "ไม่มีผู้ถูกรางวัล"
+  const adminMsg = `🎉 *ประกาศผล ${drawLabel}*\nงวด ${drawDateThai}\n\n🔢 เลขออก: \`${winMainDisplay}\`\n⭐ ${draw.type === "POWERBALL" ? "Powerball" : "Mega Ball"}: \`${winSpecial}\`\n\n${tgWinnerLines}`
 
-  await Promise.allSettled([
-    sendAdminMessage(
-      `🎉 *ประกาศผล ${drawLabel}*\nงวด ${drawDateThai}\n\n🔢 เลขออก: \`${winMainDisplay}\`\n⭐ ${draw.type === "POWERBALL" ? "Powerball" : "Mega Ball"}: \`${winSpecial}\`\n\n${winnerCount > 0 ? winnerMessages.join("\n") : "ไม่มีผู้ถูกรางวัล"}`
-    ),
+  const tgResults = await Promise.allSettled([
+    sendAdminMessage(adminMsg),
     sendRealtimeMessage(realtimeMsg),
   ])
+
+  tgResults.forEach((r, i) => {
+    if (r.status === "rejected") {
+      console.error(`[telegram] result announcement failed (channel ${i}):`, r.reason)
+    }
+  })
+
+  const tgSent = tgResults.every((r) => r.status === "fulfilled")
 
   await writeAuditLog({
     adminId: session.user.id,
@@ -157,7 +219,7 @@ export async function POST(
     }
   }
 
-  return NextResponse.json({ winnerCount, winnerMessages })
+  return NextResponse.json({ winnerCount, winnerMessages, tgSent })
 }
 
 function getPrizeLabel(type: string, matchMain: number, matchSpecial: boolean): string | null {
