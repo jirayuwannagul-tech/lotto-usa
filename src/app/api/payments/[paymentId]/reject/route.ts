@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pa
   await ensureReferralTables()
 
   const { paymentId } = await params
-  const { rejectNote } = await req.json()
+  const { rejectNote } = await req.json().catch(() => ({}))
 
   const payment = await prisma.payment.update({
     where: { id: paymentId },

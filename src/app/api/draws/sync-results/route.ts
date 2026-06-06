@@ -120,7 +120,7 @@ export async function POST(req: Request) {
         winningSpecial: result.specialNumber,
       }).catch(() => {})
       announced++
-    } else if (draw?.winningMain && !draw.resultAnnouncedAt) {
+    } else if (draw?.winningMain && draw.winningSpecial && !draw.resultAnnouncedAt) {
       await prisma.draw.update({
         where: { id: draw.id },
         data: { resultAnnouncedAt: new Date() },
@@ -130,7 +130,7 @@ export async function POST(req: Request) {
         type: draw.type,
         drawDate: draw.drawDate,
         winningMain: draw.winningMain,
-        winningSpecial: draw.winningSpecial!,
+        winningSpecial: draw.winningSpecial,
       }).catch(() => {})
       announced++
     }
