@@ -10,6 +10,8 @@ function logTelegramError(scope: string, error: unknown) {
   console.error(`[telegram:${scope}]`, error)
 }
 
+const escapeMd = (s: string) => s.replace(/[_*`[\]]/g, "\\$&")
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -81,11 +83,11 @@ export async function POST(req: NextRequest) {
             : `⚠️ ยอดสลิป ${ocrResult.amount.toLocaleString("th-TH")} ฿ — *ไม่ตรง* (ออเดอร์ ${orderTotal.toLocaleString("th-TH")} ฿)`
           : `❓ OCR ไม่พบยอดเงิน`
 
-      const senderLine = ocrResult.senderName ? `👤 ผู้โอน: ${ocrResult.senderName}` : ""
+      const senderLine = ocrResult.senderName ? `👤 ผู้โอน: ${escapeMd(ocrResult.senderName)}` : ""
 
       const approvalText =
         `📎 *มีออเดอร์รอกดอนุมัติ*\n\n` +
-        `👤 ${fullOrder.user.name}\n` +
+        `👤 ${escapeMd(fullOrder.user.name)}\n` +
         `🎱 ${drawLabel}\n` +
         `🎫 ${fullOrder.items.length} ชุด\n` +
         `💰 ${orderTotal.toLocaleString("th-TH")} ฿\n` +

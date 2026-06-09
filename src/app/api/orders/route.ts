@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
   const drawLabel = draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"
   try {
     await sendRealtimeMessage(
-      `🆕 *มีออเดอร์ใหม่*\n\n👤 ${session.user.name}\n🎯 ${drawLabel}\n🎫 ${order.items.length} ชุด\n💰 ${Number(order.totalTHB).toLocaleString("th-TH", { maximumFractionDigits: 0 })} บาท\n\nยังรอการชำระเงิน/แนบสลิป`
+      `🆕 *มีออเดอร์ใหม่*\n\n👤 ${session.user.name.replace(/[_*`[\]]/g, "\\$&")}\n🎯 ${drawLabel}\n🎫 ${order.items.length} ชุด\n💰 ${Number(order.totalTHB).toLocaleString("th-TH", { maximumFractionDigits: 0 })} บาท\n\nยังรอการชำระเงิน/แนบสลิป`
     )
   } catch (error) {
     logTelegramError("order-created", error)
