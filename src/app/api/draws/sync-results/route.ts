@@ -34,6 +34,20 @@ async function fetchMegaResults() {
   }))
 }
 
+function getPrizeLabel(type: string, matchMain: number, matchSpecial: boolean): string | null {
+  const special = type === "POWERBALL" ? "Powerball" : "Mega Ball"
+  if (matchMain === 5 && matchSpecial) return "🥇 แจ็คพอต!"
+  if (matchMain === 5) return "🥈 Match 5"
+  if (matchMain === 4 && matchSpecial) return `Match 4+${special}`
+  if (matchMain === 4) return "Match 4"
+  if (matchMain === 3 && matchSpecial) return `Match 3+${special}`
+  if (matchMain === 3) return "Match 3"
+  if (matchMain === 2 && matchSpecial) return `Match 2+${special}`
+  if (matchMain === 1 && matchSpecial) return `Match 1+${special}`
+  if (matchMain === 0 && matchSpecial) return `Match ${special}`
+  return null
+}
+
 async function announceResult(draw: { id: string; type: string; drawDate: Date; winningMain: string; winningSpecial: string }) {
   const typeLabel = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
   const dateThai = draw.drawDate.toLocaleDateString("th-TH", {
@@ -43,14 +57,41 @@ async function announceResult(draw: { id: string; type: string; drawDate: Date; 
     month: "long",
     year: "numeric",
   })
-  const balls = draw.winningMain.split(",").map((n) => n.trim())
-  const ballLine = balls.map((n) => `(${n})`).join("  ") + `  ⭐ *${draw.winningSpecial.trim()}*`
+  const winMain = draw.winningMain.split(",").map((n) => n.trim())
+  const winSpecial = draw.winningSpecial.trim()
+  const ballLine = winMain.map((n) => `(${n})`).join("  ") + `  ⭐ *${winSpecial}*`
 
-  const msg = `🎱 *ผลหวย ${typeLabel}*\n📅 งวด ${dateThai}\n\n${ballLine}\n\n_ตรวจสอบเลขในแดชบอร์ดของคุณได้เลย_`
+  // Realtime: เลขออกอย่างเดียว
+  const realtimeMsg = `🎱 *ผลหวย ${typeLabel}*\n📅 งวด ${dateThai}\n\n${ballLine}\n\n_ตรวจสอบเลขในแดชบอร์ดของคุณได้เลย_`
+
+  // Admin: เช็คผู้ถูกรางวัล
+  const orders = await prisma.order.findMany({
+    where: {
+      drawId: draw.id,
+      status: { in: ["APPROVED", "TICKET_UPLOADED", "MATCHED"] },
+    },
+    include: { user: true, items: true },
+  })
+
+  const escapeMd = (s: string) => s.replace(/[_*`[\]]/g, "\\$&")
+  const winnerLines: string[] = []
+  for (const order of orders) {
+    for (const item of order.items) {
+      const itemMain = item.mainNumbers.split(",").map((n) => n.trim().padStart(2, "0")).sort()
+      const itemSpecial = item.specialNumber.trim().padStart(2, "0")
+      const matchMain = itemMain.filter((n) => winMain.includes(n)).length
+      const matchSpecial = itemSpecial === winSpecial
+      const prize = getPrizeLabel(draw.type, matchMain, matchSpecial)
+      if (prize) winnerLines.push(`🏆 ${escapeMd(order.user.name)}: ${item.mainNumbers} | ${item.specialNumber} → ${prize}`)
+    }
+  }
+
+  const winnerSection = winnerLines.length > 0 ? winnerLines.join("\n") : "ไม่มีผู้ถูกรางวัลในงวดนี้"
+  const adminMsg = `🎉 *ประกาศผล ${typeLabel}*\n📅 งวด ${dateThai}\n\n${ballLine}\n\n${winnerSection}`
 
   const tgResults = await Promise.allSettled([
-    sendAdminMessage(msg),
-    sendRealtimeMessage(msg),
+    sendAdminMessage(adminMsg),
+    sendRealtimeMessage(realtimeMsg),
   ])
   for (const r of tgResults) {
     if (r.status === "rejected") console.error("[TG announce error]", r.reason)
