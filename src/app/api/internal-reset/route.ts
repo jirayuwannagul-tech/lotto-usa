@@ -93,6 +93,28 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ ok: true, deleted: orders.length, orders: preview })
 }
 
+// DELETE — wipe all orders (all statuses) + related payments/items/commissions. Keeps users.
+export async function DELETE(req: NextRequest) {
+  const { secret } = await req.json().catch(() => ({}))
+  if (secret !== "RESET_LOTTO_NOW_2026") {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 })
+  }
+
+  const orders = await prisma.order.findMany({ select: { id: true } })
+  const orderIds = orders.map((o) => o.id)
+
+  if (orderIds.length > 0) {
+    await prisma.$transaction([
+      prisma.$executeRaw`DELETE FROM "Commission" WHERE "orderId" = ANY(${orderIds}::text[])`,
+      prisma.payment.deleteMany({ where: { orderId: { in: orderIds } } }),
+      prisma.orderItem.deleteMany({ where: { orderId: { in: orderIds } } }),
+      prisma.order.deleteMany({ where: { id: { in: orderIds } } }),
+    ])
+  }
+
+  return NextResponse.json({ ok: true, deleted: orderIds.length })
+}
+
 export async function GET(req: NextRequest) {
   const secret = new URL(req.url).searchParams.get("secret")
   if (secret !== "RESET_LOTTO_NOW_2026") {
