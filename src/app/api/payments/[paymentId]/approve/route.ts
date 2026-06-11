@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendAdminMessage, sendRealtimeMessage, sendApprovalRequest } from "@/lib/telegram"
+import { sendAdminMessage, sendRealtimeMessage, sendApprovalRequest, buildApprovedMessage } from "@/lib/telegram"
 import { approveCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
 import { sendPaymentApprovedEmail } from "@/lib/email"
 import { writeAuditLog } from "@/lib/audit"
@@ -55,28 +55,18 @@ export async function PATCH(_: NextRequest, { params }: { params: Promise<{ paym
 
   await approveCommissionForOrder(payment.orderId)
 
-  // Send the confirmed numbers only after payment is approved.
   const { order } = payment
-  const drawTypeLabel = order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
-  const itemLines = order.items
-    .map((item, i) => `  ${i + 1}. ${item.mainNumbers} | ${item.specialNumber}`)
-    .join("\n")
-
-  const message = `
-✅ ยืนยันชำระเงินแล้ว
-
-ส่งเลขเข้ากลุ่มซื้อได้เลย
-
-👤 ${order.user.name}
-📞 ${order.user.phone ?? "-"}
-🎱 ${drawTypeLabel}
-📅 งวด: ${order.draw.drawDate.toLocaleDateString("th-TH")}
-
-เลขที่จอง:
-${itemLines}
-
-💰 $${order.totalUSD} = ${order.totalTHB} บาท
-อัตรา: $1 = ${order.rateUsed} บาท`
+  const message = buildApprovedMessage({
+    userName: order.user.name,
+    userPhone: order.user.phone,
+    drawType: order.draw.type,
+    drawDate: order.draw.drawDate,
+    itemCount: order.items.length,
+    totalTHB: Number(order.totalTHB),
+    totalUSD: Number(order.totalUSD),
+    rateUsed: Number(order.rateUsed),
+    items: order.items.map((i) => ({ mainNumbers: i.mainNumbers, specialNumber: i.specialNumber })),
+  })
 
   const deliveries = await Promise.all([
     tryDelivery("admin", () => sendAdminMessage(message)),

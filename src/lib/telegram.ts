@@ -158,6 +158,89 @@ export async function sendApprovalMessage(text: string) {
   await Promise.all(ids.map((id) => sendMessage(id, text, "Markdown", threadId)))
 }
 
+// ---- Message helpers -----------------------------------------------------
+
+export function formatLotteryNumbers(
+  items: { mainNumbers: string; specialNumber: string }[],
+  drawType: string
+): string {
+  const specialLabel = drawType === "POWERBALL" ? "PB" : "MB"
+  return items
+    .map((item, i) => {
+      const mains = item.mainNumbers
+        .split(",")
+        .map((n) => n.padStart(2, "0"))
+        .join("  ")
+      const special = item.specialNumber.padStart(2, "0")
+      return `\`${String(i + 1).padStart(2)}. ${mains}  │ ${specialLabel} ${special}\``
+    })
+    .join("\n")
+}
+
+export function buildApprovalMessage(params: {
+  userName: string
+  userPhone: string | null
+  drawType: string
+  drawDate: Date
+  itemCount: number
+  totalTHB: number
+  totalUSD: number
+  rateUsed: number
+  items: { mainNumbers: string; specialNumber: string }[]
+  slipVerify?: string
+  adminUrl?: string
+}): string {
+  const drawLabel = params.drawType === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
+  const drawDateStr = params.drawDate.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })
+  const esc = (s: string) => s.replace(/[_*`[\]]/g, "\\$&")
+
+  const lines = [
+    `📎 *มีออเดอร์รอกดอนุมัติ*`,
+    ``,
+    `👤 ${esc(params.userName)}${params.userPhone ? `  📞 ${params.userPhone}` : ""}`,
+    `${drawLabel}  |  งวด ${drawDateStr}  |  ${params.itemCount} ใบ`,
+    `💰 ${params.totalTHB.toLocaleString("th-TH", { maximumFractionDigits: 0 })} ฿  ($${params.totalUSD.toFixed(2)})`,
+  ]
+
+  if (params.slipVerify) lines.push(params.slipVerify)
+
+  lines.push(``, `🎫 *เลขที่จอง:*`)
+  lines.push(formatLotteryNumbers(params.items, params.drawType))
+
+  if (params.adminUrl) lines.push(``, `🔗 ${params.adminUrl}`)
+
+  return lines.join("\n")
+}
+
+export function buildApprovedMessage(params: {
+  userName: string
+  userPhone: string | null
+  drawType: string
+  drawDate: Date
+  itemCount: number
+  totalTHB: number
+  totalUSD: number
+  rateUsed: number
+  items: { mainNumbers: string; specialNumber: string }[]
+}): string {
+  const drawLabel = params.drawType === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
+  const drawDateStr = params.drawDate.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })
+  const esc = (s: string) => s.replace(/[_*`[\]]/g, "\\$&")
+
+  const lines = [
+    `✅ *อนุมัติแล้ว — ซื้อเลขได้เลย*`,
+    ``,
+    `👤 ${esc(params.userName)}${params.userPhone ? `  📞 ${params.userPhone}` : ""}`,
+    `${drawLabel}  |  งวด ${drawDateStr}  |  ${params.itemCount} ใบ`,
+    `💰 $${params.totalUSD.toFixed(2)} = ${params.totalTHB.toLocaleString("th-TH", { maximumFractionDigits: 0 })} ฿  (rate $1 = ${Number(params.rateUsed).toFixed(0)} ฿)`,
+    ``,
+    `🎟 *เลขที่ต้องซื้อ:*`,
+    formatLotteryNumbers(params.items, params.drawType),
+  ]
+
+  return lines.join("\n")
+}
+
 // ---- Types ---------------------------------------------------------------
 
 export interface TgUpdate {

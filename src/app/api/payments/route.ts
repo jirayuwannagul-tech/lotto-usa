@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { saveUploadedFile } from "@/lib/upload"
-import { sendApprovalRequest, sendRealtimeMessage } from "@/lib/telegram"
+import { sendApprovalRequest, sendRealtimeMessage, buildApprovalMessage } from "@/lib/telegram"
 import { readSlipFromBuffer } from "@/lib/ocr"
 
 function logTelegramError(scope: string, error: unknown) {
@@ -73,27 +73,31 @@ export async function POST(req: NextRequest) {
       include: { user: true, draw: true, items: true },
     })
     if (fullOrder) {
-      const drawLabel = fullOrder.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
       const adminOrdersUrl = `${process.env.NEXTAUTH_URL ?? ""}/admin/orders`
 
       const verifyLine =
         ocrResult.amount !== null
           ? slipAmountMatches
-            ? `✅ ยอดสลิป ${ocrResult.amount.toLocaleString("th-TH")} ฿ — *ตรงกับออเดอร์*`
-            : `⚠️ ยอดสลิป ${ocrResult.amount.toLocaleString("th-TH")} ฿ — *ไม่ตรง* (ออเดอร์ ${orderTotal.toLocaleString("th-TH")} ฿)`
+            ? `✅ สลิป ${ocrResult.amount.toLocaleString("th-TH")} ฿ — *ตรงกับออเดอร์*`
+            : `⚠️ สลิป ${ocrResult.amount.toLocaleString("th-TH")} ฿ — *ไม่ตรง* (ออเดอร์ ${orderTotal.toLocaleString("th-TH")} ฿)`
           : `❓ OCR ไม่พบยอดเงิน`
 
-      const senderLine = ocrResult.senderName ? `👤 ผู้โอน: ${escapeMd(ocrResult.senderName)}` : ""
+      const senderSuffix = ocrResult.senderName ? `  (${escapeMd(ocrResult.senderName)})` : ""
+      const slipVerify = verifyLine + senderSuffix
 
-      const approvalText =
-        `📎 *มีออเดอร์รอกดอนุมัติ*\n\n` +
-        `👤 ${escapeMd(fullOrder.user.name)}\n` +
-        `🎱 ${drawLabel}\n` +
-        `🎫 ${fullOrder.items.length} ชุด\n` +
-        `💰 ${orderTotal.toLocaleString("th-TH")} ฿\n` +
-        (senderLine ? senderLine + "\n" : "") +
-        verifyLine + "\n" +
-        `\n🔗 ${adminOrdersUrl}`
+      const approvalText = buildApprovalMessage({
+        userName: fullOrder.user.name,
+        userPhone: fullOrder.user.phone,
+        drawType: fullOrder.draw.type,
+        drawDate: fullOrder.draw.drawDate,
+        itemCount: fullOrder.items.length,
+        totalTHB: Number(fullOrder.totalTHB),
+        totalUSD: Number(fullOrder.totalUSD),
+        rateUsed: Number(fullOrder.rateUsed),
+        items: fullOrder.items.map((i) => ({ mainNumbers: i.mainNumbers, specialNumber: i.specialNumber })),
+        slipVerify,
+        adminUrl: adminOrdersUrl,
+      })
 
       try {
         await Promise.all([
