@@ -13,7 +13,9 @@ function getThreadId(envKey: string) {
   const raw = process.env[envKey]
   if (!raw) return undefined
   const value = Number(raw)
-  return Number.isFinite(value) ? value : undefined
+  // topic 1 = General — Telegram rejects message_thread_id=1, send without it
+  if (!Number.isFinite(value) || value === 1) return undefined
+  return value
 }
 
 // ---- Send ----------------------------------------------------------------
