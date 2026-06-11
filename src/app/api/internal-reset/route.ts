@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
   const steps: [string, () => Promise<unknown>][] = [
     ["auditLog", () => prisma.auditLog.deleteMany()],
     ["commission", () => prisma.commission.deleteMany()],
+    ["walletTransaction", () => prisma.walletTransaction.deleteMany()],
     ["userReferral", () => prisma.userReferral.deleteMany()],
     ["passwordResetToken", () => prisma.passwordResetToken.deleteMany()],
     ["payment", () => prisma.payment.deleteMany()],
