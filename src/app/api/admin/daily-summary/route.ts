@@ -7,9 +7,13 @@ import { sendDailySummaryMessage } from "@/lib/telegram"
 
 export async function GET(req: NextRequest) {
   try {
-    const authHeader = req.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
-    const isCron = cronSecret && authHeader === `Bearer ${cronSecret}`
+    const authHeader = req.headers.get("authorization")
+    const querySecret = new URL(req.url).searchParams.get("secret")
+    const isCron = cronSecret && (
+      authHeader === `Bearer ${cronSecret}` ||
+      querySecret === cronSecret
+    )
 
     if (!isCron) {
       const session = await getServerSession(authOptions)
