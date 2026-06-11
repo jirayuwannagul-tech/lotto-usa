@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     })
     if (fullOrder) {
       const drawLabel = fullOrder.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
-      const adminOrdersUrl = new URL("/admin/orders", req.url).toString()
+      const adminOrdersUrl = `${process.env.NEXTAUTH_URL ?? ""}/admin/orders`
 
       const verifyLine =
         ocrResult.amount !== null
