@@ -20,10 +20,11 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null
 
         const input = credentials.email.trim()
-        const isPhone = /^0[0-9]{8,9}$/.test(input.replace(/[-\s]/g, ""))
+        const cleanInput = input.replace(/[\s\-()]/g, "")
+        const isPhone = /^\+?[0-9]{6,15}$/.test(cleanInput)
 
         const user = isPhone
-          ? await prisma.user.findUnique({ where: { phone: input.replace(/[-\s]/g, "") } })
+          ? await prisma.user.findUnique({ where: { phone: cleanInput } })
           : await prisma.user.findUnique({ where: { email: input } })
 
         if (!user) return null

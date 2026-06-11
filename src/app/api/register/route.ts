@@ -10,9 +10,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "กรุณากรอกเบอร์โทรและรหัสผ่าน" }, { status: 400 })
   }
 
-  const cleanPhone = String(phone).replace(/[-\s]/g, "")
-  if (!/^0[0-9]{8,9}$/.test(cleanPhone)) {
-    return NextResponse.json({ error: "เบอร์โทรไม่ถูกต้อง" }, { status: 400 })
+  const cleanPhone = String(phone).replace(/[\s\-()]/g, "")
+  if (!/^\+?[0-9]{6,15}$/.test(cleanPhone)) {
+    return NextResponse.json({ error: "เบอร์โทรไม่ถูกต้อง (6-15 ตัวเลข)" }, { status: 400 })
   }
 
   if (String(password).length < 4) {
