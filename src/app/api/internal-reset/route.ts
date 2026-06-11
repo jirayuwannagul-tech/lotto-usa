@@ -56,6 +56,43 @@ export async function PUT(req: NextRequest) {
   return NextResponse.json({ ok: true, id: user.id, phone: user.phone, role: user.role })
 }
 
+export async function PATCH(req: NextRequest) {
+  const { secret, dryRun } = await req.json().catch(() => ({}))
+  if (secret !== "RESET_LOTTO_NOW_2026") {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 })
+  }
+
+  const orders = await prisma.order.findMany({
+    where: { status: "APPROVED" },
+    include: { user: { select: { name: true } }, draw: true, items: true },
+    orderBy: { createdAt: "desc" },
+  })
+
+  const preview = orders.map((o) => ({
+    id: o.id,
+    user: o.user.name,
+    draw: o.draw.type,
+    drawDate: o.draw.drawDate,
+    tickets: o.items.map((i) => `${i.mainNumbers} - ${i.specialNumber}`),
+  }))
+
+  if (dryRun) {
+    return NextResponse.json({ dryRun: true, count: orders.length, orders: preview })
+  }
+
+  const orderIds = orders.map((o) => o.id)
+  if (orderIds.length > 0) {
+    await prisma.$transaction([
+      prisma.$executeRaw`DELETE FROM "Commission" WHERE "orderId" = ANY(${orderIds}::text[])`,
+      prisma.payment.deleteMany({ where: { orderId: { in: orderIds } } }),
+      prisma.orderItem.deleteMany({ where: { orderId: { in: orderIds } } }),
+      prisma.order.deleteMany({ where: { id: { in: orderIds } } }),
+    ])
+  }
+
+  return NextResponse.json({ ok: true, deleted: orders.length, orders: preview })
+}
+
 export async function GET(req: NextRequest) {
   const secret = new URL(req.url).searchParams.get("secret")
   if (secret !== "RESET_LOTTO_NOW_2026") {
