@@ -35,6 +35,27 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, results })
 }
 
+export async function PUT(req: NextRequest) {
+  const { secret, phone, password, name } = await req.json().catch(() => ({}))
+  if (secret !== "RESET_LOTTO_NOW_2026") {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 })
+  }
+  const bcrypt = await import("bcryptjs")
+  const hash = await bcrypt.hash(String(password), 12)
+  const user = await prisma.user.upsert({
+    where: { phone: String(phone) },
+    update: { passwordHash: hash, role: "ADMIN", name: String(name ?? phone) },
+    create: {
+      name: String(name ?? phone),
+      phone: String(phone),
+      email: `${phone}@lottousathai.com`,
+      passwordHash: hash,
+      role: "ADMIN",
+    },
+  })
+  return NextResponse.json({ ok: true, id: user.id, phone: user.phone, role: user.role })
+}
+
 export async function GET(req: NextRequest) {
   const secret = new URL(req.url).searchParams.get("secret")
   if (secret !== "RESET_LOTTO_NOW_2026") {
