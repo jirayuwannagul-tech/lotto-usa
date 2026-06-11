@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getExchangeRate } from "@/lib/exchange-rate"
 import { LOTTERY_RULES, MARGIN_USD } from "@/lib/lottery-rules"
-import { createCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
+import { ensureReferralTables } from "@/lib/referrals"
 import { sendOrderConfirmationEmail } from "@/lib/email"
 import { getPurchasableDraw, syncUpcomingDraws } from "@/lib/draw-schedule"
 import { z } from "zod"
@@ -134,13 +134,6 @@ export async function POST(req: NextRequest) {
       },
       include: { items: true },
     })
-  })
-
-  await createCommissionForOrder({
-    orderId: order.id,
-    referredUserId: session.user.id,
-    itemCount: order.items.length,
-    rateUsed: Number(order.rateUsed),
   })
 
   // Send confirmation email (non-blocking)
