@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { DeleteMemberButton } from "@/components/admin/DeleteMemberButton"
 import { MakeReferrerButton } from "@/components/admin/MakeReferrerButton"
 import { WalletTopupButton } from "@/components/admin/WalletTopupButton"
+import { AssignReferrerButton } from "@/components/admin/AssignReferrerButton"
 import { ensureReferralTables, getReferralMaps } from "@/lib/referrals"
 
 type MonthlyCommissionSummary = {
@@ -191,6 +192,7 @@ export default async function AdminMembersPage() {
                     <td className="py-3 pr-4">{member._count.orders}</td>
                     <td className="py-3 pr-4">
                       <div className="flex flex-wrap items-start gap-3">
+                        <AssignReferrerButton userId={member.id} userName={member.name} existingReferrerName={referral ? memberNameMap.get(referral.referrerUserId) ?? null : null} />
                         <MakeReferrerButton userId={member.id} userName={member.name} existingCode={ownCode} />
                         <DeleteMemberButton userId={member.id} userLabel={member.email ?? ""} />
                       </div>

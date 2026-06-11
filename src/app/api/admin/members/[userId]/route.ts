@@ -1,14 +1,60 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { ensureReferralTables } from "@/lib/referrals"
+import { ensureReferralTables, getReferrerByCode } from "@/lib/referrals"
 import { writeAuditLog } from "@/lib/audit"
 
 type Params = {
   params: Promise<{
     userId: string
   }>
+}
+
+export async function PATCH(req: NextRequest, { params }: Params) {
+  const session = await getServerSession(authOptions)
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { userId } = await params
+  const body = await req.json().catch(() => ({}))
+  const code = typeof body?.referralCode === "string" ? body.referralCode.trim().toUpperCase() : ""
+
+  if (!code) return NextResponse.json({ error: "กรุณาระบุรหัสผู้แนะนำ" }, { status: 400 })
+
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user || user.role !== "CUSTOMER") {
+    return NextResponse.json({ error: "ไม่พบสมาชิก" }, { status: 404 })
+  }
+
+  const existing = await prisma.userReferral.findUnique({ where: { userId } })
+  if (existing) {
+    return NextResponse.json({ error: "สมาชิกนี้มีผู้แนะนำอยู่แล้ว" }, { status: 409 })
+  }
+
+  const referrer = await getReferrerByCode(code)
+  if (!referrer) {
+    return NextResponse.json({ error: `ไม่พบรหัสผู้แนะนำ "${code}"` }, { status: 404 })
+  }
+
+  if (referrer.userId === userId) {
+    return NextResponse.json({ error: "ไม่สามารถแนะนำตัวเองได้" }, { status: 400 })
+  }
+
+  await prisma.userReferral.create({
+    data: { userId, referrerUserId: referrer.userId, referralCode: referrer.referralCode },
+  })
+
+  await writeAuditLog({
+    adminId: session.user.id,
+    action: "MEMBER_MADE_REFERRER",
+    targetId: userId,
+    targetType: "User",
+    note: `Admin assigned referrer code ${code} to ${user.name}`,
+  })
+
+  return NextResponse.json({ ok: true, referralCode: referrer.referralCode })
 }
 
 export async function DELETE(_req: Request, { params }: Params) {
