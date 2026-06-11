@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { sendRealtimeMessage, sendApprovalMessage } from "@/lib/telegram"
 
 export async function POST(req: NextRequest) {
   const { secret } = await req.json().catch(() => ({}))
@@ -32,4 +33,34 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, results })
+}
+
+export async function GET(req: NextRequest) {
+  const secret = new URL(req.url).searchParams.get("secret")
+  if (secret !== "RESET_LOTTO_NOW_2026") {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 })
+  }
+
+  const orders = await prisma.order.findMany({
+    where: { status: "PENDING_APPROVAL" },
+    include: { user: true, draw: true, items: true, payment: true },
+  })
+
+  for (const order of orders) {
+    const drawLabel = order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
+    const orderTotal = Number(order.totalTHB)
+    const escapeMd = (s: string) => s.replace(/[_*`[\]]/g, "\\$&")
+    const adminUrl = `${process.env.NEXTAUTH_URL ?? ""}/admin/orders`
+    const msg =
+      `📎 *มีออเดอร์รอกดอนุมัติ*\n\n` +
+      `👤 ${escapeMd(order.user.name)}\n` +
+      `🎱 ${drawLabel}\n` +
+      `🎫 ${order.items.length} ชุด\n` +
+      `💰 ${orderTotal.toLocaleString("th-TH")} ฿\n` +
+      `\n🔗 ${adminUrl}`
+    await sendRealtimeMessage(msg).catch(() => {})
+    await sendApprovalMessage(msg).catch(() => {})
+  }
+
+  return NextResponse.json({ ok: true, resent: orders.length })
 }
