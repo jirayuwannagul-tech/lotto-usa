@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { sendRealtimeMessage, sendApprovalMessage } from "@/lib/telegram"
+import { sendRealtimeMessage, sendApprovalRequest } from "@/lib/telegram"
 
 export async function POST(req: NextRequest) {
   const { secret } = await req.json().catch(() => ({}))
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
       `💰 ${orderTotal.toLocaleString("th-TH")} ฿\n` +
       `\n🔗 ${adminUrl}`
     await sendRealtimeMessage(msg).catch(() => {})
-    await sendApprovalMessage(msg).catch(() => {})
+    await sendApprovalRequest(order.id, msg).catch(() => {})
   }
 
   return NextResponse.json({ ok: true, resent: orders.length })

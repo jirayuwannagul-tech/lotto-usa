@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { saveUploadedFile } from "@/lib/upload"
-import { sendApprovalMessage, sendRealtimeMessage } from "@/lib/telegram"
+import { sendApprovalRequest, sendRealtimeMessage } from "@/lib/telegram"
 import { readSlipFromBuffer } from "@/lib/ocr"
 
 function logTelegramError(scope: string, error: unknown) {
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       try {
         await Promise.all([
           sendRealtimeMessage(approvalText),
-          sendApprovalMessage(approvalText),
+          sendApprovalRequest(orderId, approvalText),
         ])
       } catch (error) {
         logTelegramError("payment-uploaded", error)
