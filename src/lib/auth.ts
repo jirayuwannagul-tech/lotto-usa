@@ -26,6 +26,7 @@ export const authOptions: NextAuthOptions = {
         const user = isPhone
           ? await prisma.user.findUnique({ where: { phone: cleanInput } })
           : await prisma.user.findUnique({ where: { email: input } })
+            ?? await prisma.user.findUnique({ where: { phone: input } })
 
         if (!user) return null
 
