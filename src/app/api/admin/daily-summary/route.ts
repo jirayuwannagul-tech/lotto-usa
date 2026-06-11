@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getSalesDayContext } from "@/lib/sales-day"
-import { sendDailySummaryMessage, formatLotteryNumbers } from "@/lib/telegram"
+import { sendDailySummaryMessage } from "@/lib/telegram"
 
 export async function GET(req: NextRequest) {
   try {
@@ -49,22 +49,29 @@ export async function POST() {
   }
 }
 
-type TicketItem = { mainNumbers: string; specialNumber: string }
-type DrawGroup = {
-  drawType: string
-  drawDateLabel: string
-  needBuy: TicketItem[]   // APPROVED — ยังไม่อัปโหลดรูป
-  uploaded: TicketItem[]  // TICKET_UPLOADED / MATCHED
+function formatTicketLine(mainNumbers: string, specialNumber: string) {
+  const mains = mainNumbers.split(",").map((n) => n.padStart(2, "0")).join(" ")
+  const special = specialNumber.padStart(2, "0")
+  return `${mains} - ${special}`
 }
 
 async function generateSummary() {
   const now = new Date()
   const salesDay = getSalesDayContext(now)
 
+  const todayLabel = now.toLocaleDateString("th-TH", {
+    timeZone: "America/Los_Angeles",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "2-digit",
+  })
+
+  // Only APPROVED orders = need to buy, no ticket photo yet
   const approvedOrders = await prisma.order.findMany({
     where: {
       createdAt: { gte: salesDay.windowStart, lt: salesDay.windowEnd },
-      status: { in: ["APPROVED", "TICKET_UPLOADED", "MATCHED"] },
+      status: "APPROVED",
     },
     include: {
       draw: true,
@@ -73,22 +80,23 @@ async function generateSummary() {
     orderBy: { createdAt: "asc" },
   })
 
-  const pendingApprovalCount = await prisma.order.count({
-    where: {
-      createdAt: { gte: salesDay.windowStart, lt: salesDay.windowEnd },
-      status: "PENDING_APPROVAL",
-    },
-  })
+  const lines: string[] = [
+    `📋 *สรุปออเดอร์วันนี้*`,
+    `📅 ${todayLabel}`,
+    ``,
+  ]
 
-  const pendingPaymentCount = await prisma.order.count({
-    where: {
-      createdAt: { gte: salesDay.windowStart, lt: salesDay.windowEnd },
-      status: "PENDING_PAYMENT",
-    },
-  })
+  if (approvedOrders.length === 0) {
+    lines.push(`วันนี้ไม่มีออเดอร์`)
+    return { message: lines.join("\n"), generatedAt: now.toISOString(), totalNeedBuy: 0 }
+  }
 
-  // Group items by draw, split by ticket-upload status
-  const drawMap = new Map<string, DrawGroup>()
+  // Group by draw type + draw id
+  const drawMap = new Map<string, {
+    drawType: string
+    drawDateLabel: string
+    tickets: { mainNumbers: string; specialNumber: string }[]
+  }>()
 
   for (const order of approvedOrders) {
     const key = `${order.draw.type}|${order.draw.id}`
@@ -101,76 +109,33 @@ async function generateSummary() {
         hour: "2-digit",
         minute: "2-digit",
       })
-      drawMap.set(key, { drawType: order.draw.type, drawDateLabel, needBuy: [], uploaded: [] })
+      drawMap.set(key, { drawType: order.draw.type, drawDateLabel, tickets: [] })
     }
     const group = drawMap.get(key)!
-    const items = order.items.map((i) => ({ mainNumbers: i.mainNumbers, specialNumber: i.specialNumber }))
-
-    if (order.status === "APPROVED") {
-      group.needBuy.push(...items)
-    } else {
-      group.uploaded.push(...items)
+    for (const item of order.items) {
+      group.tickets.push({ mainNumbers: item.mainNumbers, specialNumber: item.specialNumber })
     }
   }
 
-  // Build message
-  const lines: string[] = [
-    `📊 *สรุปเลขที่ต้องซื้อประจำวัน*`,
-    `🕖 ส่งสรุปเวลา 7:00 AM LAX`,
-    `📅 รอบออเดอร์: ${salesDay.salesDateLabel} (LAX)`,
-    `🕒 เวลาปัจจุบัน: ${salesDay.currentTimeLabel}`,
-    `${"━".repeat(28)}`,
-  ]
-
-  if (drawMap.size === 0) {
-    lines.push(``, `ยังไม่มีออเดอร์ที่อนุมัติแล้วสำหรับรอบนี้`)
-  }
-
-  let totalNeedBuy = 0
-  let totalUploaded = 0
-
+  let totalTickets = 0
   for (const group of drawMap.values()) {
     const drawLabel = group.drawType === "POWERBALL" ? "🔴 *Powerball*" : "🔵 *Mega Millions*"
-    const totalItems = group.needBuy.length + group.uploaded.length
-    totalNeedBuy += group.needBuy.length
-    totalUploaded += group.uploaded.length
+    totalTickets += group.tickets.length
 
+    lines.push(`${drawLabel}  (${group.drawDateLabel})`)
+    lines.push(`ต้องซื้อ ${group.tickets.length} ใบ`)
+
+    for (const t of group.tickets) {
+      lines.push(formatTicketLine(t.mainNumbers, t.specialNumber))
+    }
     lines.push(``)
-    lines.push(`${drawLabel} — ${group.drawDateLabel}`)
-    lines.push(`รวม ${totalItems} ใบ`)
-
-    if (group.needBuy.length > 0) {
-      lines.push(``)
-      lines.push(`🛒 *ต้องซื้อ + ยังไม่อัปโหลดรูป — ${group.needBuy.length} ใบ*`)
-      lines.push(formatLotteryNumbers(group.needBuy, group.drawType))
-    }
-
-    if (group.uploaded.length > 0) {
-      lines.push(``)
-      lines.push(`✅ อัปโหลดรูปแล้ว — ${group.uploaded.length} ใบ`)
-      lines.push(formatLotteryNumbers(group.uploaded, group.drawType))
-    }
-
-    lines.push(`${"─".repeat(28)}`)
   }
 
-  lines.push(``)
-  lines.push(`🛒 ต้องซื้อทั้งหมด: *${totalNeedBuy} ใบ*`)
-  lines.push(`✅ อัปโหลดรูปแล้ว: ${totalUploaded} ใบ`)
-  lines.push(`⏳ รอกดอนุมัติ: ${pendingApprovalCount} ออเดอร์`)
-  lines.push(`💳 ยังไม่ส่งสลิป: ${pendingPaymentCount} ออเดอร์`)
-  lines.push(`ℹ️ ออเดอร์ที่เข้าหลัง 7:00 AM LAX จะไปรวมในรอบวันถัดไป`)
-
-  const message = lines.join("\n")
+  lines.push(`รวม ${totalTickets} ใบ`)
 
   return {
-    message,
+    message: lines.join("\n"),
     generatedAt: now.toISOString(),
-    salesDateLabel: salesDay.salesDateLabel,
-    approvedOrders: approvedOrders.length,
-    totalNeedBuy,
-    totalUploaded,
-    pendingApprovalCount,
-    pendingPaymentCount,
+    totalNeedBuy: totalTickets,
   }
 }

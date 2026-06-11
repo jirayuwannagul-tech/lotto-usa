@@ -17,7 +17,7 @@ command = "curl -sf -X POST \"$NEXTAUTH_URL/api/draws/sync-results\" -H \"Conten
 
 [[crons]]
 name = "daily-summary"
-schedule = "0 14 * * *"
+schedule = "0 15 * * *"
 command = "curl -sf -H \"Authorization: Bearer $CRON_SECRET\" \"$NEXTAUTH_URL/api/admin/daily-summary\" || true"
 
 [[crons]]
