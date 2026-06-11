@@ -88,25 +88,22 @@ async function handleBoughtCallback(callbackId: string, chatId: number, messageI
     return
   }
 
-  if (order.status === "MATCHED") {
+  if (order.status === "MATCHED" || order.status === "TICKET_UPLOADED") {
     await answerCallbackQuery(callbackId, "✅ ยืนยันแล้วก่อนหน้านี้")
     return
   }
 
-  await prisma.orderItem.updateMany({
-    where: { orderId, matchedAt: null },
-    data: { matchedAt: new Date() },
-  })
-
+  // Approve the order
   await prisma.order.update({
     where: { id: orderId },
-    data: { status: "MATCHED" },
+    data: { status: "APPROVED" },
   })
 
-  await answerCallbackQuery(callbackId, "✅ บันทึกแล้ว!")
+  await answerCallbackQuery(callbackId, "✅ อนุมัติแล้ว!")
   await editMessageText(chatId, messageId,
-    `✅ *ซื้อแล้ว — ยืนยันโดยแอดมิน*\n\n👤 ${order.user.name}\n🆔 #${orderId.slice(-8).toUpperCase()}\n\n_อัปเดตสถานะในระบบแล้ว_`
+    `✅ *อนุมัติแล้ว — รอรูปตั๋ว*\n\n👤 ${order.user.name}\n🆔 #${orderId.slice(-8).toUpperCase()}\n\n_ส่งรูปตั๋วมาในแชทนี้เพื่อยืนยันการซื้อ_`
   )
+  await sendMessage(chatId, `📸 ส่งรูปตั๋วของออเดอร์ #${orderId.slice(-8).toUpperCase()} มาได้เลยครับ`)
 }
 
 async function handleCancelCallback(callbackId: string, chatId: number, messageId: number, orderId: string) {
