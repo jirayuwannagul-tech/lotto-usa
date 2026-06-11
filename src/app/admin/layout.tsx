@@ -14,6 +14,7 @@ const adminLinks = [
   { href: "/admin/summary", label: "สรุปออเดอร์" },
   { href: "/admin/members", label: "รายชื่อสมาชิก" },
   { href: "/admin/commissions", label: "จ่าย Commission" },
+  { href: "/admin/settings", label: "ตั้งค่าบัญชี Admin" },
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

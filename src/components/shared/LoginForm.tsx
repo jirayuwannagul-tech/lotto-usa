@@ -22,12 +22,10 @@ export default function LoginForm({
   theme = "light",
 }: LoginFormProps) {
   const router = useRouter()
-  const storageKey = portal === "admin" ? "lotto_last_admin_email" : "lotto_last_customer_phone"
-  const defaultEmail = portal === "admin" ? "admin@lottousa.com" : ""
+  const storageKey = portal === "admin" ? "lotto_last_admin_username" : "lotto_last_customer_phone"
   const [email, setEmail] = useState(() => {
     if (typeof window === "undefined") return ""
-    if (portal === "admin") return defaultEmail
-    return window.localStorage.getItem(storageKey) ?? defaultEmail
+    return window.localStorage.getItem(storageKey) ?? ""
   })
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -59,7 +57,7 @@ export default function LoginForm({
       }
 
       const nextPath = role === "ADMIN" ? "/admin" : redirectTo
-      window.localStorage.setItem(storageKey, portal === "admin" ? defaultEmail : email)
+      window.localStorage.setItem(storageKey, email)
       router.push(nextPath)
       router.refresh()
     }
@@ -69,15 +67,15 @@ export default function LoginForm({
     <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
       <div>
         <label className={cn("mb-1 block text-sm", isDark ? "text-white/70" : "text-slate-700")}>
-          {portal === "customer" ? "เบอร์โทร" : "อีเมล"}
+          {portal === "customer" ? "เบอร์โทร" : "ชื่อผู้ใช้"}
         </label>
         <Input
           id={`${portal}-email`}
           name="email"
-          type={portal === "customer" ? "tel" : "email"}
+          type={portal === "customer" ? "tel" : "text"}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder={portal === "customer" ? "0812345678" : "example@email.com"}
+          placeholder={portal === "customer" ? "0812345678" : "admin"}
           autoComplete="username"
           className={cn(
             isDark
