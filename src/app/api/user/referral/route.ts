@@ -4,6 +4,16 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getReferrerByCode } from "@/lib/referrals"
 
+export async function GET() {
+  const session = await getServerSession(authOptions)
+  if (!session || session.user.role !== "CUSTOMER") {
+    return NextResponse.json({ referralCode: null })
+  }
+
+  const existing = await prisma.userReferral.findUnique({ where: { userId: session.user.id } })
+  return NextResponse.json({ referralCode: existing?.referralCode ?? null })
+}
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session || session.user.role !== "CUSTOMER") {
