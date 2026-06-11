@@ -97,7 +97,7 @@ export async function sendApprovalRequest(orderId: string, text: string) {
   const threadId = getThreadId("TELEGRAM_APPROVAL_THREAD_ID")
   if (ids.length === 0 || !BOT_TOKEN) return
   const buttons = [[
-    { text: "✅ ซื้อแล้ว", callback_data: `bought:${orderId}` },
+    { text: "✅ อนุมัติ", callback_data: `bought:${orderId}` },
     { text: "❌ ยกเลิก", callback_data: `cancel:${orderId}` },
   ]]
   await Promise.all(ids.map((id) => sendMessageWithButtons(id, text, buttons, "Markdown", threadId)))
