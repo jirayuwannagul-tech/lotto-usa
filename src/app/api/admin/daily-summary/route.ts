@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendAdminMessage } from "@/lib/telegram"
+import { sendDailySummaryMessage } from "@/lib/telegram"
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
     const summary = await generateSummary()
     if (isCron) {
-      await sendAdminMessage(summary.message)
+      await sendDailySummaryMessage(summary.message)
     }
     return NextResponse.json(summary)
   } catch (error) {
@@ -40,7 +40,7 @@ export async function POST() {
     }
 
     const summary = await generateSummary()
-    await sendAdminMessage(summary.message)
+    await sendDailySummaryMessage(summary.message)
     return NextResponse.json({ ok: true, summary: summary.message })
   } catch (error) {
     const message = error instanceof Error ? error.message : "ไม่สามารถส่งสรุปได้"
