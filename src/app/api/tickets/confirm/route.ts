@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendAdminMessage, sendRealtimeMessage } from "@/lib/telegram"
+import { sendRealtimeMessage } from "@/lib/telegram"
 import { cropTicketPlay } from "@/lib/upload"
 
 type MatchEntry = {
@@ -113,10 +113,7 @@ export async function POST(req: NextRequest) {
 
       const msg = `📸 *อัปรูปตั๋วเรียบร้อย*\n\n👤 ${orderInfo.order.user.name}\n🎱 ${drawLabel} — ${drawDateThai}\n\nเลขที่ซื้อ:\n${uploadedItems}\n\n✅ ลูกค้าสามารถดูรูปตั๋วในแดชบอร์ดได้แล้ว`
 
-      await Promise.allSettled([
-        sendAdminMessage(msg),
-        sendRealtimeMessage(msg),
-      ])
+      await sendRealtimeMessage(msg).catch(console.error)
     }
   }
 

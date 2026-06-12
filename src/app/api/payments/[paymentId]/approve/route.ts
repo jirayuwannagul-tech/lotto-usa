@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendRealtimeMessage, buildApprovedMessage } from "@/lib/telegram"
 import { createCommissionForOrder, approveCommissionForOrder, ensureReferralTables } from "@/lib/referrals"
-import { sendPaymentApprovedEmail } from "@/lib/email"
 import { writeAuditLog } from "@/lib/audit"
 
 export async function PATCH(_: NextRequest, { params }: { params: Promise<{ paymentId: string }> }) {
@@ -71,16 +70,6 @@ export async function PATCH(_: NextRequest, { params }: { params: Promise<{ paym
     targetType: "Order",
     note: `Payment ${paymentId}`,
   })
-
-  sendPaymentApprovedEmail({
-    to: order.user.email ?? "",
-    name: order.user.name,
-    orderId: order.id,
-    drawType: order.draw.type,
-    drawDate: order.draw.drawDate,
-    items: order.items.map((i) => ({ mainNumbers: i.mainNumbers, specialNumber: i.specialNumber })),
-    totalTHB: Number(order.totalTHB),
-  }).catch((err) => console.error("[email] payment approved failed", err))
 
   return NextResponse.json({ success: true })
 }

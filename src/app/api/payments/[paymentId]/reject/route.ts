@@ -31,6 +31,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pa
 
   await cancelCommissionForOrder(payment.orderId)
 
+  // Refund wallet if customer paid via wallet
+  if (payment.method === "WALLET" && payment.slipAmount !== null) {
+    const refundAmount = Number(payment.slipAmount)
+    const updatedUser = await prisma.user.update({
+      where: { id: payment.order.user.id },
+      data: { walletBalance: { increment: refundAmount } },
+    })
+    await prisma.walletTransaction.create({
+      data: {
+        userId: payment.order.user.id,
+        type: "REFUND",
+        amount: refundAmount,
+        balanceAfter: updatedUser.walletBalance,
+        note: `คืนเงิน — ออเดอร์ถูกปฏิเสธ`,
+      },
+    })
+  }
+
   await writeAuditLog({
     adminId: session.user.id,
     action: "PAYMENT_REJECTED",

@@ -1,10 +1,11 @@
 import { sendRealtimeMessage, sendAdminMessage } from "@/lib/telegram"
 
 function esc(text: string) {
-  return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, "\\$&")
+  return text.replace(/[_*[\]`]/g, "\\$&")
 }
 
-export async function sendOrderConfirmationEmail(params: {
+// Order confirmation — no TG, order is not yet paid
+export async function sendOrderConfirmationEmail(_params: {
   to: string
   name: string
   orderId: string
@@ -13,21 +14,11 @@ export async function sendOrderConfirmationEmail(params: {
   totalTHB: number
   totalUSD: number
 }) {
-  const drawLabel = params.drawType === "POWERBALL" ? "Powerball" : "Mega Millions"
-  const lines = params.items
-    .map((item, i) => `  ${i + 1}\\. ${esc(item.mainNumbers.replace(/,/g, " \\- "))} \\| ${esc(item.specialNumber)}`)
-    .join("\n")
-
-  await sendRealtimeMessage(
-    `🛒 *ออเดอร์ใหม่ — ${esc(drawLabel)}*\n` +
-    `👤 ${esc(params.name)} \\(${esc(params.to)}\\)\n` +
-    `🆔 \\#${esc(params.orderId.slice(-8).toUpperCase())}\n` +
-    `🎟 ${params.items.length} ชุด\n${lines}\n` +
-    `💰 ${esc(params.totalTHB.toLocaleString("th-TH"))} บาท \\(≈ \\$${esc(params.totalUSD.toFixed(2))}\\)`,
-  )
+  // TG notification happens only after slip is uploaded, not on order creation
 }
 
-export async function sendPaymentApprovedEmail(params: {
+// Payment approved — no TG, approve/route.ts sends via buildApprovedMessage
+export async function sendPaymentApprovedEmail(_params: {
   to: string
   name: string
   orderId: string
@@ -36,21 +27,7 @@ export async function sendPaymentApprovedEmail(params: {
   items: { mainNumbers: string; specialNumber: string }[]
   totalTHB: number
 }) {
-  const drawLabel = params.drawType === "POWERBALL" ? "Powerball" : "Mega Millions"
-  const drawDateStr = esc(
-    params.drawDate.toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" }),
-  )
-  const lines = params.items
-    .map((item, i) => `  ${i + 1}\\. ${esc(item.mainNumbers.replace(/,/g, " \\- "))} \\| ${esc(item.specialNumber)}`)
-    .join("\n")
-
-  await sendRealtimeMessage(
-    `✅ *ชำระเงินสำเร็จ — ${esc(drawLabel)}*\n` +
-    `👤 ${esc(params.name)} \\(${esc(params.to)}\\)\n` +
-    `🆔 \\#${esc(params.orderId.slice(-8).toUpperCase())}\n` +
-    `📅 งวด ${drawDateStr}\n${lines}\n` +
-    `💰 ${esc(params.totalTHB.toLocaleString("th-TH"))} บาท`,
-  )
+  // TG notification is sent by approve/route.ts via sendRealtimeMessage(buildApprovedMessage)
 }
 
 export async function sendPaymentRejectedEmail(params: {
@@ -62,8 +39,8 @@ export async function sendPaymentRejectedEmail(params: {
   const note = params.rejectNote ? `\n⚠️ เหตุผล: ${esc(params.rejectNote)}` : ""
   await sendRealtimeMessage(
     `❌ *สลิปถูกปฏิเสธ*\n` +
-    `👤 ${esc(params.name)} \\(${esc(params.to)}\\)\n` +
-    `🆔 \\#${esc(params.orderId.slice(-8).toUpperCase())}${note}`,
+    `👤 ${esc(params.name)}\n` +
+    `🆔 #${params.orderId.slice(-8).toUpperCase()}${note}`,
   )
 }
 
@@ -76,14 +53,14 @@ export async function sendWinnerEmail(params: {
   matchedNumbers: string
 }) {
   const drawLabel = params.drawType === "POWERBALL" ? "Powerball" : "Mega Millions"
-  const drawDateStr = esc(
-    params.drawDate.toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" }),
-  )
+  const drawDateStr = params.drawDate.toLocaleDateString("th-TH", {
+    year: "numeric", month: "long", day: "numeric",
+  })
 
   await sendAdminMessage(
-    `🎉 *คนถูกรางวัล\\! — ${esc(drawLabel)}*\n` +
-    `👤 ${esc(params.name)} \\(${esc(params.to)}\\)\n` +
-    `📅 งวด ${drawDateStr}\n` +
+    `🎉 *คนถูกรางวัล! — ${esc(drawLabel)}*\n` +
+    `👤 ${esc(params.name)}\n` +
+    `📅 งวด ${esc(drawDateStr)}\n` +
     `🏆 รางวัล: ${esc(params.prizeLabel)}\n` +
     `🔢 เลข: ${esc(params.matchedNumbers)}`,
   )
@@ -96,7 +73,7 @@ export async function sendPasswordResetEmail(params: {
 }) {
   await sendAdminMessage(
     `🔑 *ขอรีเซ็ตรหัสผ่าน*\n` +
-    `👤 ${esc(params.name)} \\(${esc(params.to)}\\)\n` +
-    `🔗 ${esc(params.resetUrl)}`,
+    `👤 ${esc(params.name)}\n` +
+    `🔗 ${params.resetUrl}`,
   )
 }

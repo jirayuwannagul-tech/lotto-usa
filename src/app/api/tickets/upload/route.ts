@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { saveUploadedFile } from "@/lib/upload"
 import { readLotteryTicketFromBuffer, numbersMatch } from "@/lib/ocr"
-import { sendLineNotify } from "@/lib/line-notify"
+import { sendRealtimeMessage } from "@/lib/telegram"
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  await sendLineNotify(
+  await sendRealtimeMessage(
     `⚠️ OCR จับคู่ตั๋วไม่ได้\nเลขที่อ่านได้:\n${ocr.plays.map((play) => `${play.mainNumbers.join(",")} | ${play.specialNumber}`).join("\n")}\nกรุณาตรวจสอบด้วยตัวเอง`
   )
 
