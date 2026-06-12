@@ -24,8 +24,8 @@ function formatThaiDateTime(date: Date) {
 
 function getStatusLabel(status: string, paymentStatus: string | null) {
   if (status === "PENDING_PAYMENT") return "รอชำระเงิน"
-  if (status === "PENDING_APPROVAL" || paymentStatus === "PENDING") return "รอตรวจสอบสลิป"
-  if (status === "APPROVED") return "แอดมินอนุมัติแล้ว"
+  if (status === "PENDING_APPROVAL" || paymentStatus === "PENDING") return "รอแอดมินยืนยันสลิป"
+  if (status === "APPROVED") return "แอดมินอนุมัติแล้ว — รอแอดมินส่งหลักฐานการซื้อ"
   if (status === "TICKET_UPLOADED") return "อัปโหลดรูปหวยแล้ว"
   if (status === "MATCHED") return "จับคู่ตั๋วแล้ว"
   if (status === "REJECTED" || paymentStatus === "REJECTED") return "รายการถูกปฏิเสธ"
@@ -241,7 +241,7 @@ function OrderCard({
           <div className="grid gap-2 text-sm text-white/60 sm:grid-cols-2">
             <p>วันสั่งซื้อ: {formatThaiDate(order.createdAt)}</p>
             <p>งวดจะออก: {formatThaiDateTime(order.draw.drawDate)}</p>
-            <p>ยอดรวม: <span className="text-[#c9a84c] font-semibold">{Number(order.totalTHB.toString()).toLocaleString("th-TH")} บาท</span></p>
+            <p>ยอดรวม: <span className="text-[#c9a84c] font-semibold">{Math.round(Number(order.totalTHB.toString())).toLocaleString("th-TH")} บาท</span></p>
             <p>สถานะ: <span className="text-white">{getStatusLabel(order.status, order.payment?.status ?? null)}</span></p>
           </div>
 
