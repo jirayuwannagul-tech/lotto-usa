@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { sendAdminMessage, sendRealtimeMessage } from "@/lib/telegram"
+import { sendRealtimeMessage } from "@/lib/telegram"
 
 async function fetchPowerballResults() {
   const res = await fetch("https://data.ny.gov/resource/d6yy-54nr.json?$limit=10&$order=draw_date+DESC", {
@@ -48,7 +48,13 @@ function getPrizeLabel(type: string, matchMain: number, matchSpecial: boolean): 
   return null
 }
 
-async function announceResult(draw: { id: string; type: string; drawDate: Date; winningMain: string; winningSpecial: string }) {
+async function announceResult(draw: {
+  id: string
+  type: string
+  drawDate: Date
+  winningMain: string
+  winningSpecial: string
+}) {
   const typeLabel = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
   const dateThai = draw.drawDate.toLocaleDateString("th-TH", {
     timeZone: "Asia/Bangkok",
@@ -57,14 +63,12 @@ async function announceResult(draw: { id: string; type: string; drawDate: Date; 
     month: "long",
     year: "numeric",
   })
-  const winMain = draw.winningMain.split(",").map((n) => n.trim())
-  const winSpecial = draw.winningSpecial.trim()
-  const ballLine = winMain.map((n) => `(${n})`).join("  ") + `  ⭐ *${winSpecial}*`
+  const winMain = draw.winningMain.split(",").map((n) => n.trim().padStart(2, "0"))
+  const winSpecial = draw.winningSpecial.trim().padStart(2, "0")
+  const specialLabel = draw.type === "POWERBALL" ? "PB" : "MB"
+  const ballLine = `\`${winMain.join("  ")}  │ ${specialLabel} ${winSpecial}\``
 
-  // Realtime: เลขออกอย่างเดียว
-  const realtimeMsg = `🎱 *ผลหวย ${typeLabel}*\n📅 งวด ${dateThai}\n\n${ballLine}\n\n_ตรวจสอบเลขในแดชบอร์ดของคุณได้เลย_`
-
-  // Admin: เช็คผู้ถูกรางวัล
+  // Check winners
   const orders = await prisma.order.findMany({
     where: {
       drawId: draw.id,
@@ -73,7 +77,7 @@ async function announceResult(draw: { id: string; type: string; drawDate: Date; 
     include: { user: true, items: true },
   })
 
-  const escapeMd = (s: string) => s.replace(/[_*`[\]]/g, "\\$&")
+  const esc = (s: string) => s.replace(/[_*[\]`]/g, "\\$&")
   const winnerLines: string[] = []
   for (const order of orders) {
     for (const item of order.items) {
@@ -82,20 +86,26 @@ async function announceResult(draw: { id: string; type: string; drawDate: Date; 
       const matchMain = itemMain.filter((n) => winMain.includes(n)).length
       const matchSpecial = itemSpecial === winSpecial
       const prize = getPrizeLabel(draw.type, matchMain, matchSpecial)
-      if (prize) winnerLines.push(`🏆 ${escapeMd(order.user.name)}: ${item.mainNumbers} | ${item.specialNumber} → ${prize}`)
+      if (prize) {
+        winnerLines.push(`🏆 *${esc(order.user.name)}* — ${prize}`)
+      }
     }
   }
 
-  const winnerSection = winnerLines.length > 0 ? winnerLines.join("\n") : "ไม่มีผู้ถูกรางวัลในงวดนี้"
-  const adminMsg = `🎉 *ประกาศผล ${typeLabel}*\n📅 งวด ${dateThai}\n\n${ballLine}\n\n${winnerSection}`
+  const totalOrders = orders.reduce((sum, o) => sum + o.items.length, 0)
+  const winnerSection = winnerLines.length > 0
+    ? `\n🎉 *ผู้ถูกรางวัล:*\n${winnerLines.join("\n")}`
+    : `\n✗ ไม่มีผู้ถูกรางวัลในงวดนี้ (${totalOrders} ใบ)`
 
-  const tgResults = await Promise.allSettled([
-    sendAdminMessage(adminMsg),
-    sendRealtimeMessage(realtimeMsg),
-  ])
-  for (const r of tgResults) {
-    if (r.status === "rejected") console.error("[TG announce error]", r.reason)
-  }
+  const msg = [
+    `🎱 *ผลหวย ${typeLabel}*`,
+    `📅 งวด ${dateThai}`,
+    ``,
+    ballLine,
+    winnerSection,
+  ].join("\n")
+
+  await sendRealtimeMessage(msg).catch((err) => console.error("[TG announce error]", err))
 }
 
 export async function POST(req: Request) {
@@ -122,7 +132,6 @@ export async function POST(req: Request) {
     })
 
     if (!draw) {
-      // No draw in DB for this date — create a closed historical record
       const newDraw = await prisma.draw.create({
         data: {
           type: result.type,
@@ -141,10 +150,10 @@ export async function POST(req: Request) {
         drawDate: newDraw.drawDate,
         winningMain: result.mainNumbers,
         winningSpecial: result.specialNumber,
-      }).catch(() => {})
+      })
       announced++
-    } else if (draw && !draw.winningMain) {
-      const updated_draw = await prisma.draw.update({
+    } else if (!draw.winningMain) {
+      const updatedDraw = await prisma.draw.update({
         where: { id: draw.id },
         data: {
           winningMain: result.mainNumbers,
@@ -154,14 +163,14 @@ export async function POST(req: Request) {
       })
       updated++
       await announceResult({
-        id: updated_draw.id,
-        type: updated_draw.type,
-        drawDate: updated_draw.drawDate,
+        id: updatedDraw.id,
+        type: updatedDraw.type,
+        drawDate: updatedDraw.drawDate,
         winningMain: result.mainNumbers,
         winningSpecial: result.specialNumber,
-      }).catch(() => {})
+      })
       announced++
-    } else if (draw?.winningMain && draw.winningSpecial && !draw.resultAnnouncedAt) {
+    } else if (draw.winningMain && !draw.resultAnnouncedAt) {
       await prisma.draw.update({
         where: { id: draw.id },
         data: { resultAnnouncedAt: new Date() },
@@ -171,8 +180,8 @@ export async function POST(req: Request) {
         type: draw.type,
         drawDate: draw.drawDate,
         winningMain: draw.winningMain,
-        winningSpecial: draw.winningSpecial,
-      }).catch(() => {})
+        winningSpecial: draw.winningSpecial!,
+      })
       announced++
     }
   }
