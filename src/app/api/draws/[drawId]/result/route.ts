@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendAdminMessage, sendRealtimeMessage } from "@/lib/telegram"
+import { sendAdminMessage } from "@/lib/telegram"
 import { LOTTERY_RULES } from "@/lib/lottery-rules"
 import { sendWinnerEmail } from "@/lib/email"
 import { writeAuditLog } from "@/lib/audit"
@@ -167,28 +167,28 @@ export async function POST(
   const escapeMd = (s: string) => s.replace(/[_*`[\]]/g, "\\$&")
   const winMainDisplay = winMain.join(", ")
   const ballLine = winMain.map((n: string) => `(${n})`).join("  ") + `  ⭐ *${winSpecial}*`
-  const realtimeMsg = `🎱 *ผลหวย ${drawLabel}*\n📅 งวด ${drawDateThai}\n\n${ballLine}\n\n_ตรวจสอบเลขในแดชบอร์ดของคุณได้เลย_`
   const tgWinnerLines = winnerCount > 0
     ? winnerMessages.map((msg) => {
-        // Escape only the name portion; numbers and prize labels are safe
         const match = msg.match(/^(🏆 )(.+?)(: .+)$/)
         return match ? `${match[1]}${escapeMd(match[2])}${match[3]}` : escapeMd(msg)
       }).join("\n")
-    : "ไม่มีผู้ถูกรางวัล"
-  const adminMsg = `🎉 *ประกาศผล ${drawLabel}*\nงวด ${drawDateThai}\n\n🔢 เลขออก: \`${winMainDisplay}\`\n⭐ ${draw.type === "POWERBALL" ? "Powerball" : "Mega Ball"}: \`${winSpecial}\`\n\n${tgWinnerLines}`
+    : "ไม่มีผู้ถูกรางวัลในงวดนี้"
+  const adminMsg = [
+    `🎉 *ประกาศผล ${drawLabel}*`,
+    `📅 งวด ${drawDateThai}`,
+    ``,
+    `🔢 \`${winMainDisplay}\`  ⭐ \`${winSpecial}\``,
+    ``,
+    tgWinnerLines,
+  ].join("\n")
 
-  const tgResults = await Promise.allSettled([
-    sendAdminMessage(adminMsg),
-    sendRealtimeMessage(realtimeMsg),
-  ])
-
-  tgResults.forEach((r, i) => {
-    if (r.status === "rejected") {
-      console.error(`[telegram] result announcement failed (channel ${i}):`, r.reason)
-    }
-  })
-
-  const tgSent = tgResults.every((r) => r.status === "fulfilled")
+  let tgSent = false
+  try {
+    await sendAdminMessage(adminMsg)
+    tgSent = true
+  } catch (err) {
+    console.error("[telegram] result announcement failed:", err)
+  }
 
   await writeAuditLog({
     adminId: session.user.id,

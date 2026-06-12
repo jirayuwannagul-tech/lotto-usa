@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendAdminMessage, sendRealtimeMessage } from "@/lib/telegram"
+import { sendAdminMessage } from "@/lib/telegram"
 
 async function announceResult(draw: {
   type: string
@@ -21,7 +21,7 @@ async function announceResult(draw: {
   const balls = draw.winningMain.split(",").map((n) => n.trim())
   const ballLine = balls.map((n) => `(${n})`).join("  ") + `  ⭐ *${draw.winningSpecial.trim()}*`
   const msg = `🎱 *ผลหวย ${typeLabel}*\n📅 งวด ${dateThai}\n\n${ballLine}\n\n_ตรวจสอบเลขในแดชบอร์ดของคุณได้เลย_`
-  await Promise.allSettled([sendAdminMessage(msg), sendRealtimeMessage(msg)])
+  await sendAdminMessage(msg)
 }
 
 export async function POST() {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendRealtimeMessage } from "@/lib/telegram"
+import { sendAdminMessage } from "@/lib/telegram"
 import { createCommissionForOrder, approveCommissionForOrder } from "@/lib/referrals"
 
 export async function POST(req: NextRequest) {
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     `${drawLabel}  |  ${order.items.length} ใบ\n` +
     `💰 ${orderTotal.toLocaleString("th-TH")} ฿`
 
-  sendRealtimeMessage(notifyText).catch((err) => console.error("[telegram:wallet-payment]", err))
+  sendAdminMessage(notifyText).catch((err) => console.error("[telegram:wallet-payment]", err))
 
   return NextResponse.json({ ok: true, balance: result.balance }, { status: 201 })
 }

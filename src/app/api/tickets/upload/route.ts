@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { saveUploadedFile } from "@/lib/upload"
 import { readLotteryTicketFromBuffer, numbersMatch } from "@/lib/ocr"
-import { sendRealtimeMessage } from "@/lib/telegram"
+import { sendAdminMessage } from "@/lib/telegram"
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -88,8 +88,8 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  await sendRealtimeMessage(
-    `⚠️ OCR จับคู่ตั๋วไม่ได้\nเลขที่อ่านได้:\n${ocr.plays.map((play) => `${play.mainNumbers.join(",")} | ${play.specialNumber}`).join("\n")}\nกรุณาตรวจสอบด้วยตัวเอง`
+  await sendAdminMessage(
+    `⚠️ OCR จับคู่ตั๋วไม่ได้\nเลขที่อ่านได้:\n${ocr.plays.map((play) => `${play.mainNumbers.join(",")} | ${play.specialNumber}`).join("\n")}\nกรุณาจับคู่ด้วยตัวเองที่ /admin/tickets`
   )
 
   return NextResponse.json({
