@@ -80,7 +80,11 @@ export async function POST(req: NextRequest) {
 async function handleBoughtCallback(callbackId: string, chatId: number, messageId: number, orderId: string) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { items: true, user: { select: { name: true } } },
+    include: {
+      items: true,
+      user: { select: { name: true, phone: true } },
+      draw: true,
+    },
   })
 
   if (!order) {
@@ -93,17 +97,43 @@ async function handleBoughtCallback(callbackId: string, chatId: number, messageI
     return
   }
 
-  // Approve the order
   await prisma.order.update({
     where: { id: orderId },
     data: { status: "APPROVED" },
   })
 
+  const drawLabel = order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
+  const drawDate = order.draw.drawDate.toLocaleDateString("th-TH", {
+    timeZone: "Asia/Bangkok",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })
+  const specialLabel = order.draw.type === "POWERBALL" ? "PB" : "MB"
+  const numberLines = order.items
+    .map((item, i) => {
+      const mains = item.mainNumbers.split(",").map((n) => n.trim().padStart(2, "0")).join("  ")
+      const special = item.specialNumber.trim().padStart(2, "0")
+      return `\`${String(i + 1).padStart(2)}. ${mains}  │ ${specialLabel} ${special}\``
+    })
+    .join("\n")
+
+  const phone = order.user.phone ? `  📞 ${order.user.phone}` : ""
+
   await answerCallbackQuery(callbackId, "✅ อนุมัติแล้ว!")
   await editMessageText(chatId, messageId,
-    `✅ *อนุมัติแล้ว — รอรูปตั๋ว*\n\n👤 ${order.user.name}\n🆔 #${orderId.slice(-8).toUpperCase()}\n\n_ส่งรูปตั๋วมาในแชทนี้เพื่อยืนยันการซื้อ_`
+    [
+      `✅ *อนุมัติแล้ว — ต้องซื้อเลขด้านล่าง*`,
+      ``,
+      `👤 ${order.user.name}${phone}`,
+      `${drawLabel}  |  งวด ${drawDate}  |  ${order.items.length} ใบ`,
+      ``,
+      `🎟 *เลขที่ต้องซื้อ:*`,
+      numberLines,
+      ``,
+      `_ส่งรูปตั๋วมาในแชทนี้หลังซื้อเสร็จ_`,
+    ].join("\n")
   )
-  await sendMessage(chatId, `📸 ส่งรูปตั๋วของออเดอร์ #${orderId.slice(-8).toUpperCase()} มาได้เลยครับ`)
 }
 
 async function handleCancelCallback(callbackId: string, chatId: number, messageId: number, orderId: string) {
