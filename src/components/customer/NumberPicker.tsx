@@ -1,8 +1,22 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { LOTTERY_RULES, DrawType } from "@/lib/lottery-rules"
+
+async function smartPick(
+  type: DrawType,
+): Promise<{ mainNumbers: string[]; specialNumber: string } | null> {
+  try {
+    const res = await fetch(`/api/smart-pick?type=${type}&count=1`)
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.sets?.[0] ?? null
+  } catch {
+    return null
+  }
+}
 
 interface NumberSet {
   mainNumbers: string[]
@@ -74,6 +88,7 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
       : "border-sky-500 bg-sky-500 text-white"
   const [sets, setSets] = useState<NumberSet[]>([{ mainNumbers: [], specialNumber: "" }])
   const [activeSet, setActiveSet] = useState(0)
+  const [aiLoading, setAiLoading] = useState(false)
 
   function updateMain(setIdx: number, n: string) {
     setSets((prev) => prev.map((s, i) => {
@@ -97,6 +112,19 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
     const special = randomPick(rule.specialMax, 1)[0]
     setSets((prev) => prev.map((s, i) =>
       i === setIdx ? { mainNumbers: main, specialNumber: special } : s
+    ))
+  }
+
+  async function aiPick(setIdx: number) {
+    setAiLoading(true)
+    const result = await smartPick(drawType)
+    setAiLoading(false)
+    if (!result) {
+      quickPick(setIdx)
+      return
+    }
+    setSets((prev) => prev.map((s, i) =>
+      i === setIdx ? result : s
     ))
   }
 
@@ -165,7 +193,21 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
               {current.mainNumbers.length}/{rule.mainCount}
             </span>
           </span>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            <button
+              type="button"
+              onClick={() => aiPick(activeSet)}
+              disabled={aiLoading}
+              className="flex items-center gap-1 text-xs font-medium text-violet-400 hover:text-violet-300 disabled:opacity-50"
+              title="เลือกเลขโดยใช้สถิติผลรางวัลที่ผ่านมา"
+            >
+              {aiLoading ? (
+                <span className="inline-block h-3 w-3 animate-spin rounded-full border border-violet-400 border-t-transparent" />
+              ) : (
+                <span>✦</span>
+              )}
+              AI เลือก
+            </button>
             <button
               type="button"
               onClick={() => quickPick(activeSet)}
@@ -226,6 +268,15 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
           )}
         </div>
       )}
+
+      {/* AI disclaimer + stats link */}
+      <p className="text-center text-[10px] text-white/25">
+        ✦ AI เลือก ใช้สถิติความถี่จากผลรางวัลที่ผ่านมา — ไม่ได้รับประกันโชค ลอตเตอรีคือความน่าจะเป็น
+        {" ·"}{" "}
+        <Link href="/stats" className="underline hover:text-white/50">
+          ดูสถิติ %
+        </Link>
+      </p>
 
       {/* Summary + Confirm */}
       <div className="border-t border-white/10 pt-4">
