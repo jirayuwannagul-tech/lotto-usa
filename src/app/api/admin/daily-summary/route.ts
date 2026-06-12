@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getSalesDayContext } from "@/lib/sales-day"
-import { sendDailySummaryMessage } from "@/lib/telegram"
+import { sendAdminMessage } from "@/lib/telegram"
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,7 +23,7 @@ export async function GET(req: NextRequest) {
 
     const summary = await generateSummary()
     if (isCron) {
-      await sendDailySummaryMessage(summary.message)
+      await sendAdminMessage(summary.message)
     }
     return NextResponse.json(summary)
   } catch (error) {
@@ -41,7 +40,7 @@ export async function POST() {
     }
 
     const summary = await generateSummary()
-    await sendDailySummaryMessage(summary.message)
+    await sendAdminMessage(summary.message)
     return NextResponse.json({ ok: true, summary: summary.message })
   } catch (error) {
     const message = error instanceof Error ? error.message : "ไม่สามารถส่งสรุปได้"
@@ -57,7 +56,6 @@ function formatTicketLine(mainNumbers: string, specialNumber: string) {
 
 async function generateSummary() {
   const now = new Date()
-  const salesDay = getSalesDayContext(now)
 
   const todayLabel = now.toLocaleDateString("th-TH", {
     timeZone: "America/Los_Angeles",
@@ -67,31 +65,36 @@ async function generateSummary() {
     year: "2-digit",
   })
 
-  // Only APPROVED orders = need to buy, no ticket photo yet
+  // All APPROVED orders that still have no ticket photo (regardless of when created)
   const approvedOrders = await prisma.order.findMany({
     where: {
-      createdAt: { gte: salesDay.windowStart, lt: salesDay.windowEnd },
       status: "APPROVED",
+      items: { some: { ticketPhotoUrl: null } },
     },
-    include: {
-      draw: true,
-      items: true,
-    },
-    orderBy: { createdAt: "asc" },
+    include: { draw: true, items: true },
+    orderBy: { draw: { drawDate: "asc" } },
+  })
+
+  // Orders waiting for admin slip review
+  const pendingApprovalCount = await prisma.order.count({
+    where: { status: "PENDING_APPROVAL" },
   })
 
   const lines: string[] = [
-    `📋 *สรุปออเดอร์วันนี้*`,
-    `📅 ${todayLabel}`,
+    `🌅 *สรุปประจำวัน — ${todayLabel}*`,
     ``,
   ]
 
+  if (pendingApprovalCount > 0) {
+    lines.push(`⏳ รอตรวจสลิป: *${pendingApprovalCount} ออเดอร์* — ตรวจที่ /admin/orders`)
+    lines.push(``)
+  }
+
   if (approvedOrders.length === 0) {
-    lines.push(`วันนี้ไม่มีออเดอร์`)
+    lines.push(`✅ ไม่มีออเดอร์ที่ต้องซื้อตั๋ว`)
     return { message: lines.join("\n"), generatedAt: now.toISOString(), totalNeedBuy: 0 }
   }
 
-  // Group by draw type + draw id
   const drawMap = new Map<string, {
     drawType: string
     drawDateLabel: string
@@ -101,37 +104,35 @@ async function generateSummary() {
   for (const order of approvedOrders) {
     const key = `${order.draw.type}|${order.draw.id}`
     if (!drawMap.has(key)) {
-      const drawDateLabel = order.draw.drawDate.toLocaleString("th-TH", {
-        timeZone: "Asia/Bangkok",
+      const drawDateLabel = order.draw.drawDate.toLocaleDateString("th-TH", {
+        timeZone: "America/Los_Angeles",
         weekday: "short",
         day: "numeric",
         month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
       })
       drawMap.set(key, { drawType: order.draw.type, drawDateLabel, tickets: [] })
     }
     const group = drawMap.get(key)!
-    for (const item of order.items) {
+    for (const item of order.items.filter((i) => !i.ticketPhotoUrl)) {
       group.tickets.push({ mainNumbers: item.mainNumbers, specialNumber: item.specialNumber })
     }
   }
 
   let totalTickets = 0
+  lines.push(`🎟 *ต้องซื้อตั๋ว:*`)
+  lines.push(``)
+
   for (const group of drawMap.values()) {
-    const drawLabel = group.drawType === "POWERBALL" ? "🔴 *Powerball*" : "🔵 *Mega Millions*"
+    const drawLabel = group.drawType === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
     totalTickets += group.tickets.length
-
-    lines.push(`${drawLabel}  (${group.drawDateLabel})`)
-    lines.push(`ต้องซื้อ ${group.tickets.length} ใบ`)
-
+    lines.push(`${drawLabel}  ${group.drawDateLabel}  (${group.tickets.length} ใบ)`)
     for (const t of group.tickets) {
-      lines.push(formatTicketLine(t.mainNumbers, t.specialNumber))
+      lines.push(`  \`${formatTicketLine(t.mainNumbers, t.specialNumber)}\``)
     }
     lines.push(``)
   }
 
-  lines.push(`รวม ${totalTickets} ใบ`)
+  lines.push(`รวม *${totalTickets} ใบ* ที่ต้องซื้อ`)
 
   return {
     message: lines.join("\n"),
