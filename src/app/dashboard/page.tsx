@@ -23,12 +23,13 @@ function formatThaiDateTime(date: Date) {
 }
 
 function getStatusLabel(status: string, paymentStatus: string | null) {
+  // order status takes priority — check advanced states first
+  if (status === "MATCHED") return "จับคู่ตั๋วแล้ว"
+  if (status === "TICKET_UPLOADED") return "อัปโหลดรูปหวยแล้ว"
+  if (status === "APPROVED") return "แอดมินอนุมัติแล้ว — รอแอดมินส่งหลักฐานการซื้อ"
+  if (status === "REJECTED" || paymentStatus === "REJECTED") return "รายการถูกปฏิเสธ"
   if (status === "PENDING_PAYMENT") return "รอชำระเงิน"
   if (status === "PENDING_APPROVAL" || paymentStatus === "PENDING") return "รอแอดมินยืนยันสลิป"
-  if (status === "APPROVED") return "แอดมินอนุมัติแล้ว — รอแอดมินส่งหลักฐานการซื้อ"
-  if (status === "TICKET_UPLOADED") return "อัปโหลดรูปหวยแล้ว"
-  if (status === "MATCHED") return "จับคู่ตั๋วแล้ว"
-  if (status === "REJECTED" || paymentStatus === "REJECTED") return "รายการถูกปฏิเสธ"
   return status
 }
 
