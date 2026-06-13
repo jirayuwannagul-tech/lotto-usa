@@ -36,10 +36,11 @@ export async function POST(req: NextRequest) {
   if (!msg) return NextResponse.json({ ok: true })
 
   const chatId = msg.chat.id
+  const threadId = msg.message_thread_id
 
   // ตรวจสิทธิ์ admin
   if (!isAllowedChat(chatId)) {
-    await sendMessage(chatId, "⛔ คุณไม่มีสิทธิ์ใช้บอทนี้")
+    await sendMessage(chatId, "⛔ คุณไม่มีสิทธิ์ใช้บอทนี้", "Markdown", threadId)
     return NextResponse.json({ ok: true })
   }
 
@@ -48,32 +49,32 @@ export async function POST(req: NextRequest) {
     const text = msg.text.trim()
 
     if (text === "/start" || text === "/help") {
-      await handleHelp(chatId)
+      await handleHelp(chatId, threadId)
     } else if (text.startsWith("/summary")) {
-      await handleSummary(chatId)
+      await handleSummary(chatId, threadId)
     } else if (text.startsWith("/pending")) {
-      await handlePending(chatId)
+      await handlePending(chatId, threadId)
     } else if (text.startsWith("/orders")) {
-      await handleOrders(chatId)
+      await handleOrders(chatId, threadId)
     } else {
-      await sendMessage(chatId, "ส่งรูปตั๋วมาเลย หรือพิมพ์ /help")
+      await sendMessage(chatId, "ส่งรูปตั๋วมาเลย หรือพิมพ์ /help", "Markdown", threadId)
     }
     return NextResponse.json({ ok: true })
   }
 
   // ---- Photo / Document ----
   const fileId = msg.photo
-    ? msg.photo[msg.photo.length - 1].file_id  // ใช้ขนาดใหญ่สุด
+    ? msg.photo[msg.photo.length - 1].file_id
     : msg.document?.mime_type?.startsWith("image/")
       ? msg.document.file_id
       : null
 
   if (fileId) {
     try {
-      await handleTicketPhoto(chatId, fileId)
+      await handleTicketPhoto(chatId, fileId, threadId)
     } catch (err) {
       console.error("[webhook] handleTicketPhoto error:", err)
-      await sendMessage(chatId, `❌ เกิดข้อผิดพลาด: ${err instanceof Error ? err.message : "ไม่ทราบสาเหตุ"}`)
+      await sendMessage(chatId, `❌ เกิดข้อผิดพลาด: ${err instanceof Error ? err.message : "ไม่ทราบสาเหตุ"}`, "Markdown", threadId)
     }
   }
 
@@ -165,7 +166,7 @@ async function handleCancelCallback(callbackId: string, chatId: number, messageI
 
 // ---- Handlers ------------------------------------------------------------
 
-async function handleHelp(chatId: number) {
+async function handleHelp(chatId: number, threadId?: number) {
   await sendMessage(chatId, [
     "🎱 *LottoUSA Admin Bot*",
     "",
@@ -176,10 +177,10 @@ async function handleHelp(chatId: number) {
     "",
     "*อัพโหลดตั๋ว:*",
     "ส่งรูปตั๋วมาในแชทนี้ → บอทจะ OCR อ่านเลขและ match กับออเดอร์อัตโนมัติ",
-  ].join("\n"))
+  ].join("\n"), "Markdown", threadId)
 }
 
-async function handleSummary(chatId: number) {
+async function handleSummary(chatId: number, threadId?: number) {
   const draws = await prisma.draw.findMany({
     where: { isOpen: true },
     include: {
@@ -191,7 +192,7 @@ async function handleSummary(chatId: number) {
   })
 
   if (draws.length === 0) {
-    await sendMessage(chatId, "ไม่มีงวดที่เปิดอยู่")
+    await sendMessage(chatId, "ไม่มีงวดที่เปิดอยู่", "Markdown", threadId)
     return
   }
 
@@ -217,10 +218,10 @@ async function handleSummary(chatId: number) {
   lines.push(`⏳ รอตรวจสลิป: ${pendingApproval}`)
   lines.push(`💳 รอชำระ: ${pendingPayment}`)
 
-  await sendMessage(chatId, lines.join("\n"))
+  await sendMessage(chatId, lines.join("\n"), "Markdown", threadId)
 }
 
-async function handlePending(chatId: number) {
+async function handlePending(chatId: number, threadId?: number) {
   const items = await prisma.orderItem.findMany({
     where: {
       matchedAt: null,
@@ -240,7 +241,7 @@ async function handlePending(chatId: number) {
   })
 
   if (items.length === 0) {
-    await sendMessage(chatId, "✅ ไม่มีรายการรอตั๋ว")
+    await sendMessage(chatId, "✅ ไม่มีรายการรอตั๋ว", "Markdown", threadId)
     return
   }
 
@@ -254,10 +255,10 @@ async function handlePending(chatId: number) {
     lines.push(`   \`${item.mainNumbers} ●${item.specialNumber}\``)
   }
 
-  await sendMessage(chatId, lines.join("\n"))
+  await sendMessage(chatId, lines.join("\n"), "Markdown", threadId)
 }
 
-async function handleOrders(chatId: number) {
+async function handleOrders(chatId: number, threadId?: number) {
   const draws = await prisma.draw.findMany({
     where: { isOpen: true },
     include: {
@@ -273,7 +274,7 @@ async function handleOrders(chatId: number) {
   })
 
   if (draws.length === 0) {
-    await sendMessage(chatId, "ไม่มีงวดที่เปิดอยู่")
+    await sendMessage(chatId, "ไม่มีงวดที่เปิดอยู่", "Markdown", threadId)
     return
   }
 
@@ -292,17 +293,17 @@ async function handleOrders(chatId: number) {
       }
     }
 
-    await sendMessage(chatId, lines.join("\n"))
+    await sendMessage(chatId, lines.join("\n"), "Markdown", threadId)
   }
 }
 
-async function handleTicketPhoto(chatId: number, fileId: string) {
-  await sendMessage(chatId, "🔍 กำลัง OCR อ่านเลข...")
+async function handleTicketPhoto(chatId: number, fileId: string, threadId?: number) {
+  await sendMessage(chatId, "🔍 กำลัง OCR อ่านเลข...", "Markdown", threadId)
 
   // Download รูป
   const buffer = await downloadFileBuffer(fileId)
   if (!buffer) {
-    await sendMessage(chatId, "❌ ดาวน์โหลดรูปไม่ได้")
+    await sendMessage(chatId, "❌ ดาวน์โหลดรูปไม่ได้", "Markdown", threadId)
     return
   }
 
@@ -315,13 +316,14 @@ async function handleTicketPhoto(chatId: number, fileId: string) {
     await sendMessage(chatId, [
       "❌ *OCR อ่านไม่ได้*",
       "กรุณาถ่ายรูปให้ชัดขึ้น ไม่มีแสงสะท้อน",
-    ].join("\n"))
+    ].join("\n"), "Markdown", threadId)
     return
   }
 
   await sendMessage(
     chatId,
-    `🔢 อ่านได้:\n${ocr.plays.map((play, index) => `${index + 1}. \`${play.mainNumbers.join(",")} ●${play.specialNumber}\``).join("\n")}`
+    `🔢 อ่านได้:\n${ocr.plays.map((play, index) => `${index + 1}. \`${play.mainNumbers.join(",")} ●${play.specialNumber}\``).join("\n")}`,
+    "Markdown", threadId
   )
 
   // Match กับ open draws ทั้งหมด
@@ -356,7 +358,7 @@ async function handleTicketPhoto(chatId: number, fileId: string) {
       "⚠️ *จับคู่ไม่ได้*",
       `เลขที่อ่าน:\n${ocr.plays.map((play, index) => `${index + 1}. \`${play.mainNumbers.join(",")} ●${play.specialNumber}\``).join("\n")}`,
       "ไม่ตรงกับออเดอร์ที่รออยู่ กรุณาตรวจสอบด้วยตัวเอง",
-    ].join("\n"))
+    ].join("\n"), "Markdown", threadId)
     return
   }
 
@@ -396,5 +398,5 @@ async function handleTicketPhoto(chatId: number, fileId: string) {
   await sendMessage(chatId, [
     "✅ *จับคู่สำเร็จ!*",
     ...statusLines,
-  ].join("\n"))
+  ].join("\n"), "Markdown", threadId)
 }

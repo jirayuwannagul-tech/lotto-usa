@@ -265,6 +265,7 @@ export interface TgCallbackQuery {
 
 export interface TgMessage {
   message_id: number
+  message_thread_id?: number
   from?: { id: number; first_name: string; username?: string }
   chat: { id: number; type: string }
   text?: string
