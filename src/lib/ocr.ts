@@ -79,7 +79,8 @@ Rules:
       })),
       raw,
     }
-  } catch {
+  } catch (err) {
+    console.error("[ocr] readLotteryTicket error:", err)
     return null
   }
 }
