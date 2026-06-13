@@ -123,9 +123,16 @@ export async function downloadFileBuffer(fileId: string): Promise<Buffer | null>
 // ---- Security ------------------------------------------------------------
 
 export function isAllowedChat(chatId: number): boolean {
-  const allowed = process.env.TELEGRAM_ADMIN_CHAT_IDS
-  if (!allowed) return false
-  return allowed.split(",").map((s) => s.trim()).includes(String(chatId))
+  const keys = [
+    "TELEGRAM_ADMIN_CHAT_IDS",
+    "TELEGRAM_APPROVAL_CHAT_IDS",
+    "TELEGRAM_REALTIME_CHAT_IDS",
+    "TELEGRAM_DAILY_SUMMARY_CHAT_IDS",
+  ]
+  const allIds = keys.flatMap((k) =>
+    (process.env[k] ?? "").split(",").map((s) => s.trim()).filter(Boolean)
+  )
+  return allIds.includes(String(chatId))
 }
 
 // ---- Admin broadcast -----------------------------------------------------
