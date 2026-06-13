@@ -18,10 +18,7 @@ RUN npm run build
 ENV NODE_ENV=production
 ENV HOSTNAME="0.0.0.0"
 
-# Run as non-root for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-RUN chown -R appuser:appgroup /app
-USER appuser
+RUN mkdir -p /data && chmod 777 /data
 
 EXPOSE 3000
 

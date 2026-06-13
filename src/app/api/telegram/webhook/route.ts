@@ -69,7 +69,12 @@ export async function POST(req: NextRequest) {
       : null
 
   if (fileId) {
-    await handleTicketPhoto(chatId, fileId)
+    try {
+      await handleTicketPhoto(chatId, fileId)
+    } catch (err) {
+      console.error("[webhook] handleTicketPhoto error:", err)
+      await sendMessage(chatId, `❌ เกิดข้อผิดพลาด: ${err instanceof Error ? err.message : "ไม่ทราบสาเหตุ"}`)
+    }
   }
 
   return NextResponse.json({ ok: true })
