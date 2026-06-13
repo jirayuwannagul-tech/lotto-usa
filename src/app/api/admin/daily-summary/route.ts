@@ -80,6 +80,19 @@ async function generateSummary() {
     where: { status: "PENDING_APPROVAL" },
   })
 
+  // Recent draws with results (last 7 days) — check for winners
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const recentDraws = await prisma.draw.findMany({
+    where: { winningMain: { not: null }, drawDate: { gte: weekAgo, lte: now } },
+    include: {
+      orders: {
+        where: { status: { in: ["APPROVED", "TICKET_UPLOADED", "MATCHED"] } },
+        include: { user: { select: { name: true } }, items: true },
+      },
+    },
+    orderBy: { drawDate: "desc" },
+  })
+
   const lines: string[] = [
     `🌅 *สรุปประจำวัน — ${todayLabel}*`,
     ``,
@@ -133,6 +146,36 @@ async function generateSummary() {
   }
 
   lines.push(`รวม *${totalTickets} ใบ* ที่ต้องซื้อ`)
+
+  // Winner section
+  if (recentDraws.length > 0) {
+    lines.push(``, `🏆 *ผลรางวัล 7 วันล่าสุด:*`, ``)
+    for (const draw of recentDraws) {
+      const drawLabel = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
+      const drawDateLabel = draw.drawDate.toLocaleDateString("th-TH", {
+        timeZone: "America/Los_Angeles", day: "numeric", month: "short",
+      })
+      const winMain = draw.winningMain!.split(",").map((n) => n.trim().padStart(2, "0"))
+      const winSpecial = draw.winningSpecial!.trim().padStart(2, "0")
+      lines.push(`${drawLabel} ${drawDateLabel}: \`${winMain.join(" ")} ⭐${winSpecial}\``)
+
+      const winners: string[] = []
+      for (const order of draw.orders) {
+        for (const item of order.items) {
+          const itemMain = item.mainNumbers.split(",").map((n) => n.trim().padStart(2, "0")).sort()
+          const matchMain = itemMain.filter((n) => winMain.includes(n)).length
+          const matchSpecial = item.specialNumber.trim().padStart(2, "0") === winSpecial
+          if (matchMain >= 1 || matchSpecial) {
+            const prize = matchMain === 5 && matchSpecial ? "แจ็คพอต!" :
+              matchMain === 5 ? "Match 5" : matchMain >= 3 ? `Match ${matchMain}${matchSpecial ? "+bonus" : ""}` :
+              matchSpecial ? "Match bonus" : null
+            if (prize) winners.push(`  🎉 ${order.user.name} — ${prize}`)
+          }
+        }
+      }
+      lines.push(winners.length > 0 ? winners.join("\n") : `  ✗ ไม่มีผู้ถูกรางวัล`)
+    }
+  }
 
   return {
     message: lines.join("\n"),
