@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import Anthropic from "@anthropic-ai/sdk"
 import { prisma } from "@/lib/prisma"
 import { sendMessage, downloadFileBuffer, isAllowedChat, answerCallbackQuery, editMessageText, type TgUpdate } from "@/lib/telegram"
 import { readLotteryTicketFromBuffer, numbersMatch } from "@/lib/ocr"
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
     } else if (text.startsWith("/orders")) {
       await handleOrders(chatId, threadId)
     } else {
-      await sendMessage(chatId, "ส่งรูปตั๋วมาเลย หรือพิมพ์ /help", "Markdown", threadId)
+      await handleAIChat(chatId, text, threadId)
     }
     return NextResponse.json({ ok: true })
   }
@@ -294,6 +295,44 @@ async function handleOrders(chatId: number, threadId?: number) {
     }
 
     await sendMessage(chatId, lines.join("\n"), "Markdown", threadId)
+  }
+}
+
+async function handleAIChat(chatId: number, userText: string, threadId?: number) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    await sendMessage(chatId, "⚠️ ANTHROPIC_API_KEY ยังไม่ได้ตั้งค่า", "Markdown", threadId)
+    return
+  }
+
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
+  const pendingOrders = await prisma.order.count({ where: { status: "PENDING_APPROVAL" } })
+  const approvedNoTicket = await prisma.orderItem.count({
+    where: { matchedAt: null, order: { status: "APPROVED" } },
+  })
+
+  const systemPrompt = `คุณคือ AI assistant ของระบบ lotto-usa เว็บขายลอตเตอรี่สหรัฐฯ (Powerball / Mega Millions) สำหรับลูกค้าไทย
+คุณกำลังคุยกับ admin ของระบบผ่าน Telegram
+
+สถานะระบบตอนนี้:
+- ออเดอร์รอตรวจสลิป: ${pendingOrders} รายการ
+- ใบตั๋วที่ยังไม่ได้อัพโหลด: ${approvedNoTicket} ใบ
+
+ตอบสั้นกระชับ เป็นกันเอง ภาษาไทย ห้ามใช้ Markdown formatting (ไม่ใช้ ** หรือ __ หรือ \`) เพราะ Telegram plain text`
+
+  try {
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 300,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userText }],
+    })
+
+    const reply = response.content[0].type === "text" ? response.content[0].text : "ไม่มีคำตอบ"
+    await sendMessage(chatId, reply, "Markdown", threadId)
+  } catch (err) {
+    console.error("[ai-chat] error:", err)
+    await sendMessage(chatId, "❌ AI ตอบไม่ได้ตอนนี้", "Markdown", threadId)
   }
 }
 
