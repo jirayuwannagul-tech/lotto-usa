@@ -8,6 +8,7 @@ import { DrawType } from "@/lib/lottery-rules"
 interface NumberSet {
   mainNumbers: string[]
   specialNumber: string
+  powerPlay?: string
 }
 
 interface LotteryPurchasePanelProps {
@@ -57,6 +58,7 @@ export function LotteryPurchasePanel({
           items: sets.map((set) => ({
             mainNumbers: set.mainNumbers,
             specialNumber: set.specialNumber,
+            powerPlay: set.powerPlay,
           })),
         }),
       })

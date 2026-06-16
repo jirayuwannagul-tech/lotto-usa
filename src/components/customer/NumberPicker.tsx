@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { LOTTERY_RULES, POWER_PLAY_OPTIONS, POWER_PLAY_PRICE_USD, DrawType } from "@/lib/lottery-rules"
+import { LOTTERY_RULES, POWER_PLAY_OPTIONS, POWER_PLAY_PRICE_USD, POWER_PLAY_PRICE_THB, DrawType } from "@/lib/lottery-rules"
 
 async function smartPick(
   type: DrawType,
@@ -154,7 +154,7 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
   const isPowerball = drawType === "POWERBALL"
   const powerPlayCount = isPowerball ? sets.filter((s) => s.powerPlay).length : 0
   const pricePerTicket = rule.sellPriceUSD
-  const totalUSD = sets.length * pricePerTicket + powerPlayCount * POWER_PLAY_PRICE_USD
+  const totalUSD = sets.length * pricePerTicket
 
   function updatePowerPlay(setIdx: number, value: string) {
     setSets((prev) => prev.map((s, i) =>
@@ -271,7 +271,7 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
       {isPowerball && (
         <div>
           <div className="mb-2 text-sm text-white/60">
-            Power Play <span className="text-white/40">(+${POWER_PLAY_PRICE_USD}/ใบ)</span>
+            Power Play <span className="text-white/40">(+{POWER_PLAY_PRICE_THB} ฿/ใบ)</span>
             {current.powerPlay && (
               <span className="ml-2 font-semibold text-rose-400">{current.powerPlay}</span>
             )}
@@ -334,8 +334,8 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
           </div>
           {powerPlayCount > 0 && (
             <div className="flex justify-between text-rose-400/70">
-              <span>Power Play {powerPlayCount} ใบ × $1.00</span>
-              <span>${powerPlayCount.toFixed(2)}</span>
+              <span>Power Play {powerPlayCount} ใบ × {POWER_PLAY_PRICE_THB} ฿</span>
+              <span>{powerPlayCount * POWER_PLAY_PRICE_THB} ฿</span>
             </div>
           )}
           <div className="flex justify-between font-semibold text-[#c9a84c]">
