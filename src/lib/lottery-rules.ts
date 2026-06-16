@@ -7,6 +7,7 @@ export const LOTTERY_RULES = {
     specialLabel: "Powerball",
     color: "red",
     priceUSD: 2,
+    sellPriceUSD: 3.5,
   },
   MEGA_MILLIONS: {
     name: "Mega Millions",
@@ -16,6 +17,7 @@ export const LOTTERY_RULES = {
     specialLabel: "Mega Ball",
     color: "blue",
     priceUSD: 2,
+    sellPriceUSD: 7,
   },
 } as const
 

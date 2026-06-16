@@ -106,7 +106,7 @@ export default function PaymentPage() {
       : typeof checkout?.totalTHB === "string"
         ? Number(checkout.totalTHB)
         : rule
-          ? Math.round((rule.priceUSD + MARGIN_USD) * ticketCount * 35)
+          ? Math.round(rule.sellPriceUSD * ticketCount * 35)
           : 0
   const referenceId =
     checkout && ticketCount > 0

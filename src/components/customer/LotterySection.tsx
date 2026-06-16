@@ -195,7 +195,7 @@ function PortalCard({
   }
 
   const ready = main.length === rule.mainCount && special !== ""
-  const pricePerTicket = rule.priceUSD + 1.5
+  const pricePerTicket = rule.sellPriceUSD
 
   return (
     <article className="flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-6">

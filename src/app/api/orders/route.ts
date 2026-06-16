@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const pricePerTicket = rule.priceUSD + MARGIN_USD
+  const pricePerTicket = rule.sellPriceUSD
   const rate = await getExchangeRate()
   const totalUSD = pricePerTicket * items.length
   const totalTHB = totalUSD * rate

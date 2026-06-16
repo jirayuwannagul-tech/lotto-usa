@@ -150,7 +150,7 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
     (s) => s.mainNumbers.length === rule.mainCount && s.specialNumber !== ""
   )
 
-  const pricePerTicket = rule.priceUSD + 1.5
+  const pricePerTicket = rule.sellPriceUSD
 
   return (
     <div className="space-y-4">

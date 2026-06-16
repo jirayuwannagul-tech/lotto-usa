@@ -102,7 +102,7 @@ export default function PayPage({ params }: { params: Promise<{ orderId: string 
                 ))}
                 <div className="border-t border-white/10 pt-2 space-y-1 text-sm">
                   <div className="flex justify-between text-white/50">
-                    <span>{order.items.length} ใบ × $3.50</span>
+                    <span>{order.items.length} ใบ × ${(Number(order.totalUSD) / order.items.length).toFixed(2)}</span>
                     <span>${Number(order.totalUSD).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-white/50">
