@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { LOTTERY_RULES, DrawType } from "@/lib/lottery-rules"
+import { LOTTERY_RULES, POWER_PLAY_OPTIONS, POWER_PLAY_PRICE_USD, DrawType } from "@/lib/lottery-rules"
 
 async function smartPick(
   type: DrawType,
@@ -21,6 +21,7 @@ async function smartPick(
 interface NumberSet {
   mainNumbers: string[]
   specialNumber: string
+  powerPlay?: string
 }
 
 interface Props {
@@ -150,7 +151,16 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
     (s) => s.mainNumbers.length === rule.mainCount && s.specialNumber !== ""
   )
 
+  const isPowerball = drawType === "POWERBALL"
+  const powerPlayCount = isPowerball ? sets.filter((s) => s.powerPlay).length : 0
   const pricePerTicket = rule.sellPriceUSD
+  const totalUSD = sets.length * pricePerTicket + powerPlayCount * POWER_PLAY_PRICE_USD
+
+  function updatePowerPlay(setIdx: number, value: string) {
+    setSets((prev) => prev.map((s, i) =>
+      i === setIdx ? { ...s, powerPlay: s.powerPlay === value ? undefined : value } : s
+    ))
+  }
 
   return (
     <div className="space-y-4">
@@ -257,6 +267,43 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
         />
       </div>
 
+      {/* Power Play — Powerball only */}
+      {isPowerball && (
+        <div>
+          <div className="mb-2 text-sm text-white/60">
+            Power Play <span className="text-white/40">(+${POWER_PLAY_PRICE_USD}/ใบ)</span>
+            {current.powerPlay && (
+              <span className="ml-2 font-semibold text-rose-400">{current.powerPlay}</span>
+            )}
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {POWER_PLAY_OPTIONS.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => updatePowerPlay(activeSet, opt)}
+                className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition
+                  ${current.powerPlay === opt
+                    ? "border-rose-500 bg-rose-500 text-white"
+                    : "border-white/15 bg-white/5 text-white/60 hover:border-rose-500/50 hover:text-rose-300"
+                  }`}
+              >
+                {opt}
+              </button>
+            ))}
+            {current.powerPlay && (
+              <button
+                type="button"
+                onClick={() => updatePowerPlay(activeSet, current.powerPlay!)}
+                className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-white/30 hover:text-white/60"
+              >
+                ✕ ไม่เอา
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Selected display */}
       {current.mainNumbers.length > 0 && (
         <div className="rounded-2xl border border-[#c9a84c]/20 bg-[#c9a84c]/5 p-3 text-center font-mono text-white">
@@ -280,9 +327,21 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
 
       {/* Summary + Confirm */}
       <div className="border-t border-white/10 pt-4">
-        <div className="mb-3 flex justify-between text-sm text-white/50">
-          <span>{sets.length} ใบ × ${pricePerTicket.toFixed(2)}</span>
-          <span className="font-semibold text-[#c9a84c]">${(sets.length * pricePerTicket).toFixed(2)}</span>
+        <div className="mb-3 space-y-1 text-sm text-white/50">
+          <div className="flex justify-between">
+            <span>{sets.length} ใบ × ${pricePerTicket.toFixed(2)}</span>
+            <span>${(sets.length * pricePerTicket).toFixed(2)}</span>
+          </div>
+          {powerPlayCount > 0 && (
+            <div className="flex justify-between text-rose-400/70">
+              <span>Power Play {powerPlayCount} ใบ × $1.00</span>
+              <span>${powerPlayCount.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex justify-between font-semibold text-[#c9a84c]">
+            <span>รวม</span>
+            <span>${totalUSD.toFixed(2)}</span>
+          </div>
         </div>
         <Button
           onClick={() => allValid && onConfirm(sets)}

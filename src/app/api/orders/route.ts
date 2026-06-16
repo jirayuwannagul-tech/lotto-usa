@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getExchangeRate } from "@/lib/exchange-rate"
-import { LOTTERY_RULES, MARGIN_USD } from "@/lib/lottery-rules"
+import { LOTTERY_RULES, MARGIN_USD, POWER_PLAY_OPTIONS, POWER_PLAY_PRICE_USD } from "@/lib/lottery-rules"
 import { ensureReferralTables } from "@/lib/referrals"
 import { sendOrderConfirmationEmail } from "@/lib/email"
 import { getPurchasableDraw, syncUpcomingDraws } from "@/lib/draw-schedule"
@@ -12,6 +12,7 @@ import { z } from "zod"
 const itemSchema = z.object({
   mainNumbers: z.array(z.string().regex(/^\d{1,2}$/)).min(1).max(10),
   specialNumber: z.string().regex(/^\d{1,2}$/),
+  powerPlay: z.enum(POWER_PLAY_OPTIONS).optional(),
 }).superRefine((item, ctx) => {
   const normalized = item.mainNumbers.map((value) => value.padStart(2, "0"))
   if (new Set(normalized).size !== normalized.length) {
@@ -110,7 +111,8 @@ export async function POST(req: NextRequest) {
 
   const pricePerTicket = rule.sellPriceUSD
   const rate = await getExchangeRate()
-  const totalUSD = pricePerTicket * items.length
+  const powerPlayCount = drawType === "POWERBALL" ? items.filter((i) => i.powerPlay).length : 0
+  const totalUSD = pricePerTicket * items.length + powerPlayCount * POWER_PLAY_PRICE_USD
   const totalTHB = totalUSD * rate
 
   // Use transaction to ensure order + items are created atomically
@@ -129,6 +131,7 @@ export async function POST(req: NextRequest) {
               .map((n) => n.padStart(2, "0"))
               .join(","),
             specialNumber: String(item.specialNumber).padStart(2, "0"),
+            powerPlay: drawType === "POWERBALL" ? (item.powerPlay ?? null) : null,
           })),
         },
       },
