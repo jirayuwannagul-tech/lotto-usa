@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { MARGIN_USD } from "@/lib/lottery-rules"
+import { getMarginUSD, type DrawType } from "@/lib/lottery-rules"
 
 export const REFERRAL_PROFIT_SHARE_RATE = 50
 
@@ -55,13 +55,15 @@ export async function createCommissionForOrder(params: {
   referredUserId: string
   itemCount: number
   rateUsed: number
+  drawType: DrawType
 }) {
   const referral = await prisma.userReferral.findUnique({
     where: { userId: params.referredUserId },
   })
   if (!referral) return null
 
-  const totalProfitTHB = Number((MARGIN_USD * params.itemCount * params.rateUsed).toFixed(2))
+  const marginUSD = getMarginUSD(params.drawType)
+  const totalProfitTHB = Number((marginUSD * params.itemCount * params.rateUsed).toFixed(2))
   const amountTHB = Number((totalProfitTHB * (REFERRAL_PROFIT_SHARE_RATE / 100)).toFixed(2))
   const platformShareTHB = Number((totalProfitTHB - amountTHB).toFixed(2))
 

@@ -3,7 +3,7 @@ export const LOTTERY_RULES = {
     name: "Powerball",
     mainCount: 5,
     mainMax: 69,
-    specialMax: 16,
+    specialMax: 26,
     specialLabel: "Powerball",
     color: "red",
     priceUSD: 2,
@@ -13,7 +13,7 @@ export const LOTTERY_RULES = {
     name: "Mega Millions",
     mainCount: 5,
     mainMax: 70,
-    specialMax: 24,
+    specialMax: 25,
     specialLabel: "Mega Ball",
     color: "blue",
     priceUSD: 2,
@@ -22,6 +22,11 @@ export const LOTTERY_RULES = {
 } as const
 
 export type DrawType = keyof typeof LOTTERY_RULES
+
+export function getMarginUSD(type: DrawType): number {
+  const rule = LOTTERY_RULES[type]
+  return rule.sellPriceUSD - rule.priceUSD
+}
 
 export const MARGIN_USD = 1.5
 export const POWER_PLAY_OPTIONS = ["2x", "3x", "4x", "5x", "10x"] as const

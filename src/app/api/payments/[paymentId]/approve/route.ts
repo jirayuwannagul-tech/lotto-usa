@@ -41,6 +41,7 @@ export async function PATCH(_: NextRequest, { params }: { params: Promise<{ paym
     referredUserId: payment.order.userId,
     itemCount: payment.order.items.length,
     rateUsed: Number(payment.order.rateUsed),
+    drawType: payment.order.draw.type,
   })
   await approveCommissionForOrder(payment.orderId)
 

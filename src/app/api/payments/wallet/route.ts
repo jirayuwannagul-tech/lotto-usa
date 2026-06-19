@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
     referredUserId: session.user.id,
     itemCount: order.items.length,
     rateUsed: Number(order.rateUsed),
+    drawType: order.draw.type,
   })
   await approveCommissionForOrder(orderId)
 

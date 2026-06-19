@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { MARGIN_USD } from "@/lib/lottery-rules"
+import { getMarginUSD } from "@/lib/lottery-rules"
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
   for (const c of commissions) {
     const uid = c.referrerUserId
     const itemCount = c.order.items.length
-    const profitUSD = MARGIN_USD * itemCount
+    const profitUSD = getMarginUSD(c.order.draw.type) * itemCount
     const amountUSD = profitUSD * COMMISSION_RATE
 
     if (!grouped[uid]) {
