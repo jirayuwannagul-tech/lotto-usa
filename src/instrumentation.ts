@@ -4,7 +4,52 @@ export async function register() {
     validateEnv()
     await registerTelegramWebhook()
     scheduleDailySales()
+    scheduleResultsCheck()
   }
+}
+
+// Draw times in LA: Powerball Mon/Wed/Sat 19:59, Mega Millions Tue/Fri 20:00
+const RESULT_SCHEDULE = [
+  { days: [1, 3, 6], hour: 19, minute: 59 },
+  { days: [2, 5], hour: 20, minute: 0 },
+]
+const RESULT_CHECK_DELAY_MIN = 40
+
+function scheduleResultsCheck() {
+  const appUrl = process.env.APP_URL ?? process.env.NEXTAUTH_URL
+  const secret = process.env.CRON_SECRET
+  if (!appUrl || appUrl.includes("localhost") || !secret) return
+
+  const laOffsetMs = -7 * 60 * 60 * 1000 // PDT
+
+  function msUntilNextCheck() {
+    const now = new Date()
+    const laNow = new Date(now.getTime() + laOffsetMs)
+
+    let best: Date | null = null
+    for (let offset = 0; offset <= 8; offset++) {
+      const candidate = new Date(laNow)
+      candidate.setUTCDate(laNow.getUTCDate() + offset)
+      for (const sched of RESULT_SCHEDULE) {
+        if (!sched.days.includes(candidate.getUTCDay())) continue
+        const fireAt = new Date(candidate)
+        fireAt.setUTCHours(sched.hour, sched.minute + RESULT_CHECK_DELAY_MIN, 0, 0)
+        if (fireAt <= laNow) continue
+        if (!best || fireAt < best) best = fireAt
+      }
+    }
+    if (!best) return 60 * 60 * 1000 // fallback: retry in 1h
+    return best.getTime() - laNow.getTime()
+  }
+
+  function fire() {
+    const url = `${appUrl!.replace(/\/$/, "")}/api/cron/sync-results?secret=${secret}`
+    fetch(url).catch((err) => console.error("[cron] sync-results error:", err))
+    setTimeout(fire, msUntilNextCheck())
+  }
+
+  setTimeout(fire, msUntilNextCheck())
+  console.log("[cron] results-check scheduled, next run in", Math.round(msUntilNextCheck() / 60000), "min")
 }
 
 function scheduleDailySales() {
