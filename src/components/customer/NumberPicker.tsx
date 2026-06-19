@@ -313,6 +313,11 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
               ● {current.specialNumber}
             </span>
           )}
+          {isPowerball && (
+            <span className="ml-3 font-semibold text-amber-400">
+              {current.powerPlay ? `Power Play ${current.powerPlay}` : "ไม่ใช้ Power Play"}
+            </span>
+          )}
         </div>
       )}
 
@@ -340,7 +345,10 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
           )}
           <div className="flex justify-between font-semibold text-[#c9a84c]">
             <span>รวม</span>
-            <span>${totalUSD.toFixed(2)}</span>
+            <span>
+              ${totalUSD.toFixed(2)}
+              {powerPlayCount > 0 && ` + ${powerPlayCount * POWER_PLAY_PRICE_THB} ฿`}
+            </span>
           </div>
         </div>
         <Button
