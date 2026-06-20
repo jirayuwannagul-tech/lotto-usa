@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getExchangeRate } from "@/lib/exchange-rate"
-import { LOTTERY_RULES, MARGIN_USD, POWER_PLAY_OPTIONS, POWER_PLAY_PRICE_USD, POWER_PLAY_PRICE_THB } from "@/lib/lottery-rules"
+import { LOTTERY_RULES, POWER_PLAY_OPTIONS, POWER_PLAY_PRICE_USD, POWER_PLAY_PRICE_THB } from "@/lib/lottery-rules"
 import { ensureReferralTables } from "@/lib/referrals"
 import { sendOrderConfirmationEmail } from "@/lib/email"
 import { getPurchasableDraw, syncUpcomingDraws } from "@/lib/draw-schedule"
@@ -112,8 +112,9 @@ export async function POST(req: NextRequest) {
   const pricePerTicket = rule.sellPriceUSD
   const rate = await getExchangeRate()
   const powerPlayCount = drawType === "POWERBALL" ? items.filter((i) => i.powerPlay).length : 0
-  const totalUSD = pricePerTicket * items.length
-  const totalTHB = totalUSD * rate + powerPlayCount * POWER_PLAY_PRICE_THB
+  const baseTotalUSD = pricePerTicket * items.length
+  const totalUSD = baseTotalUSD + powerPlayCount * POWER_PLAY_PRICE_USD
+  const totalTHB = baseTotalUSD * rate + powerPlayCount * POWER_PLAY_PRICE_THB
 
   // Use transaction to ensure order + items are created atomically
   const order = await prisma.$transaction(async (tx) => {

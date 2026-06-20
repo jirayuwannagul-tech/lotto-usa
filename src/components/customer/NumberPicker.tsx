@@ -155,6 +155,7 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
   const powerPlayCount = isPowerball ? sets.filter((s) => s.powerPlay).length : 0
   const pricePerTicket = rule.sellPriceUSD
   const totalUSD = sets.length * pricePerTicket
+  const powerPlayUSD = powerPlayCount * POWER_PLAY_PRICE_USD
 
   function updatePowerPlay(setIdx: number, value: string) {
     setSets((prev) => prev.map((s, i) =>
@@ -271,7 +272,7 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
       {isPowerball && (
         <div>
           <div className="mb-2 text-sm text-white/60">
-            Power Play <span className="text-white/40">(+{POWER_PLAY_PRICE_THB} ฿/ใบ)</span>
+            Power Play <span className="text-white/40">(+${POWER_PLAY_PRICE_USD.toFixed(2)} / {POWER_PLAY_PRICE_THB} ฿ ต่อใบ)</span>
             {current.powerPlay && (
               <span className="ml-2 font-semibold text-rose-400">{current.powerPlay}</span>
             )}
@@ -339,15 +340,15 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
           </div>
           {powerPlayCount > 0 && (
             <div className="flex justify-between text-rose-400/70">
-              <span>Power Play {powerPlayCount} ใบ × {POWER_PLAY_PRICE_THB} ฿</span>
-              <span>{powerPlayCount * POWER_PLAY_PRICE_THB} ฿</span>
+              <span>Power Play {powerPlayCount} ใบ × ${POWER_PLAY_PRICE_USD.toFixed(2)} ({POWER_PLAY_PRICE_THB} ฿)</span>
+              <span>${powerPlayUSD.toFixed(2)} ({powerPlayCount * POWER_PLAY_PRICE_THB} ฿)</span>
             </div>
           )}
           <div className="flex justify-between font-semibold text-[#c9a84c]">
             <span>รวม</span>
             <span>
               ${totalUSD.toFixed(2)}
-              {powerPlayCount > 0 && ` + ${powerPlayCount * POWER_PLAY_PRICE_THB} ฿`}
+              {powerPlayCount > 0 && ` + $${powerPlayUSD.toFixed(2)} = $${(totalUSD + powerPlayUSD).toFixed(2)}`}
             </span>
           </div>
         </div>
