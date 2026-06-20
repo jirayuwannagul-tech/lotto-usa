@@ -21,6 +21,11 @@ export async function POST(req: NextRequest) {
     const messageId = cq.message?.message_id
     const data = cq.data ?? ""
 
+    if (!chatId || !isAllowedChat(chatId)) {
+      await answerCallbackQuery(cq.id, "⛔ คุณไม่มีสิทธิ์ใช้บอทนี้")
+      return NextResponse.json({ ok: true })
+    }
+
     if (data.startsWith("bought:") && chatId && messageId) {
       const orderId = data.replace("bought:", "")
       await handleBoughtCallback(cq.id, chatId, messageId, orderId)
