@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { sendMessage, downloadFileBuffer, isAllowedChat, answerCallbackQuery, editMessageText, type TgUpdate } from "@/lib/telegram"
 import { readLotteryTicketFromBuffer, numbersMatch } from "@/lib/ocr"
 import { saveBuffer } from "@/lib/upload"
+import { createCommissionForOrder, approveCommissionForOrder, cancelCommissionForOrder } from "@/lib/referrals"
 
 export async function POST(req: NextRequest) {
   // ตรวจ secret token ที่ตั้งตอน setWebhook
@@ -96,6 +97,7 @@ async function handleBoughtCallback(callbackId: string, chatId: number, messageI
       items: true,
       user: { select: { name: true, phone: true } },
       draw: true,
+      payment: true,
     },
   })
 
@@ -109,10 +111,31 @@ async function handleBoughtCallback(callbackId: string, chatId: number, messageI
     return
   }
 
+  if (order.payment && order.payment.status !== "PENDING") {
+    await answerCallbackQuery(callbackId, "✅ ดำเนินการไปแล้ว")
+    return
+  }
+
+  if (order.payment) {
+    await prisma.payment.update({
+      where: { id: order.payment.id },
+      data: { status: "APPROVED", approvedAt: new Date(), approvedBy: `telegram:${chatId}` },
+    })
+  }
+
   await prisma.order.update({
     where: { id: orderId },
     data: { status: "APPROVED" },
   })
+
+  await createCommissionForOrder({
+    orderId,
+    referredUserId: order.userId,
+    itemCount: order.items.length,
+    rateUsed: Number(order.rateUsed),
+    drawType: order.draw.type,
+  })
+  await approveCommissionForOrder(orderId)
 
   const drawLabel = order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
   const drawDate = order.draw.drawDate.toLocaleDateString("th-TH", {
@@ -151,7 +174,7 @@ async function handleBoughtCallback(callbackId: string, chatId: number, messageI
 async function handleCancelCallback(callbackId: string, chatId: number, messageId: number, orderId: string) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { user: { select: { name: true } } },
+    include: { user: { select: { name: true } }, payment: true },
   })
 
   if (!order) {
@@ -159,10 +182,41 @@ async function handleCancelCallback(callbackId: string, chatId: number, messageI
     return
   }
 
+  if (order.payment && order.payment.status !== "PENDING") {
+    await answerCallbackQuery(callbackId, "✅ ดำเนินการไปแล้ว")
+    return
+  }
+
+  if (order.payment) {
+    await prisma.payment.update({
+      where: { id: order.payment.id },
+      data: { status: "REJECTED", rejectedAt: new Date(), rejectNote: "ยกเลิกผ่าน Telegram" },
+    })
+  }
+
   await prisma.order.update({
     where: { id: orderId },
     data: { status: "REJECTED" },
   })
+
+  await cancelCommissionForOrder(orderId)
+
+  if (order.payment?.method === "WALLET" && order.payment.slipAmount !== null) {
+    const refundAmount = Number(order.payment.slipAmount)
+    const updatedUser = await prisma.user.update({
+      where: { id: order.userId },
+      data: { walletBalance: { increment: refundAmount } },
+    })
+    await prisma.walletTransaction.create({
+      data: {
+        userId: order.userId,
+        type: "REFUND",
+        amount: refundAmount,
+        balanceAfter: updatedUser.walletBalance,
+        note: `คืนเงิน — ออเดอร์ถูกปฏิเสธ (Telegram)`,
+      },
+    })
+  }
 
   await answerCallbackQuery(callbackId, "❌ ยกเลิกแล้ว")
   await editMessageText(chatId, messageId,
