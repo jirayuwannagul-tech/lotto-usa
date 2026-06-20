@@ -29,11 +29,14 @@ export async function POST(req: NextRequest) {
 
   const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`
 
+  let emailSent = false
   try {
-    await sendPasswordResetEmail({ to: user.email ?? "", name: user.name, resetUrl })
+    emailSent = await sendPasswordResetEmail({ to: user.email ?? "", name: user.name, resetUrl })
   } catch (err) {
     console.error("[forgot-password] notify failed", err)
   }
 
-  return NextResponse.json({ success: true, resetUrl })
+  // Only expose the raw reset link when real email delivery failed/unconfigured,
+  // so legitimate users aren't locked out before RESEND_API_KEY is set up.
+  return NextResponse.json({ success: true, resetUrl: emailSent ? undefined : resetUrl })
 }

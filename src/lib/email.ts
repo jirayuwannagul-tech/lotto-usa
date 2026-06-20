@@ -1,8 +1,15 @@
+import { Resend } from "resend"
 import { sendRealtimeMessage, sendAdminMessage } from "@/lib/telegram"
 
 function esc(text: string) {
   return text.replace(/[_*[\]`]/g, "\\$&")
 }
+
+function escHtml(text: string) {
+  return text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!))
+}
+
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 // Order confirmation — no TG, order is not yet paid
 export async function sendOrderConfirmationEmail(_params: {
@@ -70,10 +77,33 @@ export async function sendPasswordResetEmail(params: {
   to: string
   name: string
   resetUrl: string
-}) {
-  await sendAdminMessage(
+}): Promise<boolean> {
+  sendAdminMessage(
     `🔑 *ขอรีเซ็ตรหัสผ่าน*\n` +
     `👤 ${esc(params.name)}\n` +
     `🔗 ${params.resetUrl}`,
-  )
+  ).catch((err) => console.error("[email] forgot-password admin notify failed", err))
+
+  if (!resend || !params.to) {
+    console.error("[email] RESEND_API_KEY not set or recipient missing — cannot send password reset email")
+    return false
+  }
+
+  try {
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM ?? "LottoUSA <onboarding@resend.dev>",
+      to: params.to,
+      subject: "รีเซ็ตรหัสผ่าน LottoUSA",
+      html: [
+        `<p>สวัสดีคุณ ${escHtml(params.name)},</p>`,
+        `<p>กดลิงก์ด้านล่างเพื่อตั้งรหัสผ่านใหม่ (ลิงก์หมดอายุใน 1 ชั่วโมง):</p>`,
+        `<p><a href="${escHtml(params.resetUrl)}">${escHtml(params.resetUrl)}</a></p>`,
+        `<p>หากคุณไม่ได้ขอรีเซ็ตรหัสผ่าน กรุณาเพิกเฉยต่ออีเมลนี้</p>`,
+      ].join(""),
+    })
+    return true
+  } catch (err) {
+    console.error("[email] sendPasswordResetEmail via Resend failed", err)
+    return false
+  }
 }

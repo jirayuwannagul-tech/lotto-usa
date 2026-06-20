@@ -14,6 +14,8 @@ const OPTIONAL_ENV = [
   "OMISE_SECRET_KEY",
   "OMISE_PUBLIC_KEY",
   "OMISE_WEBHOOK_SECRET",
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
 ] as const
 
 export function validateEnv() {

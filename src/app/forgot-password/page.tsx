@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
                   กดที่นี่เพื่อตั้งรหัสผ่านใหม่ →
                 </a>
               ) : (
-                <p className="mt-2 text-sm text-emerald-700">ลิงก์ถูกส่งให้แอดมินแล้ว (หมดอายุใน 1 ชั่วโมง)</p>
+                <p className="mt-2 text-sm text-emerald-700">ลิงก์ถูกส่งไปที่อีเมลของคุณแล้ว (หมดอายุใน 1 ชั่วโมง)</p>
               )}
             </div>
             <Link
