@@ -80,10 +80,9 @@ async function generateSummary() {
     where: { status: "PENDING_APPROVAL" },
   })
 
-  // Recent draws with results (last 7 days) — check for winners
-  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  // Latest draw with results — check for winners
   const recentDraws = await prisma.draw.findMany({
-    where: { winningMain: { not: null }, drawDate: { gte: weekAgo, lte: now } },
+    where: { winningMain: { not: null } },
     include: {
       orders: {
         where: { status: { in: ["APPROVED", "TICKET_UPLOADED", "MATCHED"] } },
@@ -91,6 +90,7 @@ async function generateSummary() {
       },
     },
     orderBy: { drawDate: "desc" },
+    take: 1,
   })
 
   const lines: string[] = [
@@ -149,7 +149,7 @@ async function generateSummary() {
 
   // Winner section
   if (recentDraws.length > 0) {
-    lines.push(``, `🏆 *ผลรางวัล 7 วันล่าสุด:*`, ``)
+    lines.push(``, `🏆 *ผลรางวัลล่าสุด:*`, ``)
     for (const draw of recentDraws) {
       const drawLabel = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
       const drawDateLabel = draw.drawDate.toLocaleDateString("th-TH", {

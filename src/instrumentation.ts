@@ -5,7 +5,25 @@ export async function register() {
     await registerTelegramWebhook()
     scheduleDailySales()
     scheduleResultsCheck()
+    scheduleCancelUnpaid()
   }
+}
+
+const CANCEL_UNPAID_INTERVAL_MS = 15 * 60 * 1000
+
+function scheduleCancelUnpaid() {
+  const appUrl = process.env.APP_URL ?? process.env.NEXTAUTH_URL
+  const secret = process.env.CRON_SECRET
+  if (!appUrl || appUrl.includes("localhost") || !secret) return
+
+  function fire() {
+    const url = `${appUrl!.replace(/\/$/, "")}/api/cron/cancel-unpaid?secret=${secret}`
+    fetch(url).catch((err) => console.error("[cron] cancel-unpaid error:", err))
+    setTimeout(fire, CANCEL_UNPAID_INTERVAL_MS)
+  }
+
+  setTimeout(fire, CANCEL_UNPAID_INTERVAL_MS)
+  console.log("[cron] cancel-unpaid scheduled, every", CANCEL_UNPAID_INTERVAL_MS / 60000, "min")
 }
 
 // Draw times in LA: Powerball Mon/Wed/Sat 19:59, Mega Millions Tue/Fri 20:00
