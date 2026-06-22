@@ -9,6 +9,7 @@ interface NumberSet {
   mainNumbers: string[]
   specialNumber: string
   powerPlay?: string
+  isRandom?: boolean
 }
 
 interface LotteryPurchasePanelProps {
@@ -59,6 +60,7 @@ export function LotteryPurchasePanel({
             mainNumbers: set.mainNumbers,
             specialNumber: set.specialNumber,
             powerPlay: set.powerPlay,
+            isRandom: set.isRandom,
           })),
         }),
       })

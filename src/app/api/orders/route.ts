@@ -13,6 +13,7 @@ const itemSchema = z.object({
   mainNumbers: z.array(z.string().regex(/^\d{1,2}$/)).min(1).max(10),
   specialNumber: z.string().regex(/^\d{1,2}$/),
   powerPlay: z.enum(POWER_PLAY_OPTIONS).optional(),
+  isRandom: z.boolean().optional(),
 }).superRefine((item, ctx) => {
   const normalized = item.mainNumbers.map((value) => value.padStart(2, "0"))
   if (new Set(normalized).size !== normalized.length) {
@@ -132,6 +133,7 @@ export async function POST(req: NextRequest) {
               .join(","),
             specialNumber: String(item.specialNumber).padStart(2, "0"),
             powerPlay: drawType === "POWERBALL" ? (item.powerPlay ?? null) : null,
+            isRandom: item.isRandom ?? false,
           })),
         },
       },

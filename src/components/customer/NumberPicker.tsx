@@ -22,6 +22,7 @@ interface NumberSet {
   mainNumbers: string[]
   specialNumber: string
   powerPlay?: string
+  isRandom?: boolean
 }
 
 interface Props {
@@ -162,8 +163,23 @@ export function NumberPicker({ drawType, onConfirm, confirmLabel = "ตรวจ
     ))
   }
 
+  function buyRandomNow() {
+    const main = randomPick(rule.mainMax, rule.mainCount)
+    const special = randomPick(rule.specialMax, 1)[0]
+    onConfirm([{ mainNumbers: main, specialNumber: special, isRandom: true }])
+  }
+
   return (
     <div className="space-y-4">
+      {/* Quick buy — random pick */}
+      <button
+        type="button"
+        onClick={buyRandomNow}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#c9a84c]/40 bg-[#c9a84c]/10 py-3 text-sm font-semibold text-[#c9a84c] transition hover:bg-[#c9a84c]/20"
+      >
+        🎲 ซื้อเลย — สุ่มเลขให้อัตโนมัติ (1 ใบ × ${pricePerTicket.toFixed(2)})
+      </button>
+
       {/* Set tabs */}
       <div className="flex gap-2 flex-wrap">
         {sets.map((s, i) => {

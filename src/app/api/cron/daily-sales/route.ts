@@ -70,12 +70,16 @@ export async function GET(req: NextRequest) {
     message = `🌅 *สรุปยอดขาย — ${dateLabel}*\n\n😶 วันนี้ไม่มีคนซื้อเลย`
   } else {
     const totalTHB = orders.reduce((s, o) => s + Number(o.totalTHB), 0)
-    const totalTickets = orders.reduce((s, o) => s + o.items.length, 0)
+    const allItems = orders.flatMap((o) => o.items)
+    const totalTickets = allItems.length
+    const randomCount = allItems.filter((i) => i.isRandom).length
+    const manualCount = totalTickets - randomCount
 
     const lines: string[] = [
       `🌅 *สรุปยอดขาย — ${dateLabel}*`,
       ``,
       `👥 ออเดอร์: *${orders.length}* | ใบ: *${totalTickets}* | ยอด: *${totalTHB.toLocaleString("th-TH", { maximumFractionDigits: 0 })} ฿*`,
+      `🎯 เลือกเอง: *${manualCount} ใบ* | 🎲 สุ่มให้: *${randomCount} ใบ*`,
       ``,
     ]
 
@@ -95,7 +99,8 @@ export async function GET(req: NextRequest) {
       for (const item of order.items) {
         const mains = item.mainNumbers.split(",").map((n) => n.trim().padStart(2, "0")).join(" ")
         const special = item.specialNumber.trim().padStart(2, "0")
-        group.entries.push({ name: order.user.name, nums: `\`${mains} │ ${specialLabel} ${special}\`` })
+        const tag = item.isRandom ? " 🎲" : ""
+        group.entries.push({ name: order.user.name, nums: `\`${mains} │ ${specialLabel} ${special}\`${tag}` })
       }
     }
 

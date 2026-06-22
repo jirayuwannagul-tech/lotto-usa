@@ -93,6 +93,7 @@ model OrderItem {
   mainNumbers    String
   specialNumber  String
   powerPlay      String?   // "2x" | "3x" | "4x" | "5x" | "10x" — Powerball only
+  isRandom       Boolean   @default(false) // true if picked via "ซื้อเลย" quick-buy
   ticketPhotoUrl String?
   ocrRawText     String?
   matchedAt      DateTime?
