@@ -16,6 +16,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pa
   const { paymentId } = await params
   const { rejectNote } = await req.json().catch(() => ({}))
 
+  const existing = await prisma.payment.findUnique({ where: { id: paymentId } })
+  if (!existing) return NextResponse.json({ error: "ไม่พบ payment" }, { status: 404 })
+  if (existing.status !== "PENDING") {
+    return NextResponse.json({ error: "payment นี้ถูกดำเนินการไปแล้ว" }, { status: 409 })
+  }
+
   const payment = await prisma.payment.update({
     where: { id: paymentId },
     data: { status: "REJECTED", rejectedAt: new Date(), rejectNote },
