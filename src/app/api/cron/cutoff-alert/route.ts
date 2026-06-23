@@ -37,7 +37,7 @@ export async function GET(req: Request) {
 
     const drawLabel = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
     const drawDateThai = draw.drawDate.toLocaleDateString("th-TH", {
-      timeZone: "Asia/Bangkok",
+      timeZone: "America/Los_Angeles",
       weekday: "long",
       day: "numeric",
       month: "long",

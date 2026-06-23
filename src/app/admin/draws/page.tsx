@@ -164,10 +164,10 @@ export default function DrawsPage() {
                     {d.jackpot && <span className="text-yellow-400 ml-2 text-sm">{d.jackpot}</span>}
                   </p>
                   <p className="text-white/50 text-xs">
-                    ออกรางวัล: {new Date(d.drawDate).toLocaleString("th-TH")}
+                    ออกรางวัล: {new Date(d.drawDate).toLocaleString("th-TH", { timeZone: "America/Los_Angeles" })}
                   </p>
                   <p className="text-white/50 text-xs">
-                    ปิดรับ: {new Date(d.cutoffAt).toLocaleString("th-TH")}
+                    ปิดรับ: {new Date(d.cutoffAt).toLocaleString("th-TH", { timeZone: "America/Los_Angeles" })}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

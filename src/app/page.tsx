@@ -27,7 +27,7 @@ function getSalesDayBadge(drawLabel: string) {
 function formatThaiDraw(drawDate: Date | null | undefined) {
   if (!drawDate) return "กำลังอัปเดต"
   return new Date(drawDate).toLocaleString("th-TH", {
-    timeZone: "Asia/Bangkok",
+    timeZone: "America/Los_Angeles",
     day: "numeric",
     month: "short",
     hour: "2-digit",

@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
     if (orderInfo && allMatched) {
       const drawLabel = orderInfo.order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
       const drawDateThai = orderInfo.order.draw.drawDate.toLocaleDateString("th-TH", {
-        timeZone: "Asia/Bangkok",
+        timeZone: "America/Los_Angeles",
         day: "numeric",
         month: "short",
         year: "numeric",

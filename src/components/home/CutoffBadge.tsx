@@ -19,7 +19,7 @@ function formatCountdown(ms: number) {
 
 function formatTimeThai(date: Date) {
   return date.toLocaleString("th-TH", {
-    timeZone: "Asia/Bangkok",
+    timeZone: "America/Los_Angeles",
     day: "numeric",
     month: "short",
     hour: "2-digit",

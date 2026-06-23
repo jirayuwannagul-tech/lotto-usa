@@ -198,7 +198,7 @@ export function buildApprovalMessage(params: {
   adminUrl?: string
 }): string {
   const drawLabel = params.drawType === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
-  const drawDateStr = params.drawDate.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })
+  const drawDateStr = params.drawDate.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "America/Los_Angeles" })
   const esc = (s: string) => s.replace(/[_*`[\]]/g, "\\$&")
 
   const lines = [
@@ -231,7 +231,7 @@ export function buildApprovedMessage(params: {
   items: { mainNumbers: string; specialNumber: string }[]
 }): string {
   const drawLabel = params.drawType === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
-  const drawDateStr = params.drawDate.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })
+  const drawDateStr = params.drawDate.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "America/Los_Angeles" })
   const esc = (s: string) => s.replace(/[_*`[\]]/g, "\\$&")
 
   const lines = [

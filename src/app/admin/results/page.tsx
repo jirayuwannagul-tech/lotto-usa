@@ -122,7 +122,7 @@ export default function ResultsPage() {
                   <option key={d.id} value={d.id}>
                     {d.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"} —{" "}
                     {new Date(d.drawDate).toLocaleDateString("th-TH", {
-                      timeZone: "Asia/Bangkok",
+                      timeZone: "America/Los_Angeles",
                       day: "numeric",
                       month: "short",
                       year: "2-digit",
@@ -222,7 +222,7 @@ export default function ResultsPage() {
                   <div>
                     <p className="text-white text-sm font-medium">
                       {d.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"} —{" "}
-                      {new Date(d.drawDate).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit" })}
+                      {new Date(d.drawDate).toLocaleDateString("th-TH", { timeZone: "America/Los_Angeles", day: "numeric", month: "short", year: "2-digit" })}
                     </p>
                     <p className="text-white/40 text-xs mt-0.5">
                       เลข: <span className="font-mono text-white/70">{d.winningMain}</span> | <span className="font-mono text-white/70">{d.winningSpecial}</span>

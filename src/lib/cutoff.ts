@@ -11,7 +11,7 @@ export function isCutoffPassed(cutoffAt: Date): boolean {
 
 export function formatCutoffLocal(cutoffAt: Date): string {
   return new Date(cutoffAt).toLocaleString("th-TH", {
-    timeZone: "Asia/Bangkok",
+    timeZone: "America/Los_Angeles",
     dateStyle: "medium",
     timeStyle: "short",
   })

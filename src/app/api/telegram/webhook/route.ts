@@ -139,7 +139,7 @@ async function handleBoughtCallback(callbackId: string, chatId: number, messageI
 
   const drawLabel = order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
   const drawDate = order.draw.drawDate.toLocaleDateString("th-TH", {
-    timeZone: "Asia/Bangkok",
+    timeZone: "America/Los_Angeles",
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -263,7 +263,7 @@ async function handleSummary(chatId: number, threadId?: number) {
 
   for (const draw of draws) {
     const label = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
-    const drawDate = new Date(draw.drawDate).toLocaleDateString("th-TH", { day: "numeric", month: "short" })
+    const drawDate = new Date(draw.drawDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", timeZone: "America/Los_Angeles" })
     const totalTickets = draw.orders.reduce((s, o) => s + o.items.length, 0)
     const totalTHB = draw.orders.reduce((s, o) => s + Number(o.totalTHB), 0)
     const matched = draw.orders.reduce((s, o) => s + o.items.filter((i) => i.matchedAt).length, 0)
@@ -310,7 +310,7 @@ async function handlePending(chatId: number, threadId?: number) {
   for (const item of items) {
     const draw = item.order.draw
     const label = draw.type === "POWERBALL" ? "🔴" : "🔵"
-    const drawDate = new Date(draw.drawDate).toLocaleDateString("th-TH", { day: "numeric", month: "short" })
+    const drawDate = new Date(draw.drawDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", timeZone: "America/Los_Angeles" })
     lines.push(`${label} ${drawDate} | ${item.order.user.name}`)
     lines.push(`   \`${item.mainNumbers} ●${item.specialNumber}\``)
   }
@@ -340,7 +340,7 @@ async function handleOrders(chatId: number, threadId?: number) {
 
   for (const draw of draws) {
     const label = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
-    const drawDate = new Date(draw.drawDate).toLocaleDateString("th-TH", { day: "numeric", month: "short" })
+    const drawDate = new Date(draw.drawDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", timeZone: "America/Los_Angeles" })
 
     if (draw.orders.length === 0) continue
 
@@ -485,7 +485,7 @@ async function handleTicketPhoto(chatId: number, fileId: string, threadId?: numb
     const matchedOrder = matchedItems.find((item) => item.orderId === orderId)
     if (matchedOrder) {
       const draw = matchedOrder.order.draw
-      const drawDate = new Date(draw.drawDate).toLocaleDateString("th-TH", { day: "numeric", month: "short" })
+      const drawDate = new Date(draw.drawDate).toLocaleDateString("th-TH", { day: "numeric", month: "short", timeZone: "America/Los_Angeles" })
       const drawLabel = draw.type === "POWERBALL" ? "🔴" : "🔵"
       statusLines.push(
         `${drawLabel} งวด ${drawDate}\n👤 ${matchedOrder.order.user.name}\n🎫 จับคู่ได้ ${matchedItems.filter((item) => item.orderId === orderId).length} ชุด\n${allMatched ? "🎉 ออเดอร์นี้ครบทุกใบแล้ว" : "📋 ยังมีใบอื่นรออยู่"}`

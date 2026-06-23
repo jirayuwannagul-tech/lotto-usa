@@ -173,7 +173,7 @@ export default function CommissionsPage() {
                               {c.order.draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"}
                             </td>
                             <td className="px-6 py-3 text-slate-500">
-                              {new Date(c.order.draw.drawDate).toLocaleDateString("th-TH")}
+                              {new Date(c.order.draw.drawDate).toLocaleDateString("th-TH", { timeZone: "America/Los_Angeles" })}
                             </td>
                             <td className="px-6 py-3 text-right">{c.itemCount}</td>
                             <td className="px-6 py-3 text-right text-slate-600">{fmtUSD(c.profitUSD)}</td>

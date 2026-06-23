@@ -47,7 +47,7 @@ export function CutoffCountdown({ cutoffAt, drawDate, drawType, compact = false 
   }
 
   const drawLabel = drawType === "POWERBALL" ? "พาวเวอร์บอล" : "เมกา มิลเลียนส์"
-  const drawDateTH = new Date(drawDate).toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" })
+  const drawDateTH = new Date(drawDate).toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Los_Angeles" })
 
   return (
     <div className={`rounded-2xl border p-4 ${isOpen ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"}`}>

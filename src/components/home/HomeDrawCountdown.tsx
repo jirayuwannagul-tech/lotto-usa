@@ -32,7 +32,7 @@ export function HomeDrawCountdown({ drawDate }: HomeDrawCountdownProps) {
   const thaiDrawLabel = useMemo(() => {
     if (!drawDate) return "กำลังอัปเดตเวลา"
     return new Date(drawDate).toLocaleString("th-TH", {
-      timeZone: "Asia/Bangkok",
+      timeZone: "America/Los_Angeles",
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -47,7 +47,7 @@ export function HomeDrawCountdown({ drawDate }: HomeDrawCountdownProps) {
 
   return (
     <div className="mt-3 space-y-2">
-      <p className="text-sm text-slate-500">เวลาออกหวยไทย: {thaiDrawLabel}</p>
+      <p className="text-sm text-slate-500">เวลาออกหวย (เวลา LA): {thaiDrawLabel}</p>
       <p className="text-sm font-semibold text-emerald-700">
         Countdown: {formatTimeLeft(drawDate, nowMs)}
       </p>

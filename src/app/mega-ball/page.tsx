@@ -42,7 +42,7 @@ export default async function MegaBallPage() {
           title="Mega Ball"
           drawType="MEGA_MILLIONS"
           drawDateLabel={new Date(draw.drawDate).toLocaleString("th-TH", {
-            timeZone: "Asia/Bangkok",
+            timeZone: "America/Los_Angeles",
             weekday: "long",
             day: "numeric",
             month: "long",

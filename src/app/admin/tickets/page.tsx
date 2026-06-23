@@ -34,7 +34,7 @@ export default async function AdminTicketsPage() {
 
   const drawOptions = draws.map((draw) => ({
     id: draw.id,
-    label: `${draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"} - ${draw.drawDate.toLocaleDateString("th-TH")}`,
+    label: `${draw.type === "POWERBALL" ? "Power Ball" : "Mega Ball"} - ${draw.drawDate.toLocaleDateString("th-TH", { timeZone: "America/Los_Angeles" })}`,
   }))
 
   return (

@@ -138,7 +138,7 @@ export async function POST(
 
   const drawLabel = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
   const drawDateThai = draw.drawDate.toLocaleDateString("th-TH", {
-    timeZone: "Asia/Bangkok",
+    timeZone: "America/Los_Angeles",
     day: "numeric",
     month: "short",
   })

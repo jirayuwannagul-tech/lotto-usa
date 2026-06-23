@@ -126,7 +126,7 @@ export default function StatsPage() {
         day: "numeric",
         month: "long",
         year: "numeric",
-        timeZone: "Asia/Bangkok",
+        timeZone: "America/Los_Angeles",
       })
     : null
 

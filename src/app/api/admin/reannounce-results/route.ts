@@ -12,7 +12,7 @@ async function announceResult(draw: {
 }) {
   const typeLabel = draw.type === "POWERBALL" ? "🔴 Powerball" : "🔵 Mega Millions"
   const dateThai = draw.drawDate.toLocaleDateString("th-TH", {
-    timeZone: "Asia/Bangkok",
+    timeZone: "America/Los_Angeles",
     weekday: "long",
     day: "numeric",
     month: "long",

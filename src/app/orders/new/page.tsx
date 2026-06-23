@@ -81,7 +81,7 @@ function NewOrderContent() {
             <CardHeader>
               <CardTitle className="text-white text-lg">เลือกตัวเลข</CardTitle>
               <p className="text-white/50 text-sm">
-                งวด {new Date(draw.drawDate).toLocaleDateString("th-TH")} •
+                งวด {new Date(draw.drawDate).toLocaleDateString("th-TH", { timeZone: "America/Los_Angeles" })} •
                 ${pricePerTicket.toFixed(2)}/ใบ
               </p>
             </CardHeader>

@@ -20,7 +20,7 @@ function DrawRow({ draw }: { draw: HistoricalDraw }) {
     day: "numeric",
     month: "short",
     year: "numeric",
-    timeZone: "Asia/Bangkok",
+    timeZone: "America/Los_Angeles",
   })
   const typeLabel = draw.type === "POWERBALL" ? "🔴 PB" : "🔵 MM"
   return (

@@ -13,7 +13,7 @@ function formatThaiDate(date: Date) {
 
 function formatThaiDateTime(date: Date) {
   return date.toLocaleString("th-TH", {
-    timeZone: "Asia/Bangkok",
+    timeZone: "America/Los_Angeles",
     weekday: "long",
     day: "numeric",
     month: "long",

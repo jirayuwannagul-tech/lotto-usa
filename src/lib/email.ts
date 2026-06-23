@@ -54,7 +54,7 @@ export async function sendWinnerEmail(params: {
 }) {
   const drawLabel = params.drawType === "POWERBALL" ? "Powerball" : "Mega Millions"
   const drawDateStr = params.drawDate.toLocaleDateString("th-TH", {
-    year: "numeric", month: "long", day: "numeric",
+    year: "numeric", month: "long", day: "numeric", timeZone: "America/Los_Angeles",
   })
 
   await sendAdminMessage(
