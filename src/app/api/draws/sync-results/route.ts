@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendRealtimeMessage } from "@/lib/telegram"
+import { buildScheduledDrawDate } from "@/lib/draw-schedule"
+
+// NY Open Data's draw_date has no timezone suffix (e.g. "2026-06-22T00:00:00.000"),
+// which JS parses as local server time, not UTC. Force UTC so the calendar date we
+// extract below always matches the date reported by the official source.
+function parseApiDateAsUTC(rawDate: string): Date {
+  return new Date(rawDate.endsWith("Z") ? rawDate : `${rawDate}Z`)
+}
 
 async function fetchPowerballResults() {
   const res = await fetch("https://data.ny.gov/resource/d6yy-54nr.json?$limit=10&$order=draw_date+DESC", {
@@ -13,7 +21,7 @@ async function fetchPowerballResults() {
     const pb = nums.pop()!
     return {
       type: "POWERBALL" as const,
-      date: new Date(row.draw_date),
+      date: parseApiDateAsUTC(row.draw_date),
       mainNumbers: nums.map((n) => n.padStart(2, "0")).join(","),
       specialNumber: pb.padStart(2, "0"),
     }
@@ -28,7 +36,7 @@ async function fetchMegaResults() {
   const data = await res.json() as { draw_date: string; winning_numbers: string; mega_ball: string }[]
   return data.map((row) => ({
     type: "MEGA_MILLIONS" as const,
-    date: new Date(row.draw_date),
+    date: parseApiDateAsUTC(row.draw_date),
     mainNumbers: row.winning_numbers.trim().split(" ").map((n) => n.padStart(2, "0")).join(","),
     specialNumber: row.mega_ball.padStart(2, "0"),
   }))
@@ -132,11 +140,20 @@ export async function POST(req: Request) {
     })
 
     if (!draw) {
+      // No pre-existing Draw row (nobody visited a purchase page yet to create it) —
+      // build the correct LA-anchored drawDate from the result's calendar date instead
+      // of trusting the raw API date as-is.
+      const scheduledDrawDate = buildScheduledDrawDate(
+        result.type,
+        result.date.getUTCFullYear(),
+        result.date.getUTCMonth() + 1,
+        result.date.getUTCDate()
+      )
       const newDraw = await prisma.draw.create({
         data: {
           type: result.type,
-          drawDate: result.date,
-          cutoffAt: result.date,
+          drawDate: scheduledDrawDate,
+          cutoffAt: scheduledDrawDate,
           isOpen: false,
           winningMain: result.mainNumbers,
           winningSpecial: result.specialNumber,

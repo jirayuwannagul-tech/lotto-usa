@@ -39,6 +39,11 @@ function buildDateInLosAngeles(
   )
 }
 
+export function buildScheduledDrawDate(type: DrawType, year: number, month: number, day: number): Date {
+  const schedule = SCHEDULE[type]
+  return buildDateInLosAngeles(year, month, day, schedule.hour, schedule.minute)
+}
+
 export function getNextDrawDates(type: DrawType, now = new Date()) {
   const schedule = SCHEDULE[type]
   const nowLA = toZonedTime(now, LA_TIME_ZONE)
