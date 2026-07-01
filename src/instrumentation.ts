@@ -31,7 +31,8 @@ const RESULT_SCHEDULE = [
   { days: [1, 3, 6], hour: 19, minute: 59 },
   { days: [2, 5], hour: 20, minute: 0 },
 ]
-const RESULT_CHECK_DELAY_MIN = 40
+// Fire at +40, +90, +150 min after each draw — NY API can take 1-2h to update
+const RESULT_CHECK_OFFSETS_MIN = [40, 90, 150]
 
 function scheduleResultsCheck() {
   const appUrl = process.env.APP_URL ?? process.env.NEXTAUTH_URL
@@ -50,10 +51,13 @@ function scheduleResultsCheck() {
       candidate.setUTCDate(laNow.getUTCDate() + offset)
       for (const sched of RESULT_SCHEDULE) {
         if (!sched.days.includes(candidate.getUTCDay())) continue
-        const fireAt = new Date(candidate)
-        fireAt.setUTCHours(sched.hour, sched.minute + RESULT_CHECK_DELAY_MIN, 0, 0)
-        if (fireAt <= laNow) continue
-        if (!best || fireAt < best) best = fireAt
+        for (const delayMin of RESULT_CHECK_OFFSETS_MIN) {
+          const fireAt = new Date(candidate)
+          // setUTCHours handles minute overflow (e.g. 59+150=209 → wraps correctly)
+          fireAt.setUTCHours(sched.hour, sched.minute + delayMin, 0, 0)
+          if (fireAt <= laNow) continue
+          if (!best || fireAt < best) best = fireAt
+        }
       }
     }
     if (!best) return 60 * 60 * 1000 // fallback: retry in 1h

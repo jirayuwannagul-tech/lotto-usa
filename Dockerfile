@@ -17,6 +17,7 @@ RUN npm run build
 
 ENV NODE_ENV=production
 ENV HOSTNAME="0.0.0.0"
+ENV TZ=America/Los_Angeles
 
 RUN mkdir -p /data && chmod 777 /data
 

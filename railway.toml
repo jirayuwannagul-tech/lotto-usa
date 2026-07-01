@@ -12,7 +12,7 @@ command = "curl -sf \"$NEXTAUTH_URL/api/cron/sync-draws?secret=$CRON_SECRET\" ||
 
 [[crons]]
 name = "sync-results"
-schedule = "0 5 * * *"
+schedule = "0 */3 * * *"
 command = "curl -sf -X POST \"$NEXTAUTH_URL/api/draws/sync-results\" -H \"Content-Type: application/json\" -d '{\"secret\":\"SYNC_RESULTS_2026\"}' || true"
 
 [[crons]]
